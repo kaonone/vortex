@@ -42,7 +42,7 @@ contract MyStrategy is BaseStrategy {
 
     address public constant badgerTree = 0x2C798FaFd37C7DCdcAc2498e19432898Bc51376b;
 
-    // slippage tolerance 0.5% (divide by MAX_BPS)
+    // slippage tolerance 0.5% (divide by MAX_BPS) - Changeable by Governance or Strategist
     uint256 public sl = 50;
     uint256 public pid = 24; // ibBTC_WBTC_LP pool ID
     uint256 public constant MAX_BPS = 10000;
@@ -72,6 +72,7 @@ contract MyStrategy is BaseStrategy {
         IERC20Upgradeable(reward).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
         IERC20Upgradeable(wBTC_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
         IERC20Upgradeable(wETH_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
+        IERC20Upgradeable(ibBTC_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
 
         IERC20Upgradeable(wBTC_TOKEN).safeApprove(ibBTC_WBTC_LP, type(uint256).max);
         IERC20Upgradeable(ibBTC_TOKEN).safeApprove(ibBTC_WBTC_LP, type(uint256).max);

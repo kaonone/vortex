@@ -1,4 +1,7 @@
 from brownie import *
+from brownie import interface, accounts, Contract, MyStrategy, Controller, SettV3
+import time
+
 from config import (
   BADGER_DEV_MULTISIG,
   WANT,
@@ -80,15 +83,52 @@ def deploy():
   controller.approveStrategy(WANT, strategy, {"from": governance})
   controller.setStrategy(WANT, strategy, {"from": deployer})
 
+  WBTC = strategy.wBTC_TOKEN()
+  wbtc = interface.IERC20(WBTC)
+  IBBTC = strategy.ibBTC_TOKEN()
+  ibBTC = interface.IERC20(IBBTC)
+
   ## Uniswap some tokens here
-  router = Contract.from_explorer("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+  router = Contract.from_explorer(strategy.SUSHISWAP_ROUTER())
+  
+  wbtc.approve(router.address, 999999999999999999999999999999, {"from": deployer})
+  ibBTC.approve(router.address, 999999999999999999999999999999, {"from": deployer})
+
+  # Buy WBTC with path MATIC -> WETH -> WBTC
   router.swapExactETHForTokens(
-    0, ## Mint out
-    ["0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", WANT],
-    deployer,
-    9999999999999999,
-    {"from": deployer, "value": 5000000000000000000}
+      0,
+      ["0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+          "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619", WBTC],
+      deployer,
+      9999999999999999,
+      {"from": deployer, "value": 5000 * 10**18}
   )
+
+  # Buy WBTC with path MATIC -> WETH -> WBTC -> ibBTC
+  router.swapExactETHForTokens(
+      0,
+      ["0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+          "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619", WBTC, IBBTC],
+      deployer,
+      9999999999999999,
+      {"from": deployer, "value": 5000 * 10**18}
+  )
+
+  # Add ibBTC-wBTC liquidity
+  router.addLiquidity(
+    WBTC,
+    IBBTC,
+    wbtc.balanceOf(deployer),
+    ibBTC.balanceOf(deployer),
+    wbtc.balanceOf(deployer) * 0.005,
+    ibBTC.balanceOf(deployer) * 0.005,
+    deployer,
+    int(time.time()),
+    {"from": deployer}
+  )
+  
+  assert want.balanceOf(deployer) > 0
+  print("Initial Want Balance: ", want.balanceOf(deployer.address))
 
   return DotMap(
     deployer=deployer,

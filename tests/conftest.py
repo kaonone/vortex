@@ -67,5 +67,10 @@ def settKeeper(vault):
 def strategyKeeper(strategy):
   return accounts.at(strategy.keeper(), force=True)
 
+## Forces reset before each test
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
+
 
       

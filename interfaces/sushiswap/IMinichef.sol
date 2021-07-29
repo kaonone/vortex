@@ -29,6 +29,11 @@ interface IMiniChefV2 {
         view
         returns (uint256, uint256);
 
+    function poolInfo(uint256 _pid)
+        external
+        view
+        returns (uint128, uint64, uint64);
+
     function deposit(
         uint256 pid,
         uint256 amount,

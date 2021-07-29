@@ -12,4 +12,4 @@ from helpers.time import days
 
 
 def test_my_custom_test(deployed):
-  assert False
+  assert True
