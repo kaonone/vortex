@@ -10,6 +10,7 @@ class Network(IntEnum):
     xDai = 100
     Forknet = 1337
     BSC = 56
+    Polygon = 137
 
 
 MULTICALL_ADDRESSES = {
@@ -20,4 +21,5 @@ MULTICALL_ADDRESSES = {
     Network.xDai: "0xb5b692a88BDFc81ca69dcB1d924f59f0413A602a",
     Network.Forknet: "0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441",
     Network.BSC: "0xec8c00da6ce45341fb8c31653b598ca0d8251804",
+    Network.Polygon: "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507",
 }
