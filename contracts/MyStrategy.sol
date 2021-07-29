@@ -199,10 +199,16 @@ contract MyStrategy is BaseStrategy {
             return 0;
         }
 
-        // Send CRV rewards to BadgerTree
+        // Process Sushi rewards if existing
         if (sushiAmount > 0) {
-            IERC20Upgradeable(SUSHI_TOKEN).safeTransfer(badgerTree, sushiAmount);
-            emit TreeDistribution(SUSHI_TOKEN, sushiAmount, block.number, block.timestamp);
+            // Process fees on Sushi Rewards
+            _processRewardsFees(sushiAmount, SUSHI_TOKEN);
+
+            // Transfer balance of Sushi to the Badger Tree
+            uint256 sushiBalance = IERC20Upgradeable(SUSHI_TOKEN).balanceOf(address(this));
+            IERC20Upgradeable(SUSHI_TOKEN).safeTransfer(badgerTree, sushiBalance);
+
+            emit TreeDistribution(SUSHI_TOKEN, sushiBalance, block.number, block.timestamp);
         }
 
         if (rewardsAmount > 0) {
@@ -261,11 +267,18 @@ contract MyStrategy is BaseStrategy {
 
     /// ===== Internal Helper Functions =====
 
-    /// @dev used to manage the governance and strategist fee, make sure to use it to get paid!
+    /// @dev used to manage the governance and strategist fee on earned want, make sure to use it to get paid!
     function _processPerformanceFees(uint256 _amount) internal returns (uint256 governancePerformanceFee, uint256 strategistPerformanceFee) {
         governancePerformanceFee = _processFee(want, _amount, performanceFeeGovernance, IController(controller).rewards());
 
         strategistPerformanceFee = _processFee(want, _amount, performanceFeeStrategist, strategist);
+    }
+
+    /// @dev used to manage the governance and strategist fee on earned rewards, make sure to use it to get paid!
+    function _processRewardsFees(uint256 _amount, address token) internal returns (uint256 governanceRewardsFee, uint256 strategistRewardsFee) {
+        governanceRewardsFee = _processFee(token, _amount, performanceFeeGovernance, IController(controller).rewards());
+
+        strategistRewardsFee = _processFee(token, _amount, performanceFeeStrategist, strategist);
     }
 
     function setSlippageTolerance(uint256 _s) external whenNotPaused {
