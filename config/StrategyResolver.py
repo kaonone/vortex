@@ -130,10 +130,18 @@ class StrategyResolver(StrategyCoreResolver):
             assert after.balances("sushi", "badgerTree") > before.balances(
                 "sushi", "badgerTree"
             )
-            # All sushi harvested is sent to the tree
+            # All sushi harvested (after fees) is sent to the tree
             assert (
                 after.balances("sushi", "badgerTree") - before.balances("sushi", "badgerTree") ==
                 event["amount"]
+            )
+            # Governance rewards fees are charged
+            assert after.balances("sushi", "governanceRewards") > before.balances(
+                "sushi", "governanceRewards"
+            )
+            # Strategist rewards fees are charged
+            assert after.balances("sushi", "strategist") > before.balances(
+                "sushi", "strategist"
             )
 
     def printState(self, event, keys):
