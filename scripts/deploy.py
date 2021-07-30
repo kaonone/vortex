@@ -1,6 +1,7 @@
 from brownie import *
 from brownie import interface, accounts, Contract, MyStrategy, Controller, SettV3
 import time
+from helpers.time import days
 
 from config import (
   BADGER_DEV_MULTISIG,
@@ -123,7 +124,7 @@ def deploy():
     wbtc.balanceOf(deployer) * 0.005,
     ibBTC.balanceOf(deployer) * 0.005,
     deployer,
-    int(time.time()),
+    int(time.time()) + 1200, # Now + 20mins
     {"from": deployer}
   )
   
