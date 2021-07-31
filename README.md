@@ -1,21 +1,35 @@
-# Badger Strategy V1 Brownie Mix
+# ibBTC/wBTC Sushi Liquidity Pool Yield Strategy
 
-- Video Introduction: https://youtu.be/FVbhgPYW_D0
+## NOTE: TO TEST
+Import the fork network with tons of ETH
+```
+brownie networks import network-config.yaml
+```
 
-- Example Project: https://github.com/Badger-Finance/wBTC-AAVE-Rewards-Farm-Badger-V1-Strategy
-- Full Project Walkthrough: https://www.youtube.com/watch?v=lTb0RFJJx2k
-- 1-1 Mentoring (Valid throughout HackMoney and Gitcoin Round 10): https://calendly.com/alex-entreprenerd/badger-hackmoney-1-1
+This Polygon network strategy takes Sushi's ibBTC/wBTC liquidity pool tokens as deposit and stakes it on Sushi's MiniChefV2 for yield. The rewards are in wMATIC and SUSHI. The wMATIC is swapped for wBTC and ibBTC in equal parts and these tokens are deposited on the liquidity pool to obtain more want. The SUSHI rewards are distributed to users through the BadgerTree. 
 
-## What you'll find here
+## Deposit
+Deposit ibBTC/wBTC SLP tokens in Sushi's MiniChefV2, so that we earn interest as well as rewards in WMATIC and SUSHI.
 
-- Basic Solidity Smart Contract for creating your own Badger Strategy ([`contracts/MyStrategy.sol`](contracts/MyStrategy.sol))
+## Tend
+If there's any ibBTC/wBTC SLP in the strategy, it will be deposited in the pool.
 
-- Interfaces for some of the most used DeFi protocols on ethereum mainnet. ([`interfaces`](interfaces))
-- Dependencies for OpenZeppelin and other libraries. ([`deps`](deps))
+## Harvest
+The Strategy will harvest WMATIC, swap it into wBTC and ibBTC in equal parts and deposit these tokens into the SLP to obtain more want. Additionally, the strategy will harvest SUSHI rewards that will be forward to users through the BadgerTree.
 
-- Sample test suite that runs on mainnet fork. ([`tests`](tests))
+In further detail:
+If no reward, then do nothing.
+If SUSHI reward is available, process fees on it and transfer the balance to the BadgerTree.
+If WMATIC reward is available, swap for WBTC and ibBTC in equal parts and use these tokens to provide liquidity to the SLP.
+Finally, fees are processed on the want obtained.
 
-This mix is configured for use with [Ganache](https://github.com/trufflesuite/ganache-cli) on a [forked mainnet](https://eth-brownie.readthedocs.io/en/stable/network-management.html#using-a-forked-development-network).
+
+## Expected Yield as of July 29th, 2021
+
+SUSHI:  3.70%
+WMATIC: 6.10%
+
+Total:  9.80%
 
 ## Installation and Setup
 
