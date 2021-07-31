@@ -18,10 +18,10 @@ If there's any ibBTC/wBTC SLP in the strategy, it will be deposited in the pool.
 The Strategy will harvest WMATIC, swap it into wBTC and ibBTC in equal parts and deposit these tokens into the SLP to obtain more want. Additionally, the strategy will harvest SUSHI rewards that will be forward to users through the BadgerTree.
 
 In further detail:
-If no reward, then do nothing.
-If SUSHI reward is available, process fees on it and transfer the balance to the BadgerTree.
-If WMATIC reward is available, swap for WBTC and ibBTC in equal parts and use these tokens to provide liquidity to the SLP.
-Finally, fees are processed on the want obtained.
+-If no reward, then do nothing.
+-If SUSHI reward is available, process fees on it and transfer the balance to the BadgerTree.
+-If WMATIC reward is available, swap for WBTC and ibBTC in equal parts and use these tokens to provide liquidity to the SLP.
+-Finally, fees are processed on the want obtained.
 
 
 ## Expected Yield as of July 29th, 2021
