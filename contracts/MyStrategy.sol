@@ -135,6 +135,12 @@ contract MyStrategy is BaseStrategy {
         return (_pendingSushi, _pendingMatic);
     }
 
+    /// @notice sets slippage tolerance for liquidity provision
+    function setSlippageTolerance(uint256 _s) external whenNotPaused {
+        _onlyGovernanceOrStrategist();
+        sl = _s;
+    }
+
     /// ===== Internal Core Implementations =====
 
     /// @dev security check to avoid moving tokens that would cause a rugpull, edit based on strat
@@ -157,21 +163,24 @@ contract MyStrategy is BaseStrategy {
 
     /// @dev utility function to withdraw everything for migration
     function _withdrawAll() internal override {
-        (uint256 staked, ) = IMiniChefV2(CHEF).userInfo(pid, address(this));
-
         // Withdraw all want from Chef
-        IMiniChefV2(CHEF).withdraw(pid, staked, address(this));
+        IMiniChefV2(CHEF).withdraw(pid, balanceOfPool(), address(this));
 
-        // Some sushi may be returned to the contract and picked up next harvest
+        // Some SUSHI/wMATIC may be returned to the contract and picked up next harvest
 
         // Note: All want is automatically withdrawn outside this "inner hook" in base strategy function
     }
     /// @dev withdraw the specified amount of want, liquidate from lpComponent to want, paying off any necessary debt for the conversion
     function _withdrawSome(uint256 _amount) internal override returns (uint256) {
-        // Withdraw all want from Chef
-        IMiniChefV2(CHEF).withdraw(pid, _amount, address(this));
+        uint256 _totalWant = balanceOfPool();
+        // Due to rounding errors on the Controller, the amount may be slightly higher than the available amount in edge cases.
+        if (_amount > _totalWant) {
+            IMiniChefV2(CHEF).withdraw(pid, _totalWant, address(this));
+        } else {
+            IMiniChefV2(CHEF).withdraw(pid, _amount, address(this));
+        }
 
-        // Some sushi may be returned to the contract and picked up next harvest
+        // Some SUSHI/wMATIC may be returned to the contract and picked up next harvest
 
         // Note: All want is automatically withdrawn outside this "inner hook" in base strategy function
 
@@ -279,10 +288,5 @@ contract MyStrategy is BaseStrategy {
         governanceRewardsFee = _processFee(token, _amount, performanceFeeGovernance, IController(controller).rewards());
 
         strategistRewardsFee = _processFee(token, _amount, performanceFeeStrategist, strategist);
-    }
-
-    function setSlippageTolerance(uint256 _s) external whenNotPaused {
-        _onlyGovernanceOrStrategist();
-        sl = _s;
     }
 }
