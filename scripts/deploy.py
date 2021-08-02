@@ -90,7 +90,7 @@ def deploy():
   ibBTC = interface.IERC20(IBBTC)
 
   ## Uniswap some tokens here
-  router = Contract.from_explorer(strategy.SUSHISWAP_ROUTER())
+  router = interface.IUniswapRouterV2(strategy.SUSHISWAP_ROUTER())
   
   wbtc.approve(router.address, 999999999999999999999999999999, {"from": deployer})
   ibBTC.approve(router.address, 999999999999999999999999999999, {"from": deployer})

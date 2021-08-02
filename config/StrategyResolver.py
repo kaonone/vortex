@@ -59,6 +59,8 @@ class StrategyResolver(StrategyCoreResolver):
 
         (Strategy Must Implement)
         """
+        console.print("=== Compare Tend ===")
+        self.manager.printCompare(before, after)
         # Tend only produces results if balance of want in strategy is > 0
         if before.get("strategy.balanceOfWant") > 0:
             # Check that balance of want on strategy goes to 0 after tend
