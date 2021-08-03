@@ -1,5 +1,5 @@
 from brownie import *
-from brownie import interface, accounts, Contract, MyStrategy, Controller, SettV3
+from brownie import interface, accounts, Contract, StrategySushiBadgerIbBTC, Controller, SettV3
 import time
 from helpers.time import days
 
@@ -61,7 +61,7 @@ def deploy():
   # sett.setGuestList(guestList, {"from": governance})
 
   ## Start up Strategy
-  strategy = MyStrategy.deploy({"from": deployer})
+  strategy = StrategySushiBadgerIbBTC.deploy({"from": deployer})
   strategy.initialize(
     BADGER_DEV_MULTISIG,
     strategist,
