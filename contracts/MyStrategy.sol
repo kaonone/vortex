@@ -43,8 +43,8 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
     address public constant badgerTree = 0x2C798FaFd37C7DCdcAc2498e19432898Bc51376b;
 
     // slippage tolerance 0.5% (divide by MAX_BPS) - Changeable by Governance or Strategist
-    uint256 public sl = 50;
-    uint256 public pid = 24; // ibBTC_WBTC_LP pool ID
+    uint256 public sl;
+    uint256 public constant pid = 24; // ibBTC_WBTC_LP pool ID
     uint256 public constant MAX_BPS = 10000;
 
     function initialize(
@@ -67,6 +67,9 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
         performanceFeeStrategist = _feeConfig[1];
         withdrawalFee = _feeConfig[2];
 
+        // Set default slippage value
+        sl = 50;
+
         /// @dev do one off approvals here
         IERC20Upgradeable(want).safeApprove(CHEF, type(uint256).max);
         IERC20Upgradeable(reward).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
@@ -82,7 +85,7 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
 
     // @dev Specify the name of the strategy
     function getName() external override pure returns (string memory) {
-        return "ibBTC-wBTC-SLP-Rewards-Badger-Strategy";
+        return "StrategySushiBadgerIbBTC";
     }
 
     // @dev Specify the version of the Strategy, for upgrades
@@ -259,7 +262,7 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
         uint256 earned = IERC20Upgradeable(want).balanceOf(address(this)).sub(_before);
 
         /// @notice Keep this in so you get paid!
-        (uint256 governancePerformanceFee, uint256 strategistPerformanceFee) = _processPerformanceFees(earned);
+        _processPerformanceFees(earned);
 
         /// @dev Harvest event that every strategy MUST have, see BaseStrategy
         emit Harvest(earned, block.number);
