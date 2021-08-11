@@ -18,7 +18,6 @@ from config import (
   GUARDIAN,
 )
 
-from dotmap import DotMap
 import click
 from rich.console import Console
 
