@@ -1,7 +1,21 @@
+live:
+  - name: Arbitrum
+    networks:
+      - name: Mainnet (Infura)
+        chainid: 42161
+        id: arbitrum-main
+        host: https://arbitrum-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api.arbiscan.io/api
+      - name: Testnet
+        chainid: 421611
+        id: arbitrum-test
+        host: https://rinkeby.arbitrum.io/rpc
+        explorer: https://rinkeby-explorer.arbitrum.io
+
 development:
-  - name: Ganache-CLI (Polygon-Mainnet Fork)
-    id: polygon-main-fork-2
-    cmd: ganache-cli
+  - name: Ganache (Arbitrum-Mainnet Fork)
+    id: arbitrum-main-fork
+    cmd: ganache
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
@@ -10,5 +24,4 @@ development:
       accounts: 10
       evm_version: istanbul
       mnemonic: brownie
-      fork: polygon-main
-      default_balance: 100000 ether
+      fork: arbitrum-main
