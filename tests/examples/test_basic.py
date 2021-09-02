@@ -1,7 +1,7 @@
 from config import (
   BADGER_DEV_MULTISIG,
   WANT,
-  LP_COMPONENT,
+  # LP_COMPONENT,
   REWARD_TOKEN,
   DEFAULT_GOV_PERFORMANCE_FEE,
   DEFAULT_PERFORMANCE_FEE,
@@ -18,8 +18,8 @@ def test_deploy_settings(deployed):
 
   ## NOTE: Change based on how you set your contract
   assert protected_tokens[0] == WANT
-  assert protected_tokens[1] == LP_COMPONENT
-  assert protected_tokens[2] == REWARD_TOKEN
+  # assert protected_tokens[1] == LP_COMPONENT
+  assert protected_tokens[1] == REWARD_TOKEN
 
   assert strategy.governance() == BADGER_DEV_MULTISIG
 

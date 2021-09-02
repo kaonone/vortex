@@ -1,12 +1,12 @@
 from brownie import *
-from brownie import interface, accounts, Contract, StrategySushiBadgerIbBTC, Controller, SettV3
+from brownie import interface, accounts, Contract, StrategySushiBadgerWbtcWeth, Controller, SettV3
 import time
 from helpers.time import days
 
 from config import (
   BADGER_DEV_MULTISIG,
   WANT,
-  LP_COMPONENT,
+  # LP_COMPONENT,
   REWARD_TOKEN,
   PROTECTED_TOKENS,
   FEES
@@ -21,6 +21,9 @@ def deploy():
   """
     Deploys, vault, controller and strats and wires them up for you to test
   """
+  print("here1")
+  # Hack to fix Ganache v7 call bug
+  accounts.default = accounts[0]
   deployer = accounts[0]
 
   strategist = deployer
@@ -30,11 +33,12 @@ def deploy():
   governance = accounts.at(BADGER_DEV_MULTISIG, force=True)
 
   controller = Controller.deploy({"from": deployer})
+
   controller.initialize(
     BADGER_DEV_MULTISIG,
     strategist,
     keeper,
-    BADGER_DEV_MULTISIG
+    BADGER_DEV_MULTISIG,
   )
 
   sett = SettV3.deploy({"from": deployer})
@@ -52,7 +56,6 @@ def deploy():
   sett.unpause({"from": governance})
   controller.setVault(WANT, sett)
 
-
   ## TODO: Add guest list once we find compatible, tested, contract
   # guestList = VipCappedGuestListWrapperUpgradeable.deploy({"from": deployer})
   # guestList.initialize(sett, {"from": deployer})
@@ -61,7 +64,7 @@ def deploy():
   # sett.setGuestList(guestList, {"from": governance})
 
   ## Start up Strategy
-  strategy = StrategySushiBadgerIbBTC.deploy({"from": deployer})
+  strategy = StrategySushiBadgerWbtcWeth.deploy({"from": deployer})
   strategy.initialize(
     BADGER_DEV_MULTISIG,
     strategist,
@@ -71,12 +74,13 @@ def deploy():
     PROTECTED_TOKENS,
     FEES
   )
+  print("here2")
 
   ## Tool that verifies bytecode (run independetly) <- Webapp for anyone to verify
 
   ## Set up tokens
   want = interface.IERC20(WANT)
-  lpComponent = interface.IERC20(LP_COMPONENT)
+  # lpComponent = interface.IERC20(LP_COMPONENT)
   rewardToken = interface.IERC20(REWARD_TOKEN)
 
   ## Wire up Controller to Strart
@@ -84,45 +88,39 @@ def deploy():
   controller.approveStrategy(WANT, strategy, {"from": governance})
   controller.setStrategy(WANT, strategy, {"from": deployer})
 
-  WBTC = strategy.wBTC_TOKEN()
+  WBTC = strategy.WBTC_TOKEN()
+  WETH = strategy.WETH_TOKEN()
   wbtc = interface.IERC20(WBTC)
-  IBBTC = strategy.ibBTC_TOKEN()
-  ibBTC = interface.IERC20(IBBTC)
+  weth = interface.IERC20(WETH)
 
   ## Uniswap some tokens here
   router = interface.IUniswapRouterV2(strategy.SUSHISWAP_ROUTER())
   
   wbtc.approve(router.address, 999999999999999999999999999999, {"from": deployer})
-  ibBTC.approve(router.address, 999999999999999999999999999999, {"from": deployer})
+  weth.approve(router.address, 999999999999999999999999999999, {"from": deployer})
 
-  # Buy WBTC with path MATIC -> WETH -> WBTC
+  deposit_amount = 50 * 10**18
+
+  # Convert ETH -> WETH
+  interface.IWETH(WETH).deposit({"value": deposit_amount, "from": deployer})
+
+  # Buy WBTC with path ETH -> WETH -> WBTC
   router.swapExactETHForTokens(
       0,
-      ["0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-          "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619", WBTC],
+      [WETH, WBTC],
       deployer,
       9999999999999999,
-      {"from": deployer, "value": 5000 * 10**18}
+      {"value": deposit_amount, "from": deployer}
   )
 
-  # Buy WBTC with path MATIC -> WETH -> WBTC -> ibBTC
-  router.swapExactETHForTokens(
-      0,
-      ["0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-          "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619", WBTC, IBBTC],
-      deployer,
-      9999999999999999,
-      {"from": deployer, "value": 5000 * 10**18}
-  )
-
-  # Add ibBTC-wBTC liquidity
+  # Add WBTC-WETH liquidity
   router.addLiquidity(
     WBTC,
-    IBBTC,
+    WETH,
     wbtc.balanceOf(deployer),
-    ibBTC.balanceOf(deployer),
+    weth.balanceOf(deployer),
     wbtc.balanceOf(deployer) * 0.005,
-    ibBTC.balanceOf(deployer) * 0.005,
+    weth.balanceOf(deployer) * 0.005,
     deployer,
     int(time.time()) + 1200, # Now + 20mins
     {"from": deployer}
@@ -139,6 +137,6 @@ def deploy():
     strategy=strategy,
     # guestList=guestList,
     want=want,
-    lpComponent=lpComponent,
+    # lpComponent=lpComponent,
     rewardToken=rewardToken
   )

@@ -6,6 +6,7 @@ live:
         id: arbitrum-main
         host: https://arbitrum-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         explorer: https://api.arbiscan.io/api
+        multicall2: "0x80C7DD17B01855a6D2347444a0FCC36136a314de"
       - name: Testnet
         chainid: 421611
         id: arbitrum-test
@@ -15,7 +16,7 @@ live:
 development:
   - name: Ganache (Arbitrum-Mainnet Fork)
     id: arbitrum-main-fork
-    cmd: ganache
+    cmd: npx ganache
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
@@ -24,4 +25,13 @@ development:
       accounts: 10
       evm_version: istanbul
       mnemonic: brownie
+      fork: arbitrum-main
+
+  - name: Hardhat (Arbitrum Fork)
+    id: hardhat-arbitrum-fork
+    cmd: npx hardhat node
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
       fork: arbitrum-main

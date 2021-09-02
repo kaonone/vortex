@@ -77,7 +77,7 @@ class StrategyResolver(StrategyCoreResolver):
         strategy = self.manager.strategy
         return {
             "chef": strategy.CHEF(),
-            "pool": strategy.ibBTC_WBTC_LP(),
+            "pool": strategy.want(),
             "router": strategy.SUSHISWAP_ROUTER(),
             "badgerTree": strategy.badgerTree(),
         }   
@@ -86,15 +86,13 @@ class StrategyResolver(StrategyCoreResolver):
         super().add_balances_snap(calls, entities)
         strategy = self.manager.strategy
 
-        sushi = interface.IERC20(strategy.SUSHI_TOKEN())
-        wbtc = interface.IERC20(strategy.wBTC_TOKEN())
-        ibbtc = interface.IERC20(strategy.ibBTC_TOKEN())
-        wMATIC = interface.IERC20(strategy.reward())
+        wbtc = interface.IERC20(strategy.WBTC_TOKEN())
+        weth = interface.IERC20(strategy.WETH_TOKEN())
+        sushi = interface.IERC20(strategy.reward())
 
-        calls = self.add_entity_balances_for_tokens(calls, "sushi", sushi, entities)
         calls = self.add_entity_balances_for_tokens(calls, "wbtc", wbtc, entities)
-        calls = self.add_entity_balances_for_tokens(calls, "ibbtc", ibbtc, entities)
-        calls = self.add_entity_balances_for_tokens(calls, "wMATIC", wMATIC, entities)
+        calls = self.add_entity_balances_for_tokens(calls, "weth", weth, entities)
+        calls = self.add_entity_balances_for_tokens(calls, "sushi", sushi, entities)
 
         return calls
 

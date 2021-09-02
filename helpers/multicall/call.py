@@ -1,6 +1,6 @@
 # Credit: https://github.com/banteg/multicall.py/blob/master/multicall/call.py
 from eth_utils import to_checksum_address
-from brownie import web3
+from brownie import web3, accounts
 from helpers.multicall import Signature
 
 
@@ -32,5 +32,5 @@ class Call:
     def __call__(self, args=None):
         args = args or self.args
         calldata = self.signature.encode_data(args)
-        output = web3.eth.call({"to": self.target, "data": calldata})
+        output = web3.eth.call({"to": self.target, "data": calldata, "from": accounts[0].address}) # Added from to fix brownie bug
         return self.decode_output(output)

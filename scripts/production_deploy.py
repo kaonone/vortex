@@ -3,7 +3,7 @@ import time
 from brownie import (
     accounts,
     network,
-    StrategySushiBadgerIbBTC, 
+    StrategySushiBadgerWbtcWeth, 
     SettV3, 
     AdminUpgradeabilityProxy,
     Controller,
@@ -129,7 +129,7 @@ def deploy_vaults_and_strategies(
 
     print("Strategy Arguments: ", args)
 
-    strat_logic = StrategySushiBadgerIbBTC.deploy({"from": dev})
+    strat_logic = StrategySushiBadgerWbtcWeth.deploy({"from": dev})
     time.sleep(sleep_between_tx)
 
     strat_proxy = AdminUpgradeabilityProxy.deploy(
@@ -142,7 +142,7 @@ def deploy_vaults_and_strategies(
 
     ## We delete from deploy and then fetch again so we can interact
     AdminUpgradeabilityProxy.remove(strat_proxy)
-    strat_proxy = StrategySushiBadgerIbBTC.at(strat_proxy.address)
+    strat_proxy = StrategySushiBadgerWbtcWeth.at(strat_proxy.address)
 
     console.print(
         "[green]Strategy was deployed at: [/green]", strat_proxy.address

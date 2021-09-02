@@ -11,5 +11,5 @@ from helpers.time import days
 """
 
 
-def test_my_custom_test(deployed):
+def test_my_custom_test():
   assert True

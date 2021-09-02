@@ -2,7 +2,7 @@ from brownie import *
 from config import (
   BADGER_DEV_MULTISIG,
   WANT,
-  LP_COMPONENT,
+  # LP_COMPONENT,
   REWARD_TOKEN,
   DEFAULT_GOV_PERFORMANCE_FEE,
   DEFAULT_PERFORMANCE_FEE,
@@ -14,7 +14,7 @@ import pytest
 
 @pytest.fixture
 def tokens():
-  return [WANT, LP_COMPONENT, REWARD_TOKEN]
+  return [WANT, REWARD_TOKEN] # , LP_COMPONENT
 
 @pytest.fixture
 def deployed():
@@ -67,10 +67,13 @@ def settKeeper(vault):
 def strategyKeeper(strategy):
   return accounts.at(strategy.keeper(), force=True)
 
+# Set default account
+@pytest.fixture(autouse=True)
+def isolation(accounts):
+    accounts.default = accounts[0]
+
 ## Forces reset before each test
 @pytest.fixture(autouse=True)
 def isolation(fn_isolation):
+    accounts.default = accounts[0]
     pass
-
-
-      
