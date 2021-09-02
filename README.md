@@ -1,35 +1,40 @@
-# ibBTC/wBTC Sushi Liquidity Pool Yield Strategy
+# WBTC/WETH Sushi Liquidity Pool Yield Strategy
 
-## NOTE: TO TEST
+## NOTE: Tests are not working on a arbitrum-fork as of now
+To test the strategy logic, use the [`feat/poly`](https://github.com/shuklaayush/WBTC-WETH-SLP-Arbitrum-Strategy/tree/feat/poly) branch which runs the same strategy on a polygon-fork (with polygon addresses). 
+
+See diff here: https://github.com/shuklaayush/WBTC-WETH-SLP-Arbitrum-Strategy/compare/main...shuklaayush:feat/poly?expand=1
+
+## Test
+
 Import the fork network with tons of ETH
 ```
 brownie networks import network-config.yaml
 ```
 
-This Polygon network strategy takes Sushi's ibBTC/wBTC liquidity pool tokens as deposit and stakes it on Sushi's MiniChefV2 for yield. The rewards are in wMATIC and SUSHI. The wMATIC is swapped for wBTC and ibBTC in equal parts and these tokens are deposited on the liquidity pool to obtain more want. The SUSHI rewards are distributed to users through the BadgerTree. 
+This strategy takes Sushi's WBTC/WETH liquidity pool tokens as deposit and stakes it on Sushi's MiniChefV2 for yield. The rewards are in SUSHI. Half of the SUSHI rewards are distributed to users through the BadgerTree. The remaining SUSHI rewards are swapped for WBTC and WETH in equal parts and these tokens are deposited on the liquidity pool to obtain more want. 
 
 ## Deposit
-Deposit ibBTC/wBTC SLP tokens in Sushi's MiniChefV2, so that we earn interest as well as rewards in WMATIC and SUSHI.
+Deposit WBTC/WETH SLP tokens in Sushi's MiniChefV2, so that we earn interest as well as rewards in SUSHI.
 
 ## Tend
-If there's any ibBTC/wBTC SLP in the strategy, it will be deposited in the pool.
+If there's any WBTC/WETH SLP in the strategy, it will be deposited in the pool.
 
 ## Harvest
-The Strategy will harvest WMATIC, swap it into wBTC and ibBTC in equal parts and deposit these tokens into the SLP to obtain more want. Additionally, the strategy will harvest SUSHI rewards that will be forward to users through the BadgerTree.
+The Strategy will harvest SUSHI rewards, and forward half of them to users through the BadgerTree. It will then swap the remaining half into WBTC and WETH in equal parts and deposit these tokens into the SLP to obtain more want.
 
 In further detail:
-- If no reward, then do nothing.
-- If SUSHI reward is available, process fees on it and transfer the balance to the BadgerTree.
-- If WMATIC reward is available, swap for WBTC and ibBTC in equal parts and use these tokens to provide liquidity to the SLP.
-- Finally, fees are processed on the want obtained.
+- If no SUSHI reward, then do nothing.
+- If reward is available, then divide it into two parts:
+  - Process fees on first half and transfer remaining to the BadgerTree.
+  - Swap the other half for WBTC and WETH in equal parts and use these tokens to provide more liquidity to the SLP. Also, process fees on the extra want obtained.
 
 
-## Expected Yield as of July 31st, 2021
+## Expected Yield as of September 2nd, 2021
 
-- SUSHI:  3.70%
-- WMATIC: 6.10%
+- SUSHI:  31.61%
 
-- Total:  9.80%
+# Original README
 
 ## Installation and Setup
 
