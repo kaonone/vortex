@@ -2,7 +2,7 @@
 
 Basis 2.0 is a protocol that leverage the funding rate from a perpetual protocol and the fees from a Uniswap v3 position in order to achieve superior returns.
 
-For more on this please see [Basis 2.0 Description](https://docs.google.com/document/u/1/d/1pU-ORN8N2z-U6BjOJRtOa2KEJgqdzrut45aq8O-plaA/edit?usp=sharing) and .
+For more on this please see [Basis 2.0 Description](https://docs.google.com/document/u/1/d/1pU-ORN8N2z-U6BjOJRtOa2KEJgqdzrut45aq8O-plaA/edit?usp=sharing) and [Uni v3 ALM](https://docs.google.com/document/d/1IIK2xUQMWHrkthN0GlPCh3TPwchzi0Xi5BY6pLR1qnU/edit) .
 
 ## Requirements
 
@@ -17,7 +17,7 @@ For more on this please see [Basis 2.0 Description](https://docs.google.com/docu
 ## Smart Contracts
 
 * Basis Contracts //These contract allow users to take earn a funding rate by entering the perpetual trade.
-  * Vault //Isolates user funds and is able to administer them to a strategy.
+  * Vault // Isolates user funds and is able to administer them to a strategy.
     * State changing methods
       * `deposit(address user uint256 amount0 uint 256 amount1)` // Emits a Deposited Event
       * `withdraw(address user uint256 amount0 uint 256 amount1)` // Emits a Withdrawal Event
@@ -50,7 +50,7 @@ For more on this please see [Basis 2.0 Description](https://docs.google.com/docu
     * `claimReward(bytes32 merkleRoot address)` // claims the rewards from the SWISE contract. 
     * harvest()
 
-## User Stories
+## User Stories (We will complete this tomorrow)
 
 1) As a user , I want to deposit funds into the Basis Vaults so that I can earn market neutral yield.
    * Deposit
@@ -65,9 +65,12 @@ For more on this please see [Basis 2.0 Description](https://docs.google.com/docu
 
 ## Things to consider
 
-* Markets can close: https://github.com/mcdexio/mai-protocol-v3/blob/b7846a06969f2eeb61dcdcf6da15acfb19b3c038/contracts/module/TradeModule.sol#L119 
-* Funding Rate Calculation: https://github.com/mcdexio/mai-protocol-v3/blob/b7846a06969f2eeb61dcdcf6da15acfb19b3c038/contracts/module/PerpetualModule.sol#L300-L324
-* Funding Rate: How much of the funding rate does the trader earn v AMM? 
+* [Markets can close](https://github.com/mcdexio/mai-protocol-v3/blob/b7846a06969f2eeb61dcdcf6da15acfb19b3c038/contracts/module/TradeModule.sol#L119) 
+* [Funding Rate Calculation](https://github.com/mcdexio/mai-protocol-v3/blob/b7846a06969f2eeb61dcdcf6da15acfb19b3c038/contracts/module/PerpetualModule.sol#L300-L324)
+* Funding Rate: How much of the funding rate does the trader earn v AMM?
 
 ## Resources
+
+* [Mai Protocol v3 Github](https://github.com/mcdexio/mai-protocol-v3/tree/b7846a06969f2eeb61dcdcf6da15acfb19b3c038)
+* [Mai v3 Documents][https://docs.mcdex.io/mai-protocol-v3]
 * [Hop Protocol](https://github.com/hop-protocol/contracts/blob/master/contracts/bridges/L2_Bridge.sol)
