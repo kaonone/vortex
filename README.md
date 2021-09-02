@@ -1,4 +1,4 @@
-# Basis 2.0
+# Basis 2.0 (WIP)
 
 Basis 2.0 is a protocol that leverage the funding rate from a perpetual protocol and the fees from a Uniswap v3 position in order to achieve superior returns.
 
