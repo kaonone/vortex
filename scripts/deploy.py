@@ -21,7 +21,6 @@ def deploy():
   """
     Deploys, vault, controller and strats and wires them up for you to test
   """
-  print("here1")
   # Hack to fix Ganache v7 call bug
   accounts.default = accounts[0]
   deployer = accounts[0]
@@ -74,7 +73,6 @@ def deploy():
     PROTECTED_TOKENS,
     FEES
   )
-  print("here2")
 
   ## Tool that verifies bytecode (run independetly) <- Webapp for anyone to verify
 
@@ -102,12 +100,23 @@ def deploy():
   deposit_amount = 50 * 10**18
 
   # Convert ETH -> WETH
-  interface.IWETH(WETH).deposit({"value": deposit_amount, "from": deployer})
+  # interface.IWETH(WETH).deposit({"value": deposit_amount, "from": deployer})
+  ########### NOTE: Poly - Convert MATIC -> WETH
+  WMATIC = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+  router.swapExactETHForTokens(
+      0,
+      [WMATIC, WETH],
+      deployer,
+      9999999999999999,
+      {"from": deployer, "value": deposit_amount}
+  )
+  ##############
 
   # Buy WBTC with path ETH -> WETH -> WBTC
   router.swapExactETHForTokens(
       0,
-      [WETH, WBTC],
+      # [WETH, WBTC],
+      [WMATIC, WETH, WBTC], # NOTE: Poly
       deployer,
       9999999999999999,
       {"value": deposit_amount, "from": deployer}

@@ -33,13 +33,18 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
     address public reward; // Token we farm and swap to want
 
     address public constant WBTC_TOKEN =
-        0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
+        // 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
+        0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6; // NOTE: Poly
     address public constant WETH_TOKEN =
-        0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+        // 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+        0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // NOTE: Poly
 
-    address public constant CHEF = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3; // MiniChefV2
+    address public constant CHEF =
+        // 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3; // MiniChefV2
+        0x0769fd68dFb93167989C6f7254cd0D766Fb2841F; // NOTE: Poly
     address public constant SUSHISWAP_ROUTER =
-        0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
+        // 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
+        0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // NOTE: Poly
 
     address public constant badgerTree =
         0x2C798FaFd37C7DCdcAc2498e19432898Bc51376b;
