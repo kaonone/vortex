@@ -1,7 +1,11 @@
 # use Ganache's forked mainnet mode as the default network
 # NOTE: You don't *have* to do this, but it is often helpful for testing
 networks:
-  default: polygon-main-fork-2
+  default: polygon-main-fork
+
+  polygon-main-fork:
+    cmd_settings:
+      default_balance: 100000
 
 # automatically fetch contract sources from Etherscan
 autofetch_sources: True
