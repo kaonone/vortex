@@ -28,23 +28,19 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
     event TreeDistribution(address indexed token, uint256 amount, uint256 indexed blockNumber, uint256 timestamp);
 
     // address public want // Inherited from BaseStrategy, the token the strategy wants, swaps into and tries to grow
-    address public lpComponent; // Token we provide liquidity with
-    address public reward; // Token we farm and swap to want / lpComponent
+    address public reward; // Token we farm and swap to want
 
-    address public constant wETH_TOKEN = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
-    address public constant wBTC_TOKEN = 0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6;
-    address public constant ibBTC_TOKEN = 0x4EaC4c4e9050464067D673102F8E24b2FccEB350;
-    address public constant SUSHI_TOKEN = 0x0b3F868E0BE5597D5DB7fEB59E1CADBb0fdDa50a; // Reward to be distributed
+    address public constant WETH_TOKEN = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address public constant WBTC_TOKEN = 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
 
-    address public constant CHEF = 0x0769fd68dFb93167989C6f7254cd0D766Fb2841F; // MiniChefV2
+    address public constant CHEF = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3; // MiniChefV2
     address public constant SUSHISWAP_ROUTER = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
-    address public constant ibBTC_WBTC_LP = 0x8F8e95Ff4B4c5E354ccB005c6B0278492D7B5907; // want
 
     address public constant badgerTree = 0x2C798FaFd37C7DCdcAc2498e19432898Bc51376b;
 
     // slippage tolerance 0.5% (divide by MAX_BPS) - Changeable by Governance or Strategist
     uint256 public sl;
-    uint256 public constant pid = 24; // ibBTC_WBTC_LP pool ID
+    uint256 public constant pid = 3; // WBTC_WETH_LP pool ID
     uint256 public constant MAX_BPS = 10000;
 
     function initialize(
@@ -53,15 +49,14 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
         address _controller,
         address _keeper,
         address _guardian,
-        address[3] memory _wantConfig,
+        address[2] memory _wantConfig,
         uint256[3] memory _feeConfig
     ) public initializer {
         __BaseStrategy_init(_governance, _strategist, _controller, _keeper, _guardian);
 
         /// @dev Add config here
         want = _wantConfig[0];
-        lpComponent = _wantConfig[1];
-        reward = _wantConfig[2];
+        reward = _wantConfig[1];
 
         performanceFeeGovernance = _feeConfig[0];
         performanceFeeStrategist = _feeConfig[1];
@@ -73,19 +68,15 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
         /// @dev do one off approvals here
         IERC20Upgradeable(want).safeApprove(CHEF, type(uint256).max);
         IERC20Upgradeable(reward).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
-        IERC20Upgradeable(wBTC_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
-        IERC20Upgradeable(wETH_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
-        IERC20Upgradeable(ibBTC_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
-
-        IERC20Upgradeable(wBTC_TOKEN).safeApprove(ibBTC_WBTC_LP, type(uint256).max);
-        IERC20Upgradeable(ibBTC_TOKEN).safeApprove(ibBTC_WBTC_LP, type(uint256).max);
+        IERC20Upgradeable(WBTC_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
+        IERC20Upgradeable(WETH_TOKEN).safeApprove(SUSHISWAP_ROUTER, type(uint256).max);
     }
 
     /// ===== View Functions =====
 
     // @dev Specify the name of the strategy
     function getName() external override pure returns (string memory) {
-        return "StrategySushiBadgerIbBTC";
+        return "StrategySushiBadgerWbtcWeth";
     }
 
     // @dev Specify the version of the Strategy, for upgrades
@@ -111,34 +102,20 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
 
     /// @dev These are the tokens that cannot be moved except by the vault
     function getProtectedTokens() public override view returns (address[] memory) {
-        address[] memory protectedTokens = new address[](6);
+        address[] memory protectedTokens = new address[](4);
         protectedTokens[0] = want;
-        protectedTokens[1] = lpComponent;
-        protectedTokens[2] = reward;
-        protectedTokens[3] = SUSHI_TOKEN;
-        protectedTokens[4] = ibBTC_TOKEN;
-        protectedTokens[5] = wBTC_TOKEN;
+        protectedTokens[1] = reward;
+        protectedTokens[2] = WBTC_TOKEN;
+        protectedTokens[3] = WETH_TOKEN;
         return protectedTokens;
     }
 
     /// @notice returns amounts of rewards pending for this Strategy to be Harvest
-    function checkPendingReward() public view returns (uint256, uint256) {
-        uint256 _pendingSushi = IMiniChefV2(CHEF).pendingSushi(
+    function checkPendingReward() public view returns (uint256) {
+        return IMiniChefV2(CHEF).pendingSushi(
             pid,
             address(this)
         );
-        IRewarder rewarder = IMiniChefV2(CHEF).rewarder(pid);
-        (, uint256[] memory _rewardAmounts) = rewarder.pendingTokens(
-            pid,
-            address(this),
-            0
-        );
-
-        uint256 _pendingMatic;
-        if (_rewardAmounts.length > 0) {
-            _pendingMatic = _rewardAmounts[0];
-        }
-        return (_pendingSushi, _pendingMatic);
     }
 
     /// @notice sets slippage tolerance for liquidity provision
@@ -172,7 +149,7 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
         // Withdraw all want from Chef
         IMiniChefV2(CHEF).withdraw(pid, balanceOfPool(), address(this));
 
-        // Some SUSHI/wMATIC may be returned to the contract and picked up next harvest
+        // Some SUSHI may be returned to the contract and picked up next harvest
 
         // Note: All want is automatically withdrawn outside this "inner hook" in base strategy function
     }
@@ -186,7 +163,7 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
             IMiniChefV2(CHEF).withdraw(pid, _amount, address(this));
         }
 
-        // Some SUSHI/wMATIC may be returned to the contract and picked up next harvest
+        // Some SUSHI may be returned to the contract and picked up next harvest
 
         // Note: All want is automatically withdrawn outside this "inner hook" in base strategy function
 
@@ -205,59 +182,56 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
         // Harvest rewards from MiniChefV2
         IMiniChefV2(CHEF).harvest(pid, address(this));
 
-        // Get total rewards (WMATIC & SUSHI)
+        // Get total rewards (SUSHI)
         uint256 rewardsAmount = IERC20Upgradeable(reward).balanceOf(address(this));
-        uint256 sushiAmount = IERC20Upgradeable(SUSHI_TOKEN).balanceOf(address(this));
 
         // If no reward, then nothing happens
-        if (rewardsAmount == 0 && sushiAmount == 0) {
+        if (rewardsAmount == 0) {
             return 0;
         }
 
-        // Process Sushi rewards if existing
-        if (sushiAmount > 0) {
+        uint256 rewardsToTree = rewardsAmount.mul(5000).div(MAX_BPS);
+        uint256 rewardsToCompound = rewardsAmount.sub(rewardsToTree);
+
+        if (rewardsToTree > 0) {
             // Process fees on Sushi Rewards
-            _processRewardsFees(sushiAmount, SUSHI_TOKEN);
+            _processRewardsFees(rewardsToTree, reward);
 
             // Transfer balance of Sushi to the Badger Tree
-            uint256 sushiBalance = IERC20Upgradeable(SUSHI_TOKEN).balanceOf(address(this));
-            IERC20Upgradeable(SUSHI_TOKEN).safeTransfer(badgerTree, sushiBalance);
+            uint256 rewardsBalance = IERC20Upgradeable(reward).balanceOf(address(this)).sub(rewardsToCompound);
+            IERC20Upgradeable(reward).safeTransfer(badgerTree, rewardsBalance);
 
-            emit TreeDistribution(SUSHI_TOKEN, sushiBalance, block.number, block.timestamp);
+            emit TreeDistribution(reward, rewardsBalance, block.number, block.timestamp);
         }
 
-        if (rewardsAmount > 0) {
-            uint256 _half = rewardsAmount.mul(5000).div(MAX_BPS);
+        uint256 _half = rewardsToCompound.mul(5000).div(MAX_BPS);
 
-            // Swap rewarded wMATIC for wBTC through wETH path
-            address[] memory path = new address[](3);
-            path[0] = reward;
-            path[1] = wETH_TOKEN;
-            path[2] = wBTC_TOKEN;
-            IUniswapRouterV2(SUSHISWAP_ROUTER).swapExactTokensForTokens(_half, 0, path, address(this), now);
+        // Swap rewarded SUSHI for WBTC through WETH path
+        address[] memory path = new address[](3);
+        path[0] = reward;
+        path[1] = WETH_TOKEN;
+        path[2] = WBTC_TOKEN;
+        IUniswapRouterV2(SUSHISWAP_ROUTER).swapExactTokensForTokens(_half, 0, path, address(this), now);
 
-            // Swap rewarded wMATIC for ibBTC through wETH -> wBTC path
-            path = new address[](4);
-            path[0] = reward;
-            path[1] = wETH_TOKEN;
-            path[2] = wBTC_TOKEN;
-            path[3] = ibBTC_TOKEN;
-            IUniswapRouterV2(SUSHISWAP_ROUTER).swapExactTokensForTokens(rewardsAmount.sub(_half), 0, path, address(this), now);
+        // Swap rewarded SUSHI for WETH
+        path = new address[](2);
+        path[0] = reward;
+        path[1] = WETH_TOKEN;
+        IUniswapRouterV2(SUSHISWAP_ROUTER).swapExactTokensForTokens(rewardsToCompound.sub(_half), 0, path, address(this), now);
 
-            // Add liquidity for ibBTC-wBTC pool
-            uint256 _wbtcIn = balanceOfToken(wBTC_TOKEN);
-            uint256 _ibbtcIn = balanceOfToken(ibBTC_TOKEN);
-            IUniswapRouterV2(SUSHISWAP_ROUTER).addLiquidity(
-                wBTC_TOKEN,
-                ibBTC_TOKEN,
-                _wbtcIn,
-                _ibbtcIn,
-                _wbtcIn.mul(sl).div(MAX_BPS),
-                _ibbtcIn.mul(sl).div(MAX_BPS),
-                address(this),
-                now
-            );
-        }
+        // Add liquidity for WBTC-WETH pool
+        uint256 _wbtcIn = balanceOfToken(WBTC_TOKEN);
+        uint256 _wethIn = balanceOfToken(WETH_TOKEN);
+        IUniswapRouterV2(SUSHISWAP_ROUTER).addLiquidity(
+            WBTC_TOKEN,
+            WETH_TOKEN,
+            _wbtcIn,
+            _wethIn,
+            _wbtcIn.mul(sl).div(MAX_BPS),
+            _wethIn.mul(sl).div(MAX_BPS),
+            address(this),
+            now
+        );
 
         uint256 earned = IERC20Upgradeable(want).balanceOf(address(this)).sub(_before);
 
@@ -285,14 +259,12 @@ contract StrategySushiBadgerIbBTC is BaseStrategy {
     /// @dev used to manage the governance and strategist fee on earned want, make sure to use it to get paid!
     function _processPerformanceFees(uint256 _amount) internal returns (uint256 governancePerformanceFee, uint256 strategistPerformanceFee) {
         governancePerformanceFee = _processFee(want, _amount, performanceFeeGovernance, IController(controller).rewards());
-
         strategistPerformanceFee = _processFee(want, _amount, performanceFeeStrategist, strategist);
     }
 
     /// @dev used to manage the governance and strategist fee on earned rewards, make sure to use it to get paid!
     function _processRewardsFees(uint256 _amount, address token) internal returns (uint256 governanceRewardsFee, uint256 strategistRewardsFee) {
         governanceRewardsFee = _processFee(token, _amount, performanceFeeGovernance, IController(controller).rewards());
-
         strategistRewardsFee = _processFee(token, _amount, performanceFeeStrategist, strategist);
     }
 }
