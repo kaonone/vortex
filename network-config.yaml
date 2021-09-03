@@ -16,7 +16,7 @@ live:
 development:
   - name: Ganache (Arbitrum-Mainnet Fork)
     id: arbitrum-main-fork
-    cmd: npx ganache
+    cmd: ganache-cli
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
