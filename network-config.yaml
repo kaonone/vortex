@@ -14,7 +14,7 @@ live:
         explorer: https://rinkeby-explorer.arbitrum.io
 
 development:
-  - name: Ganache (Arbitrum-Mainnet Fork)
+  - name: Ganache-CLI (Arbitrum-Mainnet Fork)
     id: arbitrum-main-fork
     cmd: ganache-cli
     host: http://127.0.0.1
