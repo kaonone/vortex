@@ -42,7 +42,7 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
         0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
 
     address public constant badgerTree =
-        0x2C798FaFd37C7DCdcAc2498e19432898Bc51376b;
+        0x635EB2C39C75954bb53Ebc011BDC6AfAAcE115A6;
 
     // slippage tolerance 0.5% (divide by MAX_BPS) - Changeable by Governance or Strategist
     uint256 public sl;
