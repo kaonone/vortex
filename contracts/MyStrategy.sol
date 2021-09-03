@@ -118,7 +118,7 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
 
     /// @dev Returns true if this strategy requires tending
     function isTendable() public view override returns (bool) {
-        return true;
+        return balanceOfWant() > 0;
     }
 
     /// @dev These are the tokens that cannot be moved except by the vault
@@ -185,19 +185,22 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
         override
         returns (uint256)
     {
-        uint256 _totalWant = balanceOfPool();
         // Due to rounding errors on the Controller, the amount may be slightly higher than the available amount in edge cases.
-        if (_amount > _totalWant) {
-            IMiniChefV2(CHEF).withdraw(pid, _totalWant, address(this));
-        } else {
-            IMiniChefV2(CHEF).withdraw(pid, _amount, address(this));
+        if (balanceOfWant() < _amount) {
+            uint256 toWithdraw = _amount.sub(balanceOfWant());
+
+            if (balanceOfPool() < toWithdraw) {
+                IMiniChefV2(CHEF).withdraw(pid, balanceOfPool(), address(this));
+            } else {
+                IMiniChefV2(CHEF).withdraw(pid, toWithdraw, address(this));
+            }
         }
 
         // Some SUSHI may be returned to the contract and picked up next harvest
 
         // Note: All want is automatically withdrawn outside this "inner hook" in base strategy function
 
-        return _amount;
+        return MathUpgradeable.min(_amount, balanceOfWant());
     }
 
     /// @dev Harvest from strategy mechanics, realizing increase in underlying position
@@ -205,9 +208,6 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
         _onlyAuthorizedActors();
 
         uint256 _before = IERC20Upgradeable(want).balanceOf(address(this));
-
-        // Note: Deposit of zero harvests rewards balance, but go ahead and deposit idle want if we have it
-        IMiniChefV2(CHEF).deposit(pid, _before, address(this));
 
         // Harvest rewards from MiniChefV2
         IMiniChefV2(CHEF).harvest(pid, address(this));
