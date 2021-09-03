@@ -1,8 +1,8 @@
 # use Ganache's forked mainnet mode as the default network
 # NOTE: You don't *have* to do this, but it is often helpful for testing
 networks:
-  default: arbitrum-main-fork
-  # default: hardhat-arbitrum-fork
+  # default: arbitrum-main-fork
+  default: hardhat-arbitrum-fork
 
 # automatically fetch contract sources from Etherscan
 autofetch_sources: True

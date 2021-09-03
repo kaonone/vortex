@@ -3,11 +3,7 @@
   "devDependencies": {
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "ethers": "^5.0.0",
     "ethlint": "^1.2.5",
-    "ganache": "^7.0.0-alpha.0",
-    "hardhat": "/home/ayush/Git/badger/hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz",
     "husky": "^4.3.0",
     "prettier": "^2.1.2",
     "prettier-plugin-solidity": "^1.0.0-alpha.57",
