@@ -1,17 +1,37 @@
 # WBTC/WETH Sushi Liquidity Pool Yield Strategy
 
-## NOTE: Tests are not working on a arbitrum-fork as of now
-To test the strategy logic, use the [`feat/poly`](https://github.com/shuklaayush/WBTC-WETH-SLP-Arbitrum-Strategy/tree/feat/poly) branch which runs the same strategy on a polygon-fork (with polygon addresses). 
+## NOTE: TO TEST
+Arbitrum fork doesn't work with hardhat out of the box right now (probably because of a JSON-RPC incompatibility with Arbitrum node). We'll test using our own fork of hardhat that circumvents this issue. 
+
+### Install Hardhat fork
+Clone my fork of hardhat repo somewhere
+```bash
+git clone git@github.com:shuklaayush/hardhat.git
+cd hardhat
+git checkout fix/arbitrum
+yarn build
+cd packages/hardhat-core
+yarn pack # Generate hardhat-v2.6.2.tgz
+``` 
+Clone this repo and install hardhat
+```bash
+git clone git@github.com:shuklaayush/WETH-Sushi-SLP-Arbitrum-Strategy.git
+yarn add -D <path-to-hardhat-pack-file>
+```
+
+### Run brownie
+Import the fork network and run
+```
+brownie networks import network-config.yaml
+brownie test
+```
+
+### Test on Polygon
+Alternatively, to test the strategy logic, use the [`feat/poly`](https://github.com/shuklaayush/WBTC-WETH-SLP-Arbitrum-Strategy/tree/feat/poly) branch which runs the same strategy on a polygon-fork (with polygon addresses). 
 
 See diff here: https://github.com/shuklaayush/WBTC-WETH-SLP-Arbitrum-Strategy/compare/main...shuklaayush:feat/poly?expand=1
 
-## Test
-
-Import the fork network with tons of ETH
-```
-brownie networks import network-config.yaml
-```
-
+## Strategy
 This strategy takes Sushi's WBTC/WETH liquidity pool tokens as deposit and stakes it on Sushi's MiniChefV2 for yield. The rewards are in SUSHI. Half of the SUSHI rewards are distributed to users through the BadgerTree. The remaining SUSHI rewards are swapped for WBTC and WETH in equal parts and these tokens are deposited on the liquidity pool to obtain more want. 
 
 ## Deposit
