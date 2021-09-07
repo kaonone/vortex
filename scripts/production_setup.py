@@ -4,7 +4,7 @@ from brownie import (
     accounts,
     network,
     StrategySushiBadgerWbtcWeth,
-    SettV3,
+    SettV4,
 )
 
 from config import (
@@ -29,7 +29,7 @@ def main():
     dev = connect_account()
 
     strategy = StrategySushiBadgerWbtcWeth.at("0xDed61Bd8a8c90596D8A6Cf0e678dA04036146963")
-    vault = SettV3.at("0xEa8567d84E3e54B32176418B4e0C736b56378961")
+    vault = SettV4.at("0xEa8567d84E3e54B32176418B4e0C736b56378961")
 
     assert strategy.paused() == False
     assert vault.paused() == False

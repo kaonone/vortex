@@ -31,11 +31,12 @@ def test_my_custom_test(deployer, vault, sett, controller, strategy, want, settK
     assert strategy.balanceOf() == strategy.balanceOfPool()
     assert strategy.isTendable() == False
 
-    chain.sleep(days(30))
+    chain.sleep(days(60))
     chain.mine()
 
     # Harvest (twice just to see no errors)
     assert strategy.checkPendingReward() > 0
+    print(f"Pending sushi reward: {strategy.checkPendingReward() / 1e18}")
     snap.settHarvest({"from": strategyKeeper})
     assert strategy.checkPendingReward() == 0
     assert strategy.balanceOfWant() > 0

@@ -13,6 +13,7 @@ import "../interfaces/badger/IController.sol";
 
 import {IMiniChefV2} from "../interfaces/sushiswap/IMinichef.sol";
 import {IRewarder} from "../interfaces/sushiswap/IRewarder.sol";
+import {ISettV4} from "../interfaces/badger/ISettV4.sol";
 import {IUniswapRouterV2} from "../interfaces/uniswap/IUniswapRouterV2.sol";
 
 import {BaseStrategy} from "../deps/BaseStrategy.sol";
@@ -40,6 +41,11 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
     address public constant CHEF = 0xF4d73326C13a4Fc5FD7A064217e12780e9Bd62c3; // MiniChefV2
     address public constant SUSHISWAP_ROUTER =
         0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
+
+    address public constant WETH_SUSHI_SLP =
+        0x3221022e37029923aCe4235D812273C5A42C322d;
+    address public constant WETH_SUSHI_SLP_VAULT =
+        0xe774D1FB3133b037AA17D39165b8F45f444f632d;
 
     address public constant badgerTree =
         0x635EB2C39C75954bb53Ebc011BDC6AfAAcE115A6;
@@ -89,6 +95,10 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
         );
         IERC20Upgradeable(WETH_TOKEN).safeApprove(
             SUSHISWAP_ROUTER,
+            type(uint256).max
+        );
+        IERC20Upgradeable(WETH_SUSHI_SLP).safeApprove(
+            WETH_SUSHI_SLP_VAULT,
             type(uint256).max
         );
     }
@@ -186,11 +196,13 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
         returns (uint256)
     {
         // Due to rounding errors on the Controller, the amount may be slightly higher than the available amount in edge cases.
-        if (balanceOfWant() < _amount) {
-            uint256 toWithdraw = _amount.sub(balanceOfWant());
+        uint256 wantBalance = balanceOfWant();
+        if (wantBalance < _amount) {
+            uint256 toWithdraw = _amount.sub(wantBalance);
 
-            if (balanceOfPool() < toWithdraw) {
-                IMiniChefV2(CHEF).withdraw(pid, balanceOfPool(), address(this));
+            uint256 poolBalance = balanceOfPool();
+            if (poolBalance < toWithdraw) {
+                IMiniChefV2(CHEF).withdraw(pid, poolBalance, address(this));
             } else {
                 IMiniChefV2(CHEF).withdraw(pid, toWithdraw, address(this));
             }
@@ -207,63 +219,79 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
     function harvest() external whenNotPaused returns (uint256 harvested) {
         _onlyAuthorizedActors();
 
-        uint256 _before = IERC20Upgradeable(want).balanceOf(address(this));
+        uint256 _before = balanceOfWant();
 
         // Harvest rewards from MiniChefV2
         IMiniChefV2(CHEF).harvest(pid, address(this));
 
         // Get total rewards (SUSHI)
-        uint256 rewardsAmount = IERC20Upgradeable(reward).balanceOf(
-            address(this)
-        );
+        uint256 rewardsAmount = balanceOfToken(reward);
 
         // If no reward, then nothing happens
         if (rewardsAmount == 0) {
             return 0;
         }
 
-        uint256 rewardsToTree = rewardsAmount.mul(5000).div(MAX_BPS);
-        uint256 rewardsToCompound = rewardsAmount.sub(rewardsToTree);
-
-        if (rewardsToTree > 0) {
-            // Process fees on Sushi Rewards
-            _processRewardsFees(rewardsToTree, reward);
-
-            // Transfer balance of Sushi to the Badger Tree
-            uint256 rewardsBalance = IERC20Upgradeable(reward)
-                .balanceOf(address(this))
-                .sub(rewardsToCompound);
-            IERC20Upgradeable(reward).safeTransfer(badgerTree, rewardsBalance);
-
-            emit TreeDistribution(
-                reward,
-                rewardsBalance,
-                block.number,
-                block.timestamp
-            );
-        }
-
-        uint256 _half = rewardsToCompound.mul(5000).div(MAX_BPS);
-
-        // Swap rewarded SUSHI for WBTC through WETH path
-        address[] memory path = new address[](3);
+        // Swap 50% rewarded SUSHI for WETH
+        uint256 toWeth = rewardsAmount.mul(5000).div(MAX_BPS);
+        address[] memory path = new address[](2);
         path[0] = reward;
         path[1] = WETH_TOKEN;
-        path[2] = WBTC_TOKEN;
         IUniswapRouterV2(SUSHISWAP_ROUTER).swapExactTokensForTokens(
-            _half,
+            toWeth,
             0,
             path,
             address(this),
             now
         );
 
-        // Swap rewarded SUSHI for WETH
-        path = new address[](2);
+        // Use 25% rewarded Sushi to add liquidity for WETH-SUSHI pool
+        uint256 wethToSushiSlp = balanceOfToken(WETH_TOKEN).mul(5000).div(
+            MAX_BPS
+        );
+        uint256 sushiIn = rewardsAmount.mul(2500).div(MAX_BPS);
+        IUniswapRouterV2(SUSHISWAP_ROUTER).addLiquidity(
+            WETH_TOKEN,
+            reward,
+            wethToSushiSlp,
+            sushiIn,
+            wethToSushiSlp.mul(sl).div(MAX_BPS),
+            sushiIn.mul(sl).div(MAX_BPS),
+            address(this),
+            now
+        );
+
+        uint256 wethSushiSlpBalance = balanceOfToken(WETH_SUSHI_SLP);
+
+        if (wethSushiSlpBalance > 0) {
+            // Process fees on Sushi Rewards
+            _processRewardsFees(wethSushiSlpBalance, WETH_SUSHI_SLP);
+
+            uint256 treeVaultBalanceBefore = ISettV4(WETH_SUSHI_SLP_VAULT)
+                .balanceOf(badgerTree);
+            ISettV4(WETH_SUSHI_SLP_VAULT).depositFor(
+                badgerTree,
+                balanceOfToken(WETH_SUSHI_SLP)
+            );
+            uint256 treeVaultBalanceAfter = ISettV4(WETH_SUSHI_SLP_VAULT)
+                .balanceOf(badgerTree);
+
+            emit TreeDistribution(
+                WETH_SUSHI_SLP_VAULT,
+                treeVaultBalanceAfter.sub(treeVaultBalanceBefore),
+                block.number,
+                block.timestamp
+            );
+        }
+
+        // Swap remaining 25% rewarded SUSHI for WBTC through WETH path
+        uint256 toWbtc = balanceOfToken(reward);
+        path = new address[](3);
         path[0] = reward;
         path[1] = WETH_TOKEN;
+        path[2] = WBTC_TOKEN;
         IUniswapRouterV2(SUSHISWAP_ROUTER).swapExactTokensForTokens(
-            rewardsToCompound.sub(_half),
+            toWbtc,
             0,
             path,
             address(this),
@@ -271,22 +299,20 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
         );
 
         // Add liquidity for WBTC-WETH pool
-        uint256 _wbtcIn = balanceOfToken(WBTC_TOKEN);
-        uint256 _wethIn = balanceOfToken(WETH_TOKEN);
+        uint256 wbtcIn = balanceOfToken(WBTC_TOKEN);
+        uint256 wethIn = balanceOfToken(WETH_TOKEN);
         IUniswapRouterV2(SUSHISWAP_ROUTER).addLiquidity(
             WBTC_TOKEN,
             WETH_TOKEN,
-            _wbtcIn,
-            _wethIn,
-            _wbtcIn.mul(sl).div(MAX_BPS),
-            _wethIn.mul(sl).div(MAX_BPS),
+            wbtcIn,
+            wethIn,
+            wbtcIn.mul(sl).div(MAX_BPS),
+            wethIn.mul(sl).div(MAX_BPS),
             address(this),
             now
         );
 
-        uint256 earned = IERC20Upgradeable(want).balanceOf(address(this)).sub(
-            _before
-        );
+        uint256 earned = balanceOfWant().sub(_before);
 
         /// @notice Keep this in so you get paid!
         _processPerformanceFees(earned);
@@ -301,8 +327,9 @@ contract StrategySushiBadgerWbtcWeth is BaseStrategy {
     function tend() external whenNotPaused {
         _onlyAuthorizedActors();
 
-        if (balanceOfWant() > 0) {
-            _deposit(balanceOfWant());
+        uint256 wantBalance = balanceOfWant();
+        if (wantBalance > 0) {
+            _deposit(wantBalance);
         }
     }
 

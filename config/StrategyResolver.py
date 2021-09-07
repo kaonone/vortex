@@ -80,6 +80,7 @@ class StrategyResolver(StrategyCoreResolver):
             "pool": strategy.want(),
             "router": strategy.SUSHISWAP_ROUTER(),
             "badgerTree": strategy.badgerTree(),
+            "wethSushiSlpVault": strategy.WETH_SUSHI_SLP_VAULT(),
         }   
 
     def add_balances_snap(self, calls, entities):
@@ -88,11 +89,13 @@ class StrategyResolver(StrategyCoreResolver):
 
         wbtc = interface.IERC20(strategy.WBTC_TOKEN())
         weth = interface.IERC20(strategy.WETH_TOKEN())
-        sushi = interface.IERC20(strategy.reward())
+        wethSushiSlp = interface.IERC20(strategy.WETH_SUSHI_SLP())
+        wethSushiSlpVault = interface.IERC20(strategy.WETH_SUSHI_SLP_VAULT())
 
         calls = self.add_entity_balances_for_tokens(calls, "wbtc", wbtc, entities)
         calls = self.add_entity_balances_for_tokens(calls, "weth", weth, entities)
-        calls = self.add_entity_balances_for_tokens(calls, "sushi", sushi, entities)
+        calls = self.add_entity_balances_for_tokens(calls, "wethSushiSlp", wethSushiSlp, entities)
+        calls = self.add_entity_balances_for_tokens(calls, "wethSushiSlpVault", wethSushiSlpVault, entities)
 
         return calls
 
@@ -126,22 +129,26 @@ class StrategyResolver(StrategyCoreResolver):
             console.print("[blue]== harvest() TreeDistribution State ==[/blue]")
             self.printState(event, keys)
 
-            # If sushi is harvested, it is distributed to the tree
-            assert after.balances("sushi", "badgerTree") > before.balances(
-                "sushi", "badgerTree"
+            # Half Sushi harvested is used to provide liquidity to WETH-Sushi pool
+            # Resulant SLP tokens are deposited into the WETH-SUSHI-SLP vault on behalf of badger tree
+            assert after.balances("wethSushiSlp", "wethSushiSlpVault") > before.balances(
+                "wethSushiSlp", "wethSushiSlpVault"
             )
-            # All sushi harvested (after fees) is sent to the tree
+            assert after.balances("wethSushiSlpVault", "badgerTree") > before.balances(
+                "wethSushiSlpVault", "badgerTree"
+            )
+            # All WETH-Sushi SLP Vault token (after fees) is sent to the tree
             assert (
-                after.balances("sushi", "badgerTree") - before.balances("sushi", "badgerTree") ==
+                after.balances("wethSushiSlpVault", "badgerTree") - before.balances("wethSushiSlpVault", "badgerTree") ==
                 event["amount"]
             )
             # Governance rewards fees are charged
-            assert after.balances("sushi", "governanceRewards") > before.balances(
-                "sushi", "governanceRewards"
+            assert after.balances("wethSushiSlp", "governanceRewards") > before.balances(
+                "wethSushiSlp", "governanceRewards"
             )
             # Strategist rewards fees are charged
-            assert after.balances("sushi", "strategist") > before.balances(
-                "sushi", "strategist"
+            assert after.balances("wethSushiSlp", "strategist") > before.balances(
+                "wethSushiSlp", "strategist"
             )
 
     def printState(self, event, keys):

@@ -1,5 +1,5 @@
 from brownie import *
-from brownie import interface, accounts, Contract, StrategySushiBadgerWbtcWeth, Controller, SettV3
+from brownie import interface, accounts, Contract, StrategySushiBadgerWbtcWeth, Controller, SettV4
 import time
 from helpers.time import days
 
@@ -40,7 +40,7 @@ def deploy():
     BADGER_DEV_MULTISIG,
   )
 
-  sett = SettV3.deploy({"from": deployer})
+  sett = SettV4.deploy({"from": deployer})
   sett.initialize(
     WANT,
     controller,

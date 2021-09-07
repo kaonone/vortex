@@ -40,7 +40,9 @@ def controller(deployed):
   return deployed.controller
 
 @pytest.fixture
-def strategy(deployed):
+def strategy(interface, deployed):
+  weth_sushi_slp_vault = SettV4.at(deployed.strategy.WETH_SUSHI_SLP_VAULT())
+  weth_sushi_slp_vault.approveContractAccess(deployed.strategy, {'from': weth_sushi_slp_vault.governance()})
   return deployed.strategy
 
 ## Tokens ## 
@@ -67,13 +69,7 @@ def settKeeper(vault):
 def strategyKeeper(strategy):
   return accounts.at(strategy.keeper(), force=True)
 
-# Set default account
-@pytest.fixture(autouse=True)
-def isolation(accounts):
-    accounts.default = accounts[0]
-
 ## Forces reset before each test
 @pytest.fixture(autouse=True)
 def isolation(fn_isolation):
-    accounts.default = accounts[0]
     pass
