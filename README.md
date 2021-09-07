@@ -32,7 +32,7 @@ Alternatively, to test the strategy logic, use the [`feat/poly`](https://github.
 See diff here: https://github.com/shuklaayush/WBTC-WETH-SLP-Arbitrum-Strategy/compare/main...shuklaayush:feat/poly?expand=1
 
 ## Strategy
-This strategy takes Sushi's WBTC/WETH liquidity pool tokens as deposit and stakes it on Sushi's MiniChefV2 for yield. The rewards are in SUSHI. Half of the SUSHI rewards are distributed to users through the BadgerTree. The remaining SUSHI rewards are swapped for WBTC and WETH in equal parts and these tokens are deposited on the liquidity pool to obtain more want. 
+This strategy takes Sushi's WBTC/WETH liquidity pool tokens as deposit and stakes it on Sushi's MiniChefV2 for yield. The rewards are in SUSHI. Half of the SUSHI rewards are distributed deposited to the WETH-SUSHI SLP Badger vault on behalf of the BadgerTree. The remaining SUSHI rewards are swapped for WBTC and WETH in equal parts and these tokens are deposited on the liquidity pool to obtain more want. 
 
 ## Deposit
 Deposit WBTC/WETH SLP tokens in Sushi's MiniChefV2, so that we earn interest as well as rewards in SUSHI.
@@ -41,13 +41,14 @@ Deposit WBTC/WETH SLP tokens in Sushi's MiniChefV2, so that we earn interest as 
 If there's any WBTC/WETH SLP in the strategy, it will be deposited in the pool.
 
 ## Harvest
-The Strategy will harvest SUSHI rewards, and forward half of them to users through the BadgerTree. It will then swap the remaining half into WBTC and WETH in equal parts and deposit these tokens into the SLP to obtain more want.
+The Strategy will harvest SUSHI rewards, and forward half of them to the WETH-SUSHI SLP Badger vault on behalf of the BadgerTree. It will then swap the remaining half into WBTC and WETH in equal parts and deposit these tokens into the SLP to obtain more want.
 
 In further detail:
 - If no SUSHI reward, then do nothing.
-- If reward is available, then divide it into two parts:
-  - Process fees on first half and transfer remaining to the BadgerTree.
-  - Swap the other half for WBTC and WETH in equal parts and use these tokens to provide more liquidity to the SLP. Also, process fees on the extra want obtained.
+- If reward is available, then:
+  - Swap 50% SUSHI rewards to WETH
+  - Add liquidity to Sushi's WETH/SUSHI pool using half of the WETH and half of the remaining SUSHI rewards. Process fees on the WETH/SUSHI SLP gained and deposit the rest into the WETH-SUSHI SLP Badger vault on behalf of the BadgerTree.
+  - Swap the remaining SUSHI rewards for WBTC. Use this and the reamaining WETH tokens to provide more liquidity to the WBTC/WETH pool. Also, process fees on the extra want obtained.
 
 
 ## Expected Yield as of September 2nd, 2021
