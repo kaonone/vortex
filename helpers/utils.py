@@ -7,6 +7,7 @@ def approx(actual, expected, percentage_threshold):
         return True
     return diff < (actual * percentage_threshold // 100)
 
+
 def val(amount=0, decimals=18, token=None):
     # return amount
     # return "{:,.0f}".format(amount)

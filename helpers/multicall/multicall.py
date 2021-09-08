@@ -6,7 +6,9 @@ from brownie import web3
 from helpers.multicall import Call
 from helpers.multicall.constants import MULTICALL_ADDRESSES
 from rich.console import Console
+
 console = Console()
+
 
 class Multicall:
     def __init__(self, calls: List[Call]):

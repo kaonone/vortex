@@ -7,7 +7,7 @@ import "./SettAccessControl.sol";
     Add ability to prevent unwanted contract access to Sett permissions
 */
 contract SettAccessControlDefended is SettAccessControl {
-    mapping (address => bool) public approved;
+    mapping(address => bool) public approved;
 
     function approveContractAccess(address account) external {
         _onlyGovernance();
@@ -20,7 +20,11 @@ contract SettAccessControlDefended is SettAccessControl {
     }
 
     function _defend() internal view returns (bool) {
-        require(approved[msg.sender] || msg.sender == tx.origin, "Access denied for caller");
+        require(
+            approved[msg.sender] || msg.sender == tx.origin,
+            "Access denied for caller"
+        );
     }
+
     uint256[50] private __gap;
 }

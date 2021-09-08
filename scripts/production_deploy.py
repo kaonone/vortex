@@ -38,7 +38,7 @@ def main():
     # Get actors from registry
     registry = BadgerRegistry.at(REGISTRY)
 
-    strategist = dev.address #registry.get("governance")
+    strategist = dev.address  # registry.get("governance")
     guardian = registry.get("guardian")
     keeper = registry.get("keeper")
     proxyAdmin = registry.get("proxyAdminDev")
@@ -51,7 +51,7 @@ def main():
     assert controller != AddressZero
 
     # Deploy controller
-    #controller = deploy_controller(dev, proxyAdmin)
+    # controller = deploy_controller(dev, proxyAdmin)
 
     # Deploy Vault
     vault = deploy_vault(

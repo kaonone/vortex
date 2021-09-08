@@ -8,14 +8,14 @@ from brownie import (
 )
 
 from config import (
-  WANT,
-#   LP_COMPONENT,
-  REWARD_TOKEN,
-  FEES,
-  CONTROLLER,
-  BADGER_DEV_MULTISIG,
-  KEEPER,
-  GUARDIAN,
+    WANT,
+    #   LP_COMPONENT,
+    REWARD_TOKEN,
+    FEES,
+    CONTROLLER,
+    BADGER_DEV_MULTISIG,
+    KEEPER,
+    GUARDIAN,
 )
 
 import click
@@ -25,26 +25,24 @@ console = Console()
 
 sleep_between_tx = 1
 
+
 def main():
     dev = connect_account()
 
-    strategy = StrategySushiBadgerWbtcWeth.at("0xDed61Bd8a8c90596D8A6Cf0e678dA04036146963")
+    strategy = StrategySushiBadgerWbtcWeth.at(
+        "0xDed61Bd8a8c90596D8A6Cf0e678dA04036146963"
+    )
     vault = SettV4.at("0xEa8567d84E3e54B32176418B4e0C736b56378961")
 
     assert strategy.paused() == False
     assert vault.paused() == False
 
-    console.print(
-        "[blue]Strategy: [/blue]", strategy.getName()
-    )
-    console.print(
-        "[blue]Vault: [/blue]", vault.name()
-    )
+    console.print("[blue]Strategy: [/blue]", strategy.getName())
+    console.print("[blue]Vault: [/blue]", vault.name())
 
     set_parameters(dev, strategy, vault)
 
     check_parameters(strategy, vault)
-
 
 
 def set_parameters(dev, strategy, vault):
@@ -55,10 +53,8 @@ def set_parameters(dev, strategy, vault):
     if vault.controller() != CONTROLLER:
         vault.setController(CONTROLLER, {"from": dev})
         time.sleep(sleep_between_tx)
-    
-    console.print(
-        "[green]Controller existing or set at: [/green]", CONTROLLER
-    )
+
+    console.print("[green]Controller existing or set at: [/green]", CONTROLLER)
 
     # Set Fees
     if strategy.performanceFeeGovernance() != FEES[0]:
@@ -71,9 +67,7 @@ def set_parameters(dev, strategy, vault):
         strategy.setWithdrawalFee(FEES[2], {"from": dev})
         time.sleep(sleep_between_tx)
 
-    console.print(
-        "[green]Fees existing or set at: [/green]", FEES
-    )
+    console.print("[green]Fees existing or set at: [/green]", FEES)
 
     # Set permissioned accounts
     if strategy.keeper() != KEEPER:
@@ -83,10 +77,8 @@ def set_parameters(dev, strategy, vault):
         vault.setKeeper(KEEPER, {"from": dev})
         time.sleep(sleep_between_tx)
 
-    console.print(
-        "[green]Keeper existing or set at: [/green]", KEEPER
-    )
-    
+    console.print("[green]Keeper existing or set at: [/green]", KEEPER)
+
     if strategy.guardian() != GUARDIAN:
         strategy.setGuardian(GUARDIAN, {"from": dev})
         time.sleep(sleep_between_tx)
@@ -94,17 +86,13 @@ def set_parameters(dev, strategy, vault):
         vault.setGuardian(GUARDIAN, {"from": dev})
         time.sleep(sleep_between_tx)
 
-    console.print(
-        "[green]Guardian existing or set at: [/green]", GUARDIAN
-    )
+    console.print("[green]Guardian existing or set at: [/green]", GUARDIAN)
 
     if strategy.strategist() != BADGER_DEV_MULTISIG:
         strategy.setStrategist(BADGER_DEV_MULTISIG, {"from": dev})
         time.sleep(sleep_between_tx)
 
-    console.print(
-        "[green]Strategist existing or set at: [/green]", BADGER_DEV_MULTISIG
-    )
+    console.print("[green]Strategist existing or set at: [/green]", BADGER_DEV_MULTISIG)
 
     if strategy.governance() != BADGER_DEV_MULTISIG:
         strategy.setGovernance(BADGER_DEV_MULTISIG, {"from": dev})
@@ -113,15 +101,14 @@ def set_parameters(dev, strategy, vault):
         vault.setGovernance(BADGER_DEV_MULTISIG, {"from": dev})
         time.sleep(sleep_between_tx)
 
-    console.print(
-        "[green]Governance existing or set at: [/green]", BADGER_DEV_MULTISIG
-    )
+    console.print("[green]Governance existing or set at: [/green]", BADGER_DEV_MULTISIG)
+
 
 def check_parameters(strategy, vault):
     assert strategy.want() == WANT
     assert vault.token() == WANT
-    assert strategy.lpComponent() == LP_COMPONENT 
-    assert strategy.reward() == REWARD_TOKEN 
+    assert strategy.lpComponent() == LP_COMPONENT
+    assert strategy.reward() == REWARD_TOKEN
 
     assert strategy.controller() == CONTROLLER
     assert vault.controller() == CONTROLLER
@@ -139,7 +126,6 @@ def check_parameters(strategy, vault):
     assert vault.governance() == BADGER_DEV_MULTISIG
 
     console.print("[blue]All Parameters checked![/blue]")
-
 
 
 def connect_account():
