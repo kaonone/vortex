@@ -41,10 +41,10 @@ jobs:
         cd ../../..
         yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
 
-    - name: Set up python 3.8
+    - name: Set up python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.9
 
     - name: Set pip cache directory path
       id: pip-cache-dir-path
@@ -57,9 +57,9 @@ jobs:
       with:
         path: |
           ${{ steps.pip-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
+          ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           ${{ runner.os }}-pip-
 
     - name: Install python dependencies
