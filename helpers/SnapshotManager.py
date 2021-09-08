@@ -6,11 +6,10 @@ from helpers.utils import val
 
 from helpers.snapshot.snap import Snap
 
-from config.StrategyResolver import (
-    StrategyResolver
-)
+from config.StrategyResolver import StrategyResolver
 
 console = Console()
+
 
 class SnapshotManager:
     def __init__(self, sett, strategy, controller, key):

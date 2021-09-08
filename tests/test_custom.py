@@ -11,7 +11,9 @@ from helpers.time import days
 """
 
 
-def test_my_custom_test(deployer, vault, sett, controller, strategy, want, settKeeper, strategyKeeper):
+def test_my_custom_test(
+    deployer, vault, sett, controller, strategy, want, settKeeper, strategyKeeper
+):
     # Setup
     snap = SnapshotManager(vault, strategy, controller, "StrategySnapshot")
     depositAmount = want.balanceOf(deployer)
@@ -63,6 +65,11 @@ def test_my_custom_test(deployer, vault, sett, controller, strategy, want, settK
 
     # Withdraw
     snap.settWithdrawAll({"from": deployer})
-    assert strategy.balanceOf() == strategy.balanceOfPool() == strategy.balanceOfWant() == 0
+    assert (
+        strategy.balanceOf()
+        == strategy.balanceOfPool()
+        == strategy.balanceOfWant()
+        == 0
+    )
     assert strategy.isTendable() == False
     assert want.balanceOf(deployer) > depositAmount
