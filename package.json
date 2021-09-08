@@ -1,0 +1,21 @@
+{
+    "name": "akropolis-basis",
+    "version": "1.0.0",
+    "main": "index.js",
+    "repository": "https://github.com/akropolisio/basis.git",
+    "author": "AKRO",
+    "license": "MIT",
+    "scripts": {
+        "compile": "brownie compile --all",
+        "install": "pip3 install -r requirements-dev.txt",
+        "postinstall": "npm run clone-packages && npm run generate-artifacts && npx husky install",
+        "sec:flatten": "sh ./security/flattener-run.sh",
+        "test": "brownie test",
+        "test:add-fork": "brownie networks add Ethereum mainnet-test host=$ALCHEMY_ARCHIVE_NODE chainid=1 explorer=https://api.etherscan.io/api",
+        "format:fix": "npx prettier --write \"contracts/**/*.sol\" && npx prettier --write \"interfaces/**/*.sol\"",
+        "format:lint": "npx prettier --check \"contracts/**/*.sol\" && npx prettier --check \"interfaces/**/*.sol\"",
+        "format:test:lint": "black --check tests",
+        "format:test:fix": "black . tests",
+        "lint:check": "npx solhint contracts/**/*.sol  interfaces/**/*.sol"
+    }
+}

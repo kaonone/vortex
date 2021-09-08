@@ -46,3 +46,11 @@ def vault(deployer, token):
         constants.DEPOSIT_LIMIT,
         {"from": deployer}
     )
+
+
+@pytest.fixture(scope="function")
+def vault_deposited(deployer, token, users, vault):
+    for user in users:
+        token.approve(vault, constants.DEPOSIT_AMOUNT, {"from": user})
+        vault.deposit(constants.DEPOSIT_AMOUNT, user, {"from": user})
+    yield vault
