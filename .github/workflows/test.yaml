@@ -34,6 +34,7 @@ jobs:
       run: |
         git clone https://github.com/shuklaayush/hardhat.git
         cd hardhat
+        git checkout fix/arbitrum
         yarn --frozen-lockfile
         yarn build
         cd packages/hardhat-core
