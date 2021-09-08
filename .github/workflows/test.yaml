@@ -72,5 +72,5 @@ jobs:
       env:
         WEB3_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
       run: |
-        brownie networks import network-config.yaml
+        brownie networks import network-config.yaml true
         brownie test
