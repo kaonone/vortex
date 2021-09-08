@@ -67,6 +67,6 @@ jobs:
           high-threshold: 0
           medium-threshold: 20
           low-threshold: 30
-          optimization-threshold: 5
+          optimization-threshold: 50
           informative-threshold: 50
           projectPath: "./flattened"
