@@ -8,7 +8,6 @@
     "scripts": {
         "compile": "brownie compile --all",
         "install": "pip3 install -r requirements-dev.txt",
-        "postinstall": "npm run clone-packages && npm run generate-artifacts && npx husky install",
         "sec:flatten": "sh ./security/flattener-run.sh",
         "test": "brownie test",
         "test:add-fork": "brownie networks add Ethereum mainnet-test host=$ALCHEMY_ARCHIVE_NODE chainid=1 explorer=https://api.etherscan.io/api",
