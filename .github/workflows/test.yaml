@@ -3,7 +3,7 @@ name: Test
 on:
   push:
     branches:
-    - master
+    - main
     - develop
   pull_request:
 
@@ -25,10 +25,18 @@ jobs:
     - name: Setup node.js
       uses: actions/setup-node@v1
       with:
-        node-version: '12.x'
+        node-version: '14.x'
 
-    - name: Install ganache
-      run: npm install -g ganache-cli@6.12.1
+    - name: Install hardhat
+      run: |
+        git clone https://github.com/shuklaayush/hardhat.git
+        cd hardhat
+        yarn --frozen-lockfile
+        yarn build
+        cd packages/hardhat-core
+        yarn pack
+        cd ../../..
+        yarn add hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
 
     - name: Set up python 3.8
       uses: actions/setup-python@v2
@@ -59,6 +67,7 @@ jobs:
 
     - name: Run Tests
       env:
-        ETHERSCAN_TOKEN: MW5CQA6QK5YMJXP2WP3RA36HM5A7RA1IHA
-        WEB3_INFURA_PROJECT_ID: b7821200399e4be2b4e5dbdf06fbe85b
-      run: brownie test
+        WEB3_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+      run: |
+        brownie networks add network-config.yaml
+        brownie test
