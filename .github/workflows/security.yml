@@ -58,7 +58,6 @@ jobs:
       - name: Prepare contracts
         shell: bash
         run: |
-          npm run clone-packages
           npm run sec:flatten
       - name: Slither Static Analysis
         uses: luisfontes19/slither-static-analysis-action@v0.3.2
