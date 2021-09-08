@@ -7,6 +7,8 @@ on:
     - develop
   workflow_dispatch:
   pull_request:
+    branches:
+    - main
 
 jobs:
   test:
@@ -37,7 +39,7 @@ jobs:
         cd packages/hardhat-core
         yarn pack
         cd ../../..
-        yarn add hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
+        yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
 
     - name: Set up python 3.8
       uses: actions/setup-python@v2
