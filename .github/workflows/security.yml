@@ -20,6 +20,7 @@ jobs:
       - name: Prepare environment
         run:  |
           npm install
+          npm install -g ganache-cli@6.12.2
       - name: Run tests
         shell: bash
         run: |
@@ -27,7 +28,6 @@ jobs:
       - name: Run mainnet tests
         shell: bash
         run: |
-          npm install -g ganache-cli@6.12.2
           brownie test ./tests
           brownie test ./tests-mainnet
         env:
