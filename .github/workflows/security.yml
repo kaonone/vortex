@@ -7,32 +7,32 @@ on:
     branches: [ development ]
 
 jobs:
-#  unittests:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: actions/setup-node@v1.4.4
-#        with:
-#          node-version: '12'
-#      - uses: actions/setup-python@v2
-#        with:
-#          python-version: '3.8'
-#      - name: Prepare environment
-#        run:  |
-#          npm install
-#      - name: Run tests
-#        shell: bash
-#        run: |
-#          npm run test
-#      - name: Run mainnet tests
-#        shell: bash
-#        run: |
-#          npm install -g ganache-cli@6.12.2
-#          brownie test ./tests-mainnet/Strategy --network mainnet-fork
-#          brownie test ./tests-mainnet/rewards --network mainnet-fork
-#        env:
-#          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
-#          WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+  unittests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1.4.4
+        with:
+          node-version: '12'
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Prepare environment
+        run:  |
+          npm install
+      - name: Run tests
+        shell: bash
+        run: |
+          npm run test
+      - name: Run mainnet tests
+        shell: bash
+        run: |
+          npm install -g ganache-cli@6.12.2
+          brownie test ./tests
+          brownie test ./tests-mainnet
+        env:
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
+          WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
 
 
   slither:
