@@ -16,5 +16,8 @@
         "format:test:lint": "black --check tests",
         "format:test:fix": "black . tests",
         "lint:check": "npx solhint contracts/**/*.sol  interfaces/**/*.sol"
+    },
+    "devDependencies": {
+        "root": "../hardhat"
     }
 }

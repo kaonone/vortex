@@ -4,6 +4,33 @@ Basis 2.0 is a protocol that leverage the funding rate from a perpetual protocol
 
 For more on this please see [Basis 2.0 Description](https://docs.google.com/document/u/1/d/1pU-ORN8N2z-U6BjOJRtOa2KEJgqdzrut45aq8O-plaA/edit?usp=sharing) and [Uni v3 ALM](https://docs.google.com/document/d/1IIK2xUQMWHrkthN0GlPCh3TPwchzi0Xi5BY6pLR1qnU/edit) .
 
+## Development Instructions
+
+* Install the necessary dependencies (brownie 1.16.3, ganache-cli - latest)
+* Get an infura, alchemy and etherscan id:
+```
+export WEB3_INFURA_PROJECT_ID=<YOUR ID>
+export ALCHEMY_PROJECT_ID=<YOUR ID>
+export ETHERSCAN_TOKEN=<YOUR ID>
+```
+* Other arbitrum repo examples (follows the instructions here:https://github.com/shuklaayush/WBTC-WETH-SLP-Arbitrum-Strategy for setting up the hardhat method), https://github.com/jalbrekt85/wBTC-Arbitrum-Strategy, https://github.com/shuklaayush/WETH-Sushi-SLP-Arbitrum-Strategy
+* Add the network config for arbitrum
+```
+cd basis
+brownie import network-config.yaml
+```
+There are a few things to do from here to try and get it to work:
+```
+To try the Alchemy way:
+brownie test tests-mainnet --network=arb-main-fork
+
+To try the Infura way:
+brownie test tests-mainnet --network=arbitrum-main-fork
+
+To try the hardhat way (make sure you have done the setup in https://github.com/shuklaayush/WETH-Sushi-SLP-Arbitrum-Strategy):
+brownie test tests-mainnet
+```
+
 ## Requirements
 
 * **Delta Neutrality** : The Strategy **MUST** create take opposing positions so as to achieve a delta neutral position .

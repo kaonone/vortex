@@ -28,7 +28,6 @@ jobs:
       - name: Run mainnet tests
         shell: bash
         run: |
-          brownie test ./tests
           brownie test ./tests-mainnet
         env:
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}

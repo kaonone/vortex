@@ -1,5 +1,6 @@
 import pytest
 import constants
+import brownie
 from brownie import (
     BasisVault,
     BasicERC20,
@@ -17,35 +18,44 @@ def isolate_func(fn_isolation):
 
 @pytest.fixture(scope="function", autouse=True)
 def token(deployer, users, usdc_whale):
-    # usdc
-    token = Contract.from_explorer("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
+    token = Contract.from_explorer(
+        "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+        as_proxy_for="0x1eFB3f88Bc88f03FD1804A5C53b7141bbEf5dED8"
+    )
     for user in users:
-        token.transfer(user, 100_000e18, {"from": usdc_whale})
+        token.transfer(
+            user,
+            constants.DEPOSIT_AMOUNT,
+            {"from": usdc_whale}
+        )
+    # usdc
     yield token
 
 
-@pytest.fixture
-def deployer(accounts):
+@pytest.fixture(scope="function", autouse=True)
+def deployer():
+    accounts.default = accounts[0]
     yield accounts[0]
 
 
 @pytest.fixture
 def users(accounts):
-    yield accounts[1:10]
+    yield accounts[1:5]
 
 
 @pytest.fixture
 def usdc_whale():
-    yield accounts.at("0xAe2D4617c862309A3d75A0fFB358c7a5009c673F", force=True)
+    yield accounts.at("0x1f032a27b369299c73b331c9fc1e80978db45b15", force=True)
 
 
-@pytest.fixture(scope="function")
-def vault(deployer, token):
-    yield BasisVault.deploy(
-        token,
+@pytest.fixture(scope="function", autouse=True)
+def vault(token, deployer):
+    bv = BasisVault.deploy(
+        token.address,
         constants.DEPOSIT_LIMIT,
         {"from": deployer}
-    )
+        )
+    yield bv
 
 
 @pytest.fixture(scope="function")

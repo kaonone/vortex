@@ -41,7 +41,7 @@ contract BasisVault is
     constructor(
         address _want,
         uint256 _depositLimit
-    ) ERC20("Akro Basis Vault", "akBV") {
+    ) ERC20("akBV", "akBV") {
         require(_want != address(0), "!_want");
         want = IERC20(_want);
         depositLimit = _depositLimit;
