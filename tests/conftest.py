@@ -1,92 +1,49 @@
-from brownie import *
-from config import (
-    BADGER_DEV_MULTISIG,
-    WANT,
-    # LP_COMPONENT,
-    REWARD_TOKEN,
-    DEFAULT_GOV_PERFORMANCE_FEE,
-    DEFAULT_PERFORMANCE_FEE,
-    DEFAULT_WITHDRAWAL_FEE,
-)
-from dotmap import DotMap
-from scripts.deploy import deploy
 import pytest
+import constants
+from brownie import (
+    BasisVault,
+    BasicERC20
+)
 
 
-@pytest.fixture
-def tokens():
-    return [WANT, REWARD_TOKEN]  # , LP_COMPONENT
-
-
-@pytest.fixture
-def deployed():
-    """
-    Deploys, vault, controller and strats and wires them up for you to test
-    """
-    return deploy()
-
-
-## Fixtures from deploy, because it's cleaner
-
-## Contracts ##
-
-
-@pytest.fixture
-def vault(deployed):
-    return deployed.vault
-
-
-@pytest.fixture
-def sett(deployed):
-    return deployed.sett
-
-
-@pytest.fixture
-def controller(deployed):
-    return deployed.controller
-
-
-@pytest.fixture
-def strategy(interface, deployed):
-    weth_sushi_slp_vault = SettV4.at(deployed.strategy.WETH_SUSHI_SLP_VAULT())
-    weth_sushi_slp_vault.approveContractAccess(
-        deployed.strategy, {"from": weth_sushi_slp_vault.governance()}
-    )
-    return deployed.strategy
-
-
-## Tokens ##
-
-
-@pytest.fixture
-def want(deployed):
-    return deployed.want
-
-
-## Accounts ##
-
-
-@pytest.fixture
-def deployer(deployed):
-    return deployed.deployer
-
-
-@pytest.fixture
-def strategist(strategy):
-    return accounts.at(strategy.strategist(), force=True)
-
-
-@pytest.fixture
-def settKeeper(vault):
-    return accounts.at(vault.keeper(), force=True)
-
-
-@pytest.fixture
-def strategyKeeper(strategy):
-    return accounts.at(strategy.keeper(), force=True)
-
-
-## Forces reset before each test
-@pytest.fixture(autouse=True)
-def isolation(fn_isolation):
+@pytest.fixture(scope="function", autouse=True)
+def isolate_func(fn_isolation):
+    # perform a chain rewind after completing each test, to ensure proper isolation
+    # https://eth-brownie.readthedocs.io/en/v1.10.3/tests-pytest-intro.html#isolation-fixtures
     pass
+
+
+@pytest.fixture(scope="function", autouse=True)
+def token(deployer, users):
+    token = BasicERC20.deploy("Test", "TT", {"from": deployer})
+    token.mint(1_000_000_000_000e18, {"from": deployer})
+    for user in users:
+        token.mint(1_000_000e18, {"from": user})
+    yield token
+
+
+@pytest.fixture
+def deployer(accounts):
+    yield accounts[0]
+
+
+@pytest.fixture
+def users(accounts):
+    yield accounts[1:10]
+
+
+@pytest.fixture(scope="function")
+def vault(deployer, token):
+    yield BasisVault.deploy(
+        token,
+        constants.DEPOSIT_LIMIT,
+        {"from": deployer}
+    )
+
+
+@pytest.fixture(scope="function")
+def vault_deposited(deployer, token, users, vault):
+    for user in users:
+        token.approve(vault, constants.DEPOSIT_AMOUNT, {"from": user})
+        vault.deposit(constants.DEPOSIT_AMOUNT, user, {"from": user})
+    yield vault
