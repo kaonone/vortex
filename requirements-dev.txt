@@ -1,1 +1,4 @@
-eth-brownie>=1.16.3
+black==21.9b0
+eth-brownie>=1.16.2,<2.0.0
+python-dotenv==0.16.0
+parametrize-from-file==0.0.1

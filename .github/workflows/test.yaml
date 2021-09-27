@@ -1,0 +1,75 @@
+name: Test
+
+on:
+  push:
+    branches:
+    - main
+    - develop
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Cache compiler installations
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.solcx
+          ~/.vvm
+        key: ${{ runner.os }}-compiler-cache
+
+    - name: Setup node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14.x'
+
+    - name: Install hardhat
+      run: |
+        git clone https://github.com/shuklaayush/hardhat.git
+        cd hardhat
+        git checkout fix/arbitrum
+        yarn --frozen-lockfile
+        yarn build
+        cd packages/hardhat-core
+        yarn pack
+        cd ../../..
+        yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
+
+    - name: Set up python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+
+    - name: Set pip cache directory path
+      id: pip-cache-dir-path
+      run: |
+        echo "::set-output name=dir::$(pip cache dir)"
+
+    - name: Restore pip cache
+      uses: actions/cache@v2
+      id: pip-cache
+      with:
+        path: |
+          ${{ steps.pip-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          ${{ runner.os }}-pip-
+
+    - name: Install python dependencies
+      run: pip install -r requirements.txt
+
+    - name: Compile Code
+      run: brownie compile --size
+
+    - name: Run Tests
+      env:
+        WEB3_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+      run: |
+        brownie networks import network-config.yaml true
+        brownie test -s
