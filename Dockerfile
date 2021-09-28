@@ -43,8 +43,8 @@ RUN --mount=type=cache,target=/root/.cache { set -eux; \
 # install our code
 COPY . /arbitrum-scripts/
 
-# RUN /arbitrum-scripts/arb-deploy.sh 
-# RUN rm -rf hardhat
+RUN /arbitrum-scripts/arb-deploy.sh 
+RUN rm -rf hardhat
 RUN --mount=type=cache,target=/root/.cache { set -eux; \
     pip install \
         --use-feature=in-tree-build \
