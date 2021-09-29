@@ -1,5 +1,17 @@
+
+
+# automatically fetch contract sources from Etherscan
+autofetch_sources: True
+
+reports:
+
+
+networks:
+    default: hardhat-arbitrum-fork
+
 compiler:
   solc:
+    version: 0.8.4
     remappings:
       - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0'
 dependencies:
