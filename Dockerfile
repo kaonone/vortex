@@ -61,3 +61,4 @@ RUN --mount=type=cache,target=/root/.cache { set -eux; \
 WORKDIR /arbitrum-scripts/
 
 RUN  brownie networks import network-config.yaml True && brownie compile
+# RUN  brownie pm clone Uniswap/uniswap-v3-periphery@1.0.0

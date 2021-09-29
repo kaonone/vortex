@@ -1,6 +1,10 @@
+// SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
 interface IMCLP {
-
-    function deposit(uint256, address, uint256) external;
+    function deposit(
+        uint256,
+        address,
+        uint256
+    ) external;
 }
