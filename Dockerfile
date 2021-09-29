@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache { set -eux; \
 # TODO: install using package.json? install just one of these?
 RUN --mount=type=cache,target=/root/.cache { set -eux; \
     \
-    npm install -g hardhat ganache-cli yarn; \
+    npm install -g ganache-cli yarn; \
 }
 
 # install the python dependencies
@@ -44,7 +44,7 @@ RUN --mount=type=cache,target=/root/.cache { set -eux; \
 COPY . /arbitrum-scripts/
 
 RUN /arbitrum-scripts/arb-deploy.sh 
-RUN rm -rf hardhat
+
 RUN --mount=type=cache,target=/root/.cache { set -eux; \
     pip install \
         --use-feature=in-tree-build \

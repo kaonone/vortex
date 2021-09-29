@@ -6,4 +6,4 @@
 # TODO host on docker hub
 # ./arb-deploy.sh
 # rm -rf hardhat
-docker build -t arbitrum_docker . && docker run -it arbitrum_docker /bin/sh
+DOCKER_BUILDKIT=1 docker build -t arbitrum_docker . && docker run -it arbitrum_docker /bin/sh
