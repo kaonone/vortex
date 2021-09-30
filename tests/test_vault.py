@@ -159,7 +159,7 @@ def test_deposit_failures(vault, users, token, deployer):
         vault.deposit(constants.DEPOSIT_AMOUNT, "0x0000000000000000000000000000000000000000", {"from": user})
     with brownie.reverts("!depositLimit"):
         token.approve(vault, constants.DEPOSIT_LIMIT + 1, {"from": deployer})
-        vault.deposit(constants.DEPOSIT_LIMIT + 1e18, deployer, {"from": deployer})
+        vault.deposit(constants.DEPOSIT_LIMIT + 1e6, deployer, {"from": deployer})
     token.approve(vault, constants.DEPOSIT_AMOUNT, {"from": user})
     vault.deposit(constants.DEPOSIT_AMOUNT, user, {"from": user})
     token.transfer(deployer, token.balanceOf(vault), {"from": vault})

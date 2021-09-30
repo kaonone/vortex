@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface IBasisVault {
     function deposit(uint256, address) external returns (uint256);
 
-    function update(uint256) external returns (uint256);
+    function update(uint256, bool) external returns (uint256);
 
     function want() external returns (IERC20);
 }

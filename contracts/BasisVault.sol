@@ -18,12 +18,7 @@ import "../interfaces/IStrategy.sol";
  * @author akropolis.io
  * @notice A vault used as the management system for a basis trading protocol
  */
-contract BasisVault is
-    ERC20,
-    Pausable,
-    ReentrancyGuard,
-    Ownable
-{
+contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -38,29 +33,33 @@ contract BasisVault is
     // strat address
     address public strategy;
 
-    constructor(
-        address _want,
-        uint256 _depositLimit
-    ) ERC20("akBV", "akBV") {
+    // modifier to check that the caller is the strategy
+    modifier onlyStrategy() {
+        require(msg.sender == strategy, "!strategy");
+        _;
+    }
+
+    constructor(address _want, uint256 _depositLimit) ERC20("akBV", "akBV") {
         require(_want != address(0), "!_want");
         want = IERC20(_want);
         depositLimit = _depositLimit;
     }
 
+    /**********
+     * EVENTS *
+     **********/
+
     event UpdateWant(address indexed want);
     event UpdateStrategy(address indexed want);
     event UpdateDepositLimit(uint256 depositLimit);
 
-    event Deposit(
-        address indexed user,
-        uint256 deposit,
-        uint256 shares
-    );
-    event Withdraw(
-        address indexed user,
-        uint256 withdrawal,
-        uint256 shares
-    );
+    event Deposit(address indexed user, uint256 deposit, uint256 shares);
+    event Withdraw(address indexed user, uint256 withdrawal, uint256 shares);
+    event StrategyUpdate(uint256 profitOrLoss, bool isLoss, uint256 toDeposit);
+
+    /***********
+     * SETTERS *
+     ***********/
 
     /**
      * @notice  set the want for the vault
@@ -93,6 +92,10 @@ contract BasisVault is
         emit UpdateStrategy(_strategy);
     }
 
+    /**********************
+     * EXTERNAL FUNCTIONS *
+     **********************/
+
     /**
      * @notice  deposit function - where users can join the vault and
      *          receive shares in the vault proportional to their ownership
@@ -103,16 +106,11 @@ contract BasisVault is
      * @return shares the amount of shares being minted to the recipient
      *                for their deposit
      */
-    function deposit(
-        uint256 _amount,
-        address _recipient
-    )
+    function deposit(uint256 _amount, address _recipient)
         external
         nonReentrant
         whenNotPaused
-        returns (
-            uint256 shares
-        )
+        returns (uint256 shares)
     {
         require(_amount > 0, "!_amount");
         require(_recipient != address(0), "!_recipient");
@@ -133,16 +131,11 @@ contract BasisVault is
      *                    be the sender
      * @return amount the amount being withdrawn for the shares redeemed
      */
-    function withdraw(
-        uint256 _shares,
-        address _recipient
-    )
+    function withdraw(uint256 _shares, address _recipient)
         external
         nonReentrant
         whenNotPaused
-        returns (
-            uint256 amount
-        )
+        returns (uint256 amount)
     {
         require(_shares > 0, "!_shares");
         require(_shares <= balanceOf(msg.sender), "insufficient balance");
@@ -151,12 +144,12 @@ contract BasisVault is
         uint256 loss;
 
         // if the vault doesnt have free funds then funds should be taken from the strategy
-        if (amount > vaultBalance){
+        if (amount > vaultBalance) {
             uint256 needed = amount - vaultBalance;
             needed = Math.min(needed, totalLent);
             uint256 withdrawn;
             (loss, withdrawn) = IStrategy(strategy).withdraw(needed);
-            if (loss > 0){
+            if (loss > 0) {
                 amount -= loss;
                 totalLent -= loss;
             }
@@ -174,17 +167,39 @@ contract BasisVault is
         want.safeTransfer(_recipient, amount);
     }
 
-    function collectProtocolFees() external {
-
+    /**
+     * @notice function to update the state of the strategy in the vault and pull any funds to be redeposited
+     * @param  _amount change in the vault amount sent by the strategy
+     * @param  _loss   whether the change is negative or not
+     *                 be the sender
+     * @return toDeposit the amount to be deposited in to the strategy on this update
+     */
+    function update(uint256 _amount, bool _loss)
+        external
+        onlyStrategy
+        returns (uint256 toDeposit)
+    {
+        // if a loss was recorded then decrease the totalLent by the amount, otherwise increase the totalLent
+        if (_loss) {
+            totalLent -= _amount;
+        } else {
+            totalLent += _amount;
+        }
+        // increase the totalLent by the amount of deposits that havent yet been sent to the vault
+        toDeposit = want.balanceOf(address(this));
+        totalLent += toDeposit;
+        emit StrategyUpdate(_amount, _loss, toDeposit);
+        want.approve(strategy, toDeposit);
+        want.safeTransfer(msg.sender, toDeposit);
     }
 
-    function setProtocolFees() external {
+    function collectProtocolFees() external {}
 
-    }
+    function setProtocolFees() external {}
 
-    /******************
-     INTERNAL FUNCTIONS
-     ******************/
+    /**********************
+     * INTERNAL FUNCTIONS *
+     **********************/
 
     /**
      * @dev     function for handling share issuance during a deposit
@@ -194,19 +209,14 @@ contract BasisVault is
      * @return shares the amount of shares being minted to the recipient
      *                for their deposit
      */
-    function _issueShares(
-        uint256 _amount,
-        address _recipient
-    )
-    internal
-    returns (
-        uint256 shares
-    )
+    function _issueShares(uint256 _amount, address _recipient)
+        internal
+        returns (uint256 shares)
     {
         if (totalSupply() > 0) {
             // if there is supply then mint according to the proportion of the pool
             require(totalAssets() > 0, "totalAssets == 0");
-            shares = _amount * totalSupply() / totalAssets();
+            shares = (_amount * totalSupply()) / totalAssets();
         } else {
             // if there is no supply mint 1 for 1
             shares = _amount;
@@ -220,10 +230,10 @@ contract BasisVault is
      * @return the value of the inputted amount of shares in want
      */
     function _calcShareValue(uint256 _shares) internal view returns (uint256) {
-        if (totalSupply() == 0){
+        if (totalSupply() == 0) {
             return _shares;
         }
-        return (_shares * totalAssets())/ totalSupply();
+        return (_shares * totalAssets()) / totalSupply();
     }
 
     /**
@@ -232,23 +242,22 @@ contract BasisVault is
      * @return the value of the inputted amount of shares in want
      */
     function _sharesForAmount(uint256 _amount) internal view returns (uint256) {
-        if (totalAssets() > 0){
-            return (_amount * totalSupply() / totalAssets());
+        if (totalAssets() > 0) {
+            return ((_amount * totalSupply()) / totalAssets());
         } else {
             return 0;
         }
     }
-    /*******
-     GETTERS
-     *******/
+
+    /***********
+     * GETTERS *
+     ***********/
 
     /**
      * @notice get the total assets held in the vault including funds lent to the strategy
      * @return total assets in want available in the vault
      */
-    function totalAssets() public view returns (uint256){
+    function totalAssets() public view returns (uint256) {
         return want.balanceOf(address(this)) + totalLent;
     }
-
-
 }

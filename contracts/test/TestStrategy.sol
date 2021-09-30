@@ -12,9 +12,23 @@ contract TestStrategy is BasisStrategy {
         address _long,
         address _pool,
         address _vault,
+        address _oracle,
         address _router,
-        address _mcLiquidityPool
-    ) BasisStrategy(_long, _pool, _vault, _router, _mcLiquidityPool) {}
+        address _governance,
+        address _mcLiquidityPool,
+        uint256 _perpetualIndex
+    )
+        BasisStrategy(
+            _long,
+            _pool,
+            _vault,
+            _oracle,
+            _router,
+            _governance,
+            _mcLiquidityPool,
+            _perpetualIndex
+        )
+    {}
 
     function calculateSplit(uint256 _amount)
         external
@@ -28,5 +42,10 @@ contract TestStrategy is BasisStrategy {
         (shortPosition, longPosition, bufferPosition) = _calculateSplit(
             _amount
         );
+    }
+
+    function depositToMarginAccount(uint256 _amount) external {
+        IERC20(want).safeTransferFrom(msg.sender, address(this), _amount);
+        _depositToMarginAccount(_amount);
     }
 }

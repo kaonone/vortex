@@ -6,7 +6,8 @@ from brownie import (
     TestStrategy,
     accounts,
     network,
-    Contract
+    Contract,
+    interface
 )
 
 
@@ -18,22 +19,19 @@ def isolate_func(fn_isolation):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def token(deployer, users):
+def token(deployer, users, usdc_whale):
     if network.show_active() == 'development':
         toke = BasicERC20.deploy("Test", "TT", {"from": deployer})
         toke.mint(1_000_000_000_000e18, {"from": deployer})
         for user in users:
             toke.mint(1_000_000e18, {"from": user})
     else:
-        toke = Contract.from_explorer(
-        constants.USDC, 
-        as_proxy_for=constants.USDC_PROXY
-        )
+        toke = interface.IERC20(constants.USDC)
         for user in users:
             toke.transfer(
                 user,
                 constants.DEPOSIT_AMOUNT * 10,
-                {"from": deployer}
+                {"from": usdc_whale}
             )
     # usdc
     yield toke
@@ -49,6 +47,10 @@ def deployer(accounts):
         yield accounts[0]
     else:
         yield accounts.at(constants.USDC_WHALE, force=True)
+
+@pytest.fixture
+def governance(accounts):
+    yield accounts[1]
 
 
 @pytest.fixture
@@ -74,7 +76,17 @@ def vault_deposited(deployer, token, users, vault):
 
 
 @pytest.fixture(scope="function")
-def test_strategy(vault, deployer):
-    strategy = TestStrategy.deploy(constants.LONG_ASSET, constants.UNI_POOL, vault, constants.ROUTER, constants.MCLIQUIDITY, {"from": deployer})
+def test_strategy(vault, deployer, governance):
+    strategy = TestStrategy.deploy(
+        constants.LONG_ASSET, 
+        constants.UNI_POOL, 
+        vault, 
+        constants.MCDEX_ORACLE,
+        constants.ROUTER, 
+        governance,
+        constants.MCLIQUIDITY, 
+        constants.PERP_INDEX, 
+        {"from": deployer}
+    )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     yield strategy
