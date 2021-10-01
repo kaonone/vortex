@@ -62,8 +62,7 @@ def test_deposit_to_margin_account(test_strategy, deployer, token):
     token.approve(test_strategy, constants.DEPOSIT_AMOUNT, {"from": deployer})
     tx = test_strategy.depositToMarginAccount(constants.DEPOSIT_AMOUNT)
     assert "DepositToMarginAccount" in tx.events
-    assert test_strategy.getMarginCash() == constants.DEPOSIT_AMOUNT
-
+    assert test_strategy.getMarginCash() == constants.DEPOSIT_AMOUNT * 1e12
 
 
 

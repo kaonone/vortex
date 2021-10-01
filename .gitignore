@@ -11,3 +11,4 @@ artifacts/
 
 # Node/npm
 node_modules/
+node_modules/.yarn-integrity

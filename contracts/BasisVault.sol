@@ -32,6 +32,10 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
     uint256 public constant MAX_BPS = 10_000;
     // strat address
     address public strategy;
+    // management fee
+    uint256 public managementFee;
+    // performance fee
+    uint256 public performanceFee;
 
     // modifier to check that the caller is the strategy
     modifier onlyStrategy() {
@@ -56,6 +60,12 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
     event Deposit(address indexed user, uint256 deposit, uint256 shares);
     event Withdraw(address indexed user, uint256 withdrawal, uint256 shares);
     event StrategyUpdate(uint256 profitOrLoss, bool isLoss, uint256 toDeposit);
+    event ProtocolFeesChanged(
+        uint256 oldManagementFee,
+        uint256 newManagementFee,
+        uint256 oldPerformanceFee,
+        uint256 newPerformanceFee
+    );
 
     /***********
      * SETTERS *
@@ -157,7 +167,7 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         }
         vaultBalance = want.balanceOf(address(this));
 
-        // all assets have been withdrawn so now the vault must deal with teh loss in the share calculation
+        // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
         if (amount > vaultBalance) {
             amount = vaultBalance;
             _shares = _sharesForAmount(amount + loss);
@@ -193,9 +203,25 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         want.safeTransfer(msg.sender, toDeposit);
     }
 
-    function collectProtocolFees() external {}
-
-    function setProtocolFees() external {}
+    /**
+     * @notice function to set the protocol management and performance fees
+     * @param  _performanceFee the fee applied for the strategies performance
+     * @param  _managementFee the fee applied for the strategies management
+     * @dev    only callable by the owner
+     */
+    function setProtocolFees(uint256 _performanceFee, uint256 _managementFee)
+        external
+        onlyOwner
+    {
+        emit ProtocolFeesChanged(
+            managementFee,
+            _managementFee,
+            performanceFee,
+            _performanceFee
+        );
+        performanceFee = _performanceFee;
+        managementFee = _managementFee;
+    }
 
     /**********************
      * INTERNAL FUNCTIONS *

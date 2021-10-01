@@ -89,4 +89,24 @@ def test_strategy(vault, deployer, governance):
         {"from": deployer}
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
+    vault.setStrategy(strategy, {"from": deployer})
+    yield strategy
+
+
+@pytest.fixture(scope="function")
+def test_strategy_deposited(vault_deposited, deployer, governance):
+    strategy = TestStrategy.deploy(
+        constants.LONG_ASSET, 
+        constants.UNI_POOL, 
+        vault_deposited, 
+        constants.MCDEX_ORACLE,
+        constants.ROUTER, 
+        governance,
+        constants.MCLIQUIDITY, 
+        constants.PERP_INDEX, 
+        {"from": deployer}
+    )
+    strategy.setBuffer(constants.BUFFER, {"from": deployer})
+    vault_deposited.setStrategy(strategy, {"from": deployer})
+    strategy.setSlippageTolerance(constants.TRADE_SLIPPAGE, {"from": deployer})
     yield strategy

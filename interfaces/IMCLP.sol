@@ -55,4 +55,10 @@ interface IMCLP {
             bool isMarginSafe, // bankrupt
             int256 targetLeverage
         );
+
+    function setTargetLeverage(
+        uint256,
+        address,
+        int256
+    ) external;
 }
