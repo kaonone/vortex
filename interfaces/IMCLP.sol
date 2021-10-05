@@ -61,4 +61,41 @@ interface IMCLP {
         address,
         int256
     ) external;
+
+    /**
+     * @notice  Query the price, fees and cost when trade agaist amm.
+     *          The trading price is determined by the AMM based on the index price of the perpetual.
+     *          This method should returns the same result as a 'read-only' trade.
+     *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
+     *          To get the latest status, call `syncState` first.
+     *
+     *          Flags is a 32 bit uint value which indicates: (from highest bit)
+     *            - close only      only close position during trading;
+     *            - market order    do not check limit price during trading;
+     *            - stop loss       only available in brokerTrade mode;
+     *            - take profit     only available in brokerTrade mode;
+     *          For stop loss and take profit, see `validateTriggerPrice` in OrderModule.sol for details.
+     *
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   trader          The address of trader.
+     * @param   amount          The amount of position to trader, positive for buying and negative for selling. The amount always use decimals 18.
+     * @param   referrer        The address of referrer who will get rebate from the deal.
+     * @param   flags           The flags of the trade.
+     * @return  tradePrice      The average fill price.
+     * @return  totalFee        The total fee collected from the trader after the trade.
+     * @return  cost            Deposit or withdraw to let effective leverage == targetLeverage if flags contain USE_TARGET_LEVERAGE. > 0 if deposit, < 0 if withdraw.
+     */
+    function queryTrade(
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        address referrer,
+        uint32 flags
+    )
+        external
+        returns (
+            int256 tradePrice,
+            int256 totalFee,
+            int256 cost
+        );
 }

@@ -36,6 +36,19 @@ def token(deployer, users, usdc_whale):
     # usdc
     yield toke
 
+
+@pytest.fixture(scope="function", autouse=True)
+def long():
+    toke = interface.IERC20(constants.LONG_ASSET)
+    yield toke
+
+
+@pytest.fixture(scope="function", autouse=True)
+def oracle():
+    oracle = interface.IOracle(constants.MCDEX_ORACLE)
+    yield oracle
+
+
 @pytest.fixture(scope="function")
 def usdc_whale():
     yield accounts.at(constants.USDC_WHALE, force=True)

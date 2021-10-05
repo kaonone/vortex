@@ -42,9 +42,16 @@ def test_setters(test_strategy, deployer, accounts, governance):
     assert test_strategy.slippageTolerance() == 1
 
     with brownie.reverts():
+        test_strategy.setDust(1, {"from": accounts[9]})
+    test_strategy.setDust(1, {"from": deployer})
+    assert test_strategy.dust() == 1
+
+    with brownie.reverts():
         test_strategy.setGovernance(constants.UNI_POOL, {"from": deployer})
     test_strategy.setGovernance(constants.UNI_POOL, {"from": governance})
     assert test_strategy.governance() == constants.UNI_POOL
+
+
 
 
 def test_calculate_split(test_strategy, deployer, token):
@@ -63,7 +70,4 @@ def test_deposit_to_margin_account(test_strategy, deployer, token):
     tx = test_strategy.depositToMarginAccount(constants.DEPOSIT_AMOUNT)
     assert "DepositToMarginAccount" in tx.events
     assert test_strategy.getMarginCash() == constants.DEPOSIT_AMOUNT * 1e12
-
-
-
 

@@ -60,12 +60,25 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     uint256 public constant MAX_BPS = 10_000;
     // decimal shift for USDC
     int256 public constant DECIMAL_SHIFT = 1e12;
+    // dust for margin positions
+    int256 public dust = 1000;
     // slippage Tolerance for the perpetual trade
     int256 public slippageTolerance;
+    // unwind state tracker
+    bool isUnwind;
 
     // modifier to check that the caller is governance
     modifier onlyGovernance() {
         require(msg.sender == governance, "!governance");
+        _;
+    }
+
+    // modifier to check that the caller is governance or owner
+    modifier onlyAuthorised() {
+        require(
+            msg.sender == governance || msg.sender == owner(),
+            "!authorised"
+        );
         _;
     }
 
@@ -141,6 +154,17 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 perpetualIndex,
         uint256 collateral
     );
+    event AllPerpPositionsClosed(int256 perpPositions, uint256 perpetualIndex);
+    event Snapshot(
+        int256 cash,
+        int256 position,
+        int256 availableMargin,
+        int256 margin,
+        int256 settleableMargin,
+        bool isInitialMarginSafe,
+        bool isMaintenanceMarginSafe,
+        bool isMarginSafe // bankrupt
+    );
 
     /***********
      * SETTERS *
@@ -214,6 +238,15 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice  setter for dust for closing margin positions
+     * @param   _dust amount of dust in wei that is acceptable
+     * @dev     only callable by owner
+     */
+    function setDust(int256 _dust) external onlyOwner {
+        dust = _dust;
+    }
+
+    /**
      * @notice  setter for the governance address
      * @param   _governance address of governance
      * @dev     only callable by governance
@@ -238,6 +271,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 shortPosition;
         uint256 longPosition;
         uint256 bufferPosition;
+        isUnwind = false;
         // determine the profit since the last harvest and remove profits from the margi
         // account to be redistributed
         (uint256 amount, bool loss) = _determineFee();
@@ -272,9 +306,11 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      *          to want.
      * @dev     only callable by the owner
      */
-    function unwind() public onlyOwner {
-        // settle short perpetual position
-        mcLiquidityPool.settle(perpetualIndex, address(this));
+    function unwind() public onlyAuthorised {
+        require(!isUnwind, "unwound");
+        isUnwind = true;
+        // close the short position
+        int256 positionsClosed = _closeAllPerpPositions();
         // swap long asset back to want
         _swap(IERC20(long).balanceOf(address(this)), long, want);
         // withdraw all cash in the margin account
@@ -301,8 +337,11 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @dev     only callable by governance
      */
     function emergencyExit() external onlyGovernance {
-        // unwind strategy
-        unwind();
+        // unwind strategy unless it is already unwound
+        if (!isUnwind) {
+            unwind();
+        }
+
         // send funds to governance
         IERC20(want).safeTransfer(
             governance,
@@ -328,33 +367,51 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         returns (uint256 loss, uint256 withdrawn)
     {
         require(_amount > 0, "withdraw: _amount is 0");
-        // remove the buffer from the amount
-        uint256 bufferPosition = (_amount * buffer) / MAX_BPS;
-        // decrement the amount by buffer position
-        _amount -= bufferPosition;
-        // determine the longPosition in want
-        uint256 longPositionWant = _amount / 2;
-        // determine the short position
-        uint256 shortPosition = _amount - longPositionWant;
-        // close the short position
-        int256 positionsClosed = _closePerpPosition(shortPosition);
-        // determine the long position
-        uint256 longPosition = uint256(positionsClosed);
-        // convert the long to want
-        longPositionWant = _swap(longPosition, long, want);
-        // withdraw the short and buffer from the margin account
-        mcLiquidityPool.withdraw(
-            perpetualIndex,
-            address(this),
-            int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
-        );
-        // alter position values to reflect withdrawal
-        positions.bufferPosition -= bufferPosition;
-        positions.longPosition -= longPositionWant;
-        positions.shortPosition -= shortPosition;
-        positions.marginCash = getMarginCash();
-        positions.perpContracts -= positionsClosed;
-        withdrawn = longPositionWant + shortPosition + bufferPosition;
+        if (!isUnwind) {
+            // remove the buffer from the amount
+            uint256 bufferPosition = (_amount * buffer) / MAX_BPS;
+            // decrement the amount by buffer position
+            _amount -= bufferPosition;
+            // determine the longPosition in want
+            uint256 longPositionWant = _amount / 2;
+            // determine the short position
+            uint256 shortPosition = _amount - longPositionWant;
+            // close the short position
+            int256 positionsClosed = _closePerpPosition(shortPosition);
+            // determine the long position
+            uint256 longPosition = uint256(positionsClosed);
+            // convert the long to want
+            longPositionWant = _swap(longPosition, long, want);
+            snapShot();
+            if (
+                getMarginCash() >
+                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
+            ) {
+                // withdraw the short and buffer from the margin account
+                mcLiquidityPool.withdraw(
+                    perpetualIndex,
+                    address(this),
+                    int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
+                );
+            } else {
+                mcLiquidityPool.withdraw(
+                    perpetualIndex,
+                    address(this),
+                    getMarginCash()
+                );
+            }
+
+            // alter position values to reflect withdrawal
+            positions.bufferPosition -= bufferPosition;
+            positions.longPosition -= longPositionWant;
+            positions.shortPosition -= shortPosition;
+            positions.marginCash = getMarginCash();
+            positions.perpContracts -= positionsClosed;
+            withdrawn = longPositionWant + shortPosition + bufferPosition;
+        } else {
+            withdrawn = _amount;
+        }
+
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         // transfer the funds back to the vault
         if (withdrawn > wantBalance) {
@@ -367,6 +424,30 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         }
 
         emit Withdraw(withdrawn);
+    }
+
+    function snapShot() public {
+        (
+            int256 cash,
+            int256 position,
+            int256 availableMargin,
+            int256 margin,
+            int256 settleableMargin,
+            bool isInitialMarginSafe,
+            bool isMaintenanceMarginSafe,
+            bool isMarginSafe,
+
+        ) = mcLiquidityPool.getMarginAccount(perpetualIndex, address(this));
+        emit Snapshot(
+            cash,
+            position,
+            availableMargin,
+            margin,
+            settleableMargin,
+            isInitialMarginSafe,
+            isMaintenanceMarginSafe,
+            isMarginSafe
+        );
     }
 
     /**********************
@@ -414,17 +495,51 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)
         int256 contracts = ((int256(_amount) * DECIMAL_SHIFT) * 1e18) / price;
+        if (contracts + getMarginPositions() < -dust) {
+            // close short position
+            tradeAmount = mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                contracts,
+                price + slippageTolerance,
+                block.timestamp,
+                referrer,
+                0
+            );
+        } else {
+            // close all remaining short positions
+            tradeAmount = mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                -getMarginPositions(),
+                price + slippageTolerance,
+                block.timestamp,
+                referrer,
+                0
+            );
+        }
+
+        emit PerpPositionClosed(tradeAmount, perpetualIndex, _amount);
+    }
+
+    /**
+     * @notice  close all perpetual short positions on MCDEX
+     * @return  tradeAmount the amount of perpetual contracts closed
+     */
+    function _closeAllPerpPositions() internal returns (int256 tradeAmount) {
+        // get the long asset mark price from the MCDEX oracle
+        (int256 price, ) = oracle.priceTWAPLong();
         // close short position
         tradeAmount = mcLiquidityPool.trade(
             perpetualIndex,
             address(this),
-            contracts,
+            -getMarginPositions(),
             price + slippageTolerance,
             block.timestamp,
             referrer,
             0
         );
-        emit PerpPositionClosed(tradeAmount, perpetualIndex, _amount);
+        emit AllPerpPositionsClosed(tradeAmount, perpetualIndex);
     }
 
     /**
@@ -514,7 +629,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         address tokenIn = _tokenIn;
         address tokenOut = _tokenOut;
         uint24 fee = pool.fee();
-        address recipient = msg.sender;
+        address recipient = address(this);
         uint256 amountIn = _amount;
         uint256 amountOutMinimum = 0;
         uint160 sqrtPriceLimitX96 = 0;
@@ -551,8 +666,20 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice  getter for the MCDEX margin positions of the strategy
+     * @return  position of the margin account
+     */
+    function getMarginPositions() public view returns (int256 position) {
+        (, position, , , , , , , ) = mcLiquidityPool.getMarginAccount(
+            perpetualIndex,
+            address(this)
+        );
+    }
+
+    /**
      * @notice Get the account info of the trader. Need to update the funding state and the oracle price
      *         of each perpetual before and update the funding rate of each perpetual after
+     * @return cash the cash held in the margin account
      * @return position The position of the account
      * @return availableMargin The available margin of the account
      * @return margin The margin of the account
@@ -560,24 +687,23 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @return isInitialMarginSafe True if the account is initial margin safe
      * @return isMaintenanceMarginSafe True if the account is maintenance margin safe
      * @return isMarginSafe True if the total value of margin account is beyond 0
-     * @return targetLeverage   The target leverage for openning position.
      */
     function getMarginAccount()
         public
         view
         returns (
+            int256 cash,
             int256 position,
             int256 availableMargin,
             int256 margin,
             int256 settleableMargin,
             bool isInitialMarginSafe,
             bool isMaintenanceMarginSafe,
-            bool isMarginSafe, // bankrupt
-            int256 targetLeverage
+            bool isMarginSafe // bankrupt
         )
     {
         (
-            ,
+            cash,
             position,
             availableMargin,
             margin,
@@ -585,7 +711,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             isInitialMarginSafe,
             isMaintenanceMarginSafe,
             isMarginSafe,
-            targetLeverage
+
         ) = mcLiquidityPool.getMarginAccount(perpetualIndex, address(this));
     }
 }

@@ -170,7 +170,8 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
         if (amount > vaultBalance) {
             amount = vaultBalance;
-            _shares = _sharesForAmount(amount + loss);
+            _shares = _sharesForAmount(amount);
+            emit Withdraw(_recipient, amount, _shares);
         }
         _burn(msg.sender, _shares);
         emit Withdraw(_recipient, amount, _shares);
