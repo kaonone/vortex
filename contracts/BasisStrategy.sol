@@ -274,7 +274,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 bufferPosition;
         isUnwind = false;
 
-        // mcLiquidityPool.forceToSyncState();
+        mcLiquidityPool.forceToSyncState();
         // determine the profit since the last harvest and remove profits from the margi
         // account to be redistributed
         (uint256 amount, bool loss) = _determineFee();
@@ -585,6 +585,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      */
     function _determineFee() internal returns (uint256 fee, bool loss) {
         int256 feeInt;
+
         // get the cash held in the margin cash, funding rates are saved as cash in the margin account
         int256 newMarginCash = getAvailableMargin();
         int256 oldMarginCash = positions.availableMargin;
@@ -597,7 +598,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             feeInt = newMarginCash - oldMarginCash;
             mcLiquidityPool.withdraw(perpetualIndex, address(this), feeInt);
         }
-        fee = uint256(feeInt);
+        fee = IERC20(want).balanceOf(address(this));
     }
 
     /**

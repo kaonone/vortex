@@ -32,12 +32,15 @@ def test_harvest_withdraw(oracle, vault_deposited, users, deployer, test_strateg
 def test_yield_harvest(oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long, mcLiquidityPool):
     test_strategy_deposited.harvest({"from": deployer})
     print(test_strategy_deposited.getMarginAccount())
-    brownie.chain.sleep(10000000)
-    mcLiquidityPool.forceToSyncState({"from": deployer})
+    brownie.chain.sleep(1000000)
+    before_bal = test_strategy_deposited.getAvailableMargin()
+    bal = test_strategy_deposited.getAvailableMargin() - before_bal
+    print(bal)
     print(test_strategy_deposited.getMarginAccount())
     tx = test_strategy_deposited.harvest({"from": deployer})
     print(test_strategy_deposited.getMarginAccount())
 
+    # 
 
 def test_double_harvest(oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long, mcLiquidityPool):
     full_deposit = constants.DEPOSIT_AMOUNT * len(users) * constants.DECIMAL_SHIFT
