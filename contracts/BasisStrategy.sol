@@ -27,8 +27,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 shortPosition;
         uint256 longPosition;
         uint256 bufferPosition;
-        int256 marginCash;
         int256 perpContracts;
+        int256 availableMargin;
     }
 
     // MCDEX Liquidity and Perpetual Pool interface address
@@ -135,6 +135,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     event Withdraw(uint256 amountWithdrawn);
     event Harvest(
         uint256 shortPosition,
+        int256 perpContracts,
         uint256 longPosition,
         uint256 bufferPosition
     );
@@ -272,6 +273,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 longPosition;
         uint256 bufferPosition;
         isUnwind = false;
+
+        // mcLiquidityPool.forceToSyncState();
         // determine the profit since the last harvest and remove profits from the margi
         // account to be redistributed
         (uint256 amount, bool loss) = _determineFee();
@@ -295,9 +298,14 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             positions.shortPosition += shortPosition;
             positions.longPosition += longPosition;
             positions.bufferPosition += bufferPosition;
-            positions.marginCash = getMarginCash();
+            positions.availableMargin = getAvailableMargin();
         }
-        emit Harvest(shortPosition, longPosition, bufferPosition);
+        emit Harvest(
+            positions.shortPosition,
+            positions.perpContracts,
+            positions.longPosition,
+            positions.bufferPosition
+        );
     }
 
     /**
@@ -323,8 +331,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         positions.bufferPosition = 0;
         positions.longPosition = 0;
         positions.shortPosition = 0;
-        positions.marginCash = 0;
         positions.perpContracts = 0;
+        positions.availableMargin = getAvailableMargin();
         emit StrategyUnwind(
             IERC20(want).balanceOf(address(this)),
             block.timestamp
@@ -380,9 +388,20 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             int256 positionsClosed = _closePerpPosition(shortPosition);
             // determine the long position
             uint256 longPosition = uint256(positionsClosed);
-            // convert the long to want
-            longPositionWant = _swap(longPosition, long, want);
-            snapShot();
+            if (longPosition < IERC20(long).balanceOf(address(this))) {
+                // convert the long to want
+                longPositionWant = _swap(longPosition, long, want);
+            } else {
+                // convert the long to want
+                longPositionWant = _swap(
+                    IERC20(long).balanceOf(address(this)),
+                    long,
+                    want
+                );
+            }
+
+            snapshot();
+
             if (
                 getMarginCash() >
                 int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
@@ -405,8 +424,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             positions.bufferPosition -= bufferPosition;
             positions.longPosition -= longPositionWant;
             positions.shortPosition -= shortPosition;
-            positions.marginCash = getMarginCash();
             positions.perpContracts -= positionsClosed;
+            positions.availableMargin = getAvailableMargin();
             withdrawn = longPositionWant + shortPosition + bufferPosition;
         } else {
             withdrawn = _amount;
@@ -426,7 +445,10 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         emit Withdraw(withdrawn);
     }
 
-    function snapShot() public {
+    /**
+     * @notice  emit a snapshot of the margin account
+     */
+    function snapshot() public {
         (
             int256 cash,
             int256 position,
@@ -564,8 +586,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     function _determineFee() internal returns (uint256 fee, bool loss) {
         int256 feeInt;
         // get the cash held in the margin cash, funding rates are saved as cash in the margin account
-        int256 newMarginCash = getMarginCash();
-        int256 oldMarginCash = positions.marginCash;
+        int256 newMarginCash = getAvailableMargin();
+        int256 oldMarginCash = positions.availableMargin;
         if (oldMarginCash >= newMarginCash) {
             // if the margin cash held has gone down then record a loss
             loss = true;
@@ -573,11 +595,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         } else {
             // if the margin cash held has gone up then record a profit and withdraw the excess for redistribution
             feeInt = newMarginCash - oldMarginCash;
-            mcLiquidityPool.withdraw(
-                perpetualIndex,
-                address(this),
-                feeInt * DECIMAL_SHIFT
-            );
+            mcLiquidityPool.withdraw(perpetualIndex, address(this), feeInt);
         }
         fee = uint256(feeInt);
     }
@@ -677,6 +695,17 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice  getter for the MCDEX margin  of the strategy
+     * @return  availableMargin of the margin account
+     */
+    function getAvailableMargin() public view returns (int256 availableMargin) {
+        (, , availableMargin, , , , , , ) = mcLiquidityPool.getMarginAccount(
+            perpetualIndex,
+            address(this)
+        );
+    }
+
+    /**
      * @notice Get the account info of the trader. Need to update the funding state and the oracle price
      *         of each perpetual before and update the funding rate of each perpetual after
      * @return cash the cash held in the margin account
@@ -713,5 +742,27 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             isMarginSafe,
 
         ) = mcLiquidityPool.getMarginAccount(perpetualIndex, address(this));
+    }
+
+    /**
+     * @notice Get the funding rate
+     * @return the funding rate of the perpetual
+     */
+    function getFundingRate() public view returns (int256) {
+        (, , int256[39] memory nums) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        return nums[3];
+    }
+
+    /**
+     * @notice Get the unit accumulative funding
+     * @return get the unit accumulative funding of the perpetual
+     */
+    function getUnitAccumulativeFunding() public view returns (int256) {
+        (, , int256[39] memory nums) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        return nums[4];
     }
 }

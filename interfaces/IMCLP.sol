@@ -2,6 +2,14 @@
 pragma solidity 0.8.4;
 
 interface IMCLP {
+    enum PerpetualState {
+        INVALID,
+        INITIALIZING,
+        NORMAL,
+        EMERGENCY,
+        CLEARED
+    }
+
     function deposit(
         uint256 perpetualIndex,
         address trader,
@@ -98,4 +106,49 @@ interface IMCLP {
             int256 totalFee,
             int256 cost
         );
+
+    /**
+     * @notice Get the info of the perpetual. Need to update the funding state and the oracle price
+     *         of each perpetual before and update the funding rate of each perpetual after
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @return state The state of the perpetual
+     * @return oracle The oracle's address of the perpetual
+     * @return nums The related numbers of the perpetual
+     */
+    function getPerpetualInfo(uint256 perpetualIndex)
+        external
+        view
+        returns (
+            PerpetualState state,
+            address oracle,
+            // [0] totalCollateral
+            // [1] markPrice, (return settlementPrice if it is in EMERGENCY state)
+            // [2] indexPrice,
+            // [3] fundingRate,
+            // [4] unitAccumulativeFunding,
+            // [5] initialMarginRate,
+            // [6] maintenanceMarginRate,
+            // [7] operatorFeeRate,
+            // [8] lpFeeRate,
+            // [9] referralRebateRate,
+            // [10] liquidationPenaltyRate,
+            // [11] keeperGasReward,
+            // [12] insuranceFundRate,
+            // [13-15] halfSpread value, min, max,
+            // [16-18] openSlippageFactor value, min, max,
+            // [19-21] closeSlippageFactor value, min, max,
+            // [22-24] fundingRateLimit value, min, max,
+            // [25-27] ammMaxLeverage value, min, max,
+            // [28-30] maxClosePriceDiscount value, min, max,
+            // [31] openInterest,
+            // [32] maxOpenInterestRate,
+            // [33-35] fundingRateFactor value, min, max,
+            // [36-38] defaultTargetLeverage value, min, max,
+            int256[39] memory nums
+        );
+
+    /**
+     * @notice  If you want to get the real-time data, call this function first
+     */
+    function forceToSyncState() external;
 }

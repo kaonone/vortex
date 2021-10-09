@@ -48,4 +48,61 @@ contract TestStrategy is BasisStrategy {
         IERC20(want).safeTransferFrom(msg.sender, address(this), _amount);
         _depositToMarginAccount(_amount);
     }
+
+    function openPerpPosition(uint256 _amount) external {
+        IERC20(want).safeTransferFrom(msg.sender, address(this), _amount);
+        // deposit funds to the margin account to enable trading
+        _depositToMarginAccount(_amount);
+        // get the long asset mark price from the MCDEX oracle
+        (int256 price, ) = oracle.priceTWAPLong();
+        // calculate the number of contracts (*1e12 because USDC is 6 decimals)
+        int256 contracts = ((int256(_amount) * DECIMAL_SHIFT) * 1e18) / price;
+        // open short position
+        int256 tradeAmount = mcLiquidityPool.trade(
+            perpetualIndex,
+            address(this),
+            -contracts,
+            price - slippageTolerance,
+            block.timestamp,
+            referrer,
+            0x40000000
+        );
+        emit PerpPositionOpened(tradeAmount, perpetualIndex, _amount);
+    }
+
+    function closePerpPosition(uint256 _amount) external {
+        // get the long asset mark price from the MCDEX oracle
+        (int256 price, ) = oracle.priceTWAPLong();
+        int256 tradeAmount;
+        // calculate the number of contracts (*1e12 because USDC is 6 decimals)
+        int256 contracts = ((int256(_amount) * DECIMAL_SHIFT) * 1e18) / price;
+        if (contracts + getMarginPositions() < -dust) {
+            // close short position
+            tradeAmount = mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                contracts,
+                price + slippageTolerance,
+                block.timestamp,
+                referrer,
+                0x40000000
+            );
+        } else {
+            // close all remaining short positions
+            tradeAmount = mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                -getMarginPositions(),
+                price + slippageTolerance,
+                block.timestamp,
+                referrer,
+                0x40000000
+            );
+        }
+        emit PerpPositionClosed(tradeAmount, perpetualIndex, _amount);
+    }
+
+    function closeAllPerpPositions(uint256 _amount) external {
+        _closeAllPerpPositions();
+    }
 }

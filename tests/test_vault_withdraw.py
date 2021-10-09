@@ -2,8 +2,6 @@ import brownie
 import constants
 import random
 
-#TODO Test withdraws with plugged in strategy and model loss scenarios
-
 
 def test_withdraw(vault_deposited, users, token):
     for user in users:

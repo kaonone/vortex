@@ -43,7 +43,9 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         _;
     }
 
-    constructor(address _want, uint256 _depositLimit) ERC20("akBV", "akBV") {
+    constructor(address _want, uint256 _depositLimit)
+        ERC20("akBVUSDC-ETH", "akBasisVault-USDC-ETH")
+    {
         require(_want != address(0), "!_want");
         want = IERC20(_want);
         depositLimit = _depositLimit;
@@ -53,14 +55,13 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      * EVENTS *
      **********/
 
-    event UpdateWant(address indexed want);
-    event UpdateStrategy(address indexed want);
-    event UpdateDepositLimit(uint256 depositLimit);
+    event StrategyUpdated(address indexed strategy);
+    event DepositLimitUpdated(uint256 depositLimit);
 
     event Deposit(address indexed user, uint256 deposit, uint256 shares);
     event Withdraw(address indexed user, uint256 withdrawal, uint256 shares);
     event StrategyUpdate(uint256 profitOrLoss, bool isLoss, uint256 toDeposit);
-    event ProtocolFeesChanged(
+    event ProtocolFeesUpdated(
         uint256 oldManagementFee,
         uint256 newManagementFee,
         uint256 oldPerformanceFee,
@@ -72,24 +73,13 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      ***********/
 
     /**
-     * @notice  set the want for the vault
-     * @param   _want address of the token to change to
-     * @dev     only callable by owner
-     */
-    function setWant(address _want) external onlyOwner {
-        require(_want != address(0), "!_want");
-        want = IERC20(_want);
-        emit UpdateWant(_want);
-    }
-
-    /**
      * @notice  set the maximum amount that can be deposited in the vault
      * @param   _depositLimit amount of want allowed to be deposited
      * @dev     only callable by owner
      */
     function setDepositLimit(uint256 _depositLimit) external onlyOwner {
         depositLimit = _depositLimit;
-        emit UpdateDepositLimit(_depositLimit);
+        emit DepositLimitUpdated(_depositLimit);
     }
 
     /**
@@ -98,8 +88,45 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      * @dev     only callable by owner
      */
     function setStrategy(address _strategy) external onlyOwner {
+        require(_strategy != address(0), "!_strategy");
         strategy = _strategy;
-        emit UpdateStrategy(_strategy);
+        emit StrategyUpdated(_strategy);
+    }
+
+    /**
+     * @notice function to set the protocol management and performance fees
+     * @param  _performanceFee the fee applied for the strategies performance
+     * @param  _managementFee the fee applied for the strategies management
+     * @dev    only callable by the owner
+     */
+    function setProtocolFees(uint256 _performanceFee, uint256 _managementFee)
+        external
+        onlyOwner
+    {
+        emit ProtocolFeesUpdated(
+            managementFee,
+            _managementFee,
+            performanceFee,
+            _performanceFee
+        );
+        performanceFee = _performanceFee;
+        managementFee = _managementFee;
+    }
+
+    /**
+     * @notice pause the vault
+     * @dev    only callable by the owner
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice unpause the vault
+     * @dev    only callable by the owner
+     */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     /**********************
@@ -204,26 +231,6 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         want.safeTransfer(msg.sender, toDeposit);
     }
 
-    /**
-     * @notice function to set the protocol management and performance fees
-     * @param  _performanceFee the fee applied for the strategies performance
-     * @param  _managementFee the fee applied for the strategies management
-     * @dev    only callable by the owner
-     */
-    function setProtocolFees(uint256 _performanceFee, uint256 _managementFee)
-        external
-        onlyOwner
-    {
-        emit ProtocolFeesChanged(
-            managementFee,
-            _managementFee,
-            performanceFee,
-            _performanceFee
-        );
-        performanceFee = _performanceFee;
-        managementFee = _managementFee;
-    }
-
     /**********************
      * INTERNAL FUNCTIONS *
      **********************/
@@ -286,5 +293,13 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      */
     function totalAssets() public view returns (uint256) {
         return want.balanceOf(address(this)) + totalLent;
+    }
+
+    /**
+     * @notice get the price per vault share
+     * @return the price per share in want
+     */
+    function pricePerShare() public view returns (uint256) {
+        return _calcShareValue(1**decimals());
     }
 }

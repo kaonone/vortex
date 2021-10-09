@@ -48,6 +48,10 @@ def oracle():
     oracle = interface.IOracle(constants.MCDEX_ORACLE)
     yield oracle
 
+@pytest.fixture(scope="function", autouse=True)
+def mcLiquidityPool():
+    mc = interface.IMCLP(constants.MCLIQUIDITY)
+    yield mc
 
 @pytest.fixture(scope="function")
 def usdc_whale():
@@ -70,6 +74,9 @@ def governance(accounts):
 def users(accounts):
     yield accounts[1:10]
 
+@pytest.fixture(scope="function")
+def randy():
+    yield accounts.at(constants.RANDOM, force=True)
 
 @pytest.fixture(scope="function")
 def vault(deployer, token):
@@ -121,5 +128,32 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     vault_deposited.setStrategy(strategy, {"from": deployer})
+    strategy.setSlippageTolerance(constants.TRADE_SLIPPAGE, {"from": deployer})
+    yield strategy
+
+
+@pytest.fixture(scope="function")
+def test_other_strategy(token, deployer, governance, users):
+    vaulty = BasisVault.deploy(
+        token,
+        constants.DEPOSIT_LIMIT,
+        {"from": deployer}
+    )
+    for user in users:
+        token.approve(vaulty, constants.DEPOSIT_AMOUNT, {"from": user})
+        vaulty.deposit(constants.DEPOSIT_AMOUNT, user, {"from": user})
+    strategy = TestStrategy.deploy(
+        constants.LONG_ASSET, 
+        constants.UNI_POOL, 
+        vaulty, 
+        constants.MCDEX_ORACLE,
+        constants.ROUTER, 
+        governance,
+        constants.MCLIQUIDITY, 
+        constants.PERP_INDEX, 
+        {"from": deployer}
+    )
+    strategy.setBuffer(constants.BUFFER, {"from": deployer})
+    vaulty.setStrategy(strategy, {"from": deployer})
     strategy.setSlippageTolerance(constants.TRADE_SLIPPAGE, {"from": deployer})
     yield strategy
