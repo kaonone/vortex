@@ -294,9 +294,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             _depositToMarginAccount(bufferPosition);
             // open a short perpetual position and store the number of perp contracts
             positions.perpContracts += _openPerpPosition(shortPosition);
-            // record incremented positions
-            positions.availableMargin = getAvailableMargin();
         }
+        // record incremented positions
+        positions.availableMargin = getAvailableMargin();
         emit Harvest(
             positions.perpContracts,
             IERC20(long).balanceOf(address(this)),
@@ -314,7 +314,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         require(!isUnwind, "unwound");
         isUnwind = true;
         // close the short position
-        int256 positionsClosed = _closeAllPerpPositions();
+        _closeAllPerpPositions();
         // swap long asset back to want
         _swap(IERC20(long).balanceOf(address(this)), long, want);
         // withdraw all cash in the margin account
@@ -388,7 +388,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             }
             if (
                 getAvailableMargin() >
-                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
+                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT &&
+                getMarginPositions() < 0
             ) {
                 // withdraw the short and buffer from the margin account
                 mcLiquidityPool.withdraw(
@@ -475,16 +476,31 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)
         int256 contracts = ((int256(_amount) * DECIMAL_SHIFT) * 1e18) / price;
-        // open short position
-        tradeAmount = mcLiquidityPool.trade(
-            perpetualIndex,
-            address(this),
-            -contracts,
-            price - slippageTolerance,
-            block.timestamp,
-            referrer,
-            tradeMode
-        );
+        int256 longBalInt = -int256(IERC20(long).balanceOf(address(this)));
+        // check that the long and short positions will be equal after the deposit
+        if (-contracts - getMarginPositions() >= longBalInt) {
+            // open short position
+            tradeAmount = mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                -contracts,
+                price - slippageTolerance,
+                block.timestamp,
+                referrer,
+                tradeMode
+            );
+        } else {
+            tradeAmount = mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                -(getMarginPositions() - longBalInt),
+                price - slippageTolerance,
+                block.timestamp,
+                referrer,
+                tradeMode
+            );
+        }
+
         emit PerpPositionOpened(tradeAmount, perpetualIndex, _amount);
     }
 
@@ -577,12 +593,13 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             // if the margin cash held has gone down then record a loss
             loss = true;
             feeInt = oldMarginCash - newMarginCash;
+            fee = uint256(feeInt / DECIMAL_SHIFT);
         } else {
             // if the margin cash held has gone up then record a profit and withdraw the excess for redistribution
             feeInt = newMarginCash - oldMarginCash;
             mcLiquidityPool.withdraw(perpetualIndex, address(this), feeInt);
+            fee = IERC20(want).balanceOf(address(this));
         }
-        fee = IERC20(want).balanceOf(address(this));
     }
 
     /**

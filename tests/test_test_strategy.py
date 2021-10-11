@@ -1,7 +1,7 @@
 import brownie
 import constants
 import random
-
+import math
 
 def test_open_perp_position(test_strategy, deployer, accounts, governance, token):
     assert token.balanceOf(test_strategy) == 0
@@ -89,7 +89,7 @@ def test_deposit_to_margin_account(test_strategy, deployer, token):
     token.approve(test_strategy, constants.DEPOSIT_AMOUNT, {"from": deployer})
     tx = test_strategy.depositToMarginAccount(constants.DEPOSIT_AMOUNT)
     assert "DepositToMarginAccount" in tx.events
-    assert tx.events["DepositToMarginAccount"]["amount"] == constants.DEPOSIT_AMOUNT == test_strategy.getMarginCash() / constants.DECIMAL_SHIFT
+    assert tx.events["DepositToMarginAccount"]["amount"] == constants.DEPOSIT_AMOUNT == math.ceil(test_strategy.getMarginCash() / constants.DECIMAL_SHIFT)
     assert tx.events["DepositToMarginAccount"]["perpetualIndex"] == constants.PERP_INDEX
     assert token.balanceOf(test_strategy) == 0
     assert test_strategy.getMarginCash() == constants.DEPOSIT_AMOUNT * 1e12
