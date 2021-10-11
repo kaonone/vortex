@@ -24,9 +24,6 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
 
     // struct to store the position state of the strategy
     struct Positions {
-        uint256 shortPosition;
-        uint256 longPosition;
-        uint256 bufferPosition;
         int256 perpContracts;
         int256 availableMargin;
     }
@@ -65,8 +62,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // slippage Tolerance for the perpetual trade
     int256 public slippageTolerance;
     // unwind state tracker
-    bool isUnwind;
-
+    bool public isUnwind;
+    // trade mode of the perp
+    uint32 public tradeMode = 0x40000000;
     // modifier to check that the caller is governance
     modifier onlyGovernance() {
         require(msg.sender == governance, "!governance");
@@ -132,19 +130,14 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      **********/
 
     event DepositToMarginAccount(uint256 amount, uint256 perpetualIndex);
-    event Withdraw(uint256 amountWithdrawn);
+    event WithdrawStrategy(uint256 amountWithdrawn);
     event Harvest(
-        uint256 shortPosition,
         int256 perpContracts,
         uint256 longPosition,
-        uint256 bufferPosition
+        int256 availableMargin
     );
-    event StrategyUnwind(uint256 positionSize, uint256 unwindTime);
-    event EmergencyExit(
-        address indexed recipient,
-        uint256 positionSize,
-        uint256 exitTime
-    );
+    event StrategyUnwind(uint256 positionSize);
+    event EmergencyExit(address indexed recipient, uint256 positionSize);
     event PerpPositionOpened(
         int256 perpPositions,
         uint256 perpetualIndex,
@@ -248,6 +241,15 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice  setter for the tradeMode of the perp
+     * @param   _tradeMode uint32 for the perp trade mode
+     * @dev     only callable by owner
+     */
+    function setTradeMode(uint32 _tradeMode) external onlyOwner {
+        tradeMode = _tradeMode;
+    }
+
+    /**
      * @notice  setter for the governance address
      * @param   _governance address of governance
      * @dev     only callable by governance
@@ -278,8 +280,6 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         // determine the profit since the last harvest and remove profits from the margi
         // account to be redistributed
         (uint256 amount, bool loss) = _determineFee();
-        // record a loss in the short position if there is one
-        positions.shortPosition -= loss ? amount : 0;
         // update the vault with profits/losses accrued and receive deposits
         uint256 newFunds = vault.update(amount, loss);
         // combine the funds and check that they are larger than 0
@@ -295,16 +295,12 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             // open a short perpetual position and store the number of perp contracts
             positions.perpContracts += _openPerpPosition(shortPosition);
             // record incremented positions
-            positions.shortPosition += shortPosition;
-            positions.longPosition += longPosition;
-            positions.bufferPosition += bufferPosition;
             positions.availableMargin = getAvailableMargin();
         }
         emit Harvest(
-            positions.shortPosition,
             positions.perpContracts,
-            positions.longPosition,
-            positions.bufferPosition
+            IERC20(long).balanceOf(address(this)),
+            positions.availableMargin
         );
     }
 
@@ -328,15 +324,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             getMarginCash()
         );
         // reset positions
-        positions.bufferPosition = 0;
-        positions.longPosition = 0;
-        positions.shortPosition = 0;
         positions.perpContracts = 0;
         positions.availableMargin = getAvailableMargin();
-        emit StrategyUnwind(
-            IERC20(want).balanceOf(address(this)),
-            block.timestamp
-        );
+        emit StrategyUnwind(IERC20(want).balanceOf(address(this)));
     }
 
     /**
@@ -349,17 +339,10 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         if (!isUnwind) {
             unwind();
         }
-
+        uint256 wantBalance = IERC20(want).balanceOf(address(this));
         // send funds to governance
-        IERC20(want).safeTransfer(
-            governance,
-            IERC20(want).balanceOf(address(this))
-        );
-        emit EmergencyExit(
-            governance,
-            IERC20(want).balanceOf(address(this)),
-            block.timestamp
-        );
+        IERC20(want).safeTransfer(governance, wantBalance);
+        emit EmergencyExit(governance, wantBalance);
     }
 
     /**
@@ -379,16 +362,20 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             // remove the buffer from the amount
             uint256 bufferPosition = (_amount * buffer) / MAX_BPS;
             // decrement the amount by buffer position
-            _amount -= bufferPosition;
+            uint256 _remAmount = _amount - bufferPosition;
             // determine the longPosition in want
-            uint256 longPositionWant = _amount / 2;
+            uint256 longPositionWant = _remAmount / 2;
             // determine the short position
-            uint256 shortPosition = _amount - longPositionWant;
+            uint256 shortPosition = _remAmount - longPositionWant;
             // close the short position
             int256 positionsClosed = _closePerpPosition(shortPosition);
             // determine the long position
             uint256 longPosition = uint256(positionsClosed);
             if (longPosition < IERC20(long).balanceOf(address(this))) {
+                // if for whatever reason there are funds left in long when there shouldnt be then liquidate them
+                if (getMarginPositions() == 0) {
+                    longPosition = IERC20(long).balanceOf(address(this));
+                }
                 // convert the long to want
                 longPositionWant = _swap(longPosition, long, want);
             } else {
@@ -399,11 +386,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                     want
                 );
             }
-
-            snapshot();
-
             if (
-                getMarginCash() >
+                getAvailableMargin() >
                 int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
             ) {
                 // withdraw the short and buffer from the margin account
@@ -416,15 +400,14 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 mcLiquidityPool.withdraw(
                     perpetualIndex,
                     address(this),
-                    getMarginCash()
+                    getAvailableMargin()
                 );
             }
 
             // alter position values to reflect withdrawal
-            positions.bufferPosition -= bufferPosition;
-            positions.longPosition -= longPositionWant;
-            positions.shortPosition -= shortPosition;
-            positions.perpContracts -= positionsClosed;
+            // alter buffer and shorts which may experience underflow if profits are recorded
+            // on the final withdrawal before a harvest recorded the change
+            positions.perpContracts = getMarginPositions();
             positions.availableMargin = getAvailableMargin();
             withdrawn = longPositionWant + shortPosition + bufferPosition;
         } else {
@@ -432,17 +415,18 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         }
 
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
-        // transfer the funds back to the vault
-        if (withdrawn > wantBalance) {
+        // transfer the funds back to the vault, if at this point needed isnt covered then
+        // record a loss
+        if (_amount > wantBalance) {
             IERC20(want).safeTransfer(address(vault), wantBalance);
-            loss = withdrawn - wantBalance;
+            loss = _amount - wantBalance;
             withdrawn = wantBalance;
         } else {
             IERC20(want).safeTransfer(address(vault), withdrawn);
             loss = 0;
         }
 
-        emit Withdraw(withdrawn);
+        emit WithdrawStrategy(withdrawn);
     }
 
     /**
@@ -499,7 +483,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             price - slippageTolerance,
             block.timestamp,
             referrer,
-            0
+            tradeMode
         );
         emit PerpPositionOpened(tradeAmount, perpetualIndex, _amount);
     }
@@ -526,7 +510,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 price + slippageTolerance,
                 block.timestamp,
                 referrer,
-                0
+                tradeMode
             );
         } else {
             // close all remaining short positions
@@ -537,7 +521,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 price + slippageTolerance,
                 block.timestamp,
                 referrer,
-                0
+                tradeMode
             );
         }
 
@@ -559,7 +543,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             price + slippageTolerance,
             block.timestamp,
             referrer,
-            0
+            tradeMode
         );
         emit AllPerpPositionsClosed(tradeAmount, perpetualIndex);
     }

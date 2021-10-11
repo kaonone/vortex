@@ -36,6 +36,8 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
     uint256 public managementFee;
     // performance fee
     uint256 public performanceFee;
+    // fee recipient
+    address public protocolFeeRecipient;
 
     // modifier to check that the caller is the strategy
     modifier onlyStrategy() {
@@ -49,6 +51,7 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         require(_want != address(0), "!_want");
         want = IERC20(_want);
         depositLimit = _depositLimit;
+        protocolFeeRecipient = msg.sender;
     }
 
     /**********
@@ -66,6 +69,10 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         uint256 newManagementFee,
         uint256 oldPerformanceFee,
         uint256 newPerformanceFee
+    );
+    event ProtocolFeeRecipientUpdated(
+        address oldRecipient,
+        address newRecipient
     );
 
     /***********
@@ -111,6 +118,16 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         );
         performanceFee = _performanceFee;
         managementFee = _managementFee;
+    }
+
+    /**
+     * @notice function to set the protocol fee recipient
+     * @param  _newRecipient the recipient of protocol fees
+     * @dev    only callable by the owner
+     */
+    function setProtocolFeeRecipient(address _newRecipient) external onlyOwner {
+        emit ProtocolFeeRecipientUpdated(protocolFeeRecipient, _newRecipient);
+        protocolFeeRecipient = _newRecipient;
     }
 
     /**
@@ -186,20 +203,19 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
             needed = Math.min(needed, totalLent);
             uint256 withdrawn;
             (loss, withdrawn) = IStrategy(strategy).withdraw(needed);
+            vaultBalance = want.balanceOf(address(this));
             if (loss > 0) {
-                amount -= loss;
+                amount = vaultBalance;
                 totalLent -= loss;
+                // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
+                // _shares = _sharesForAmount(amount);
+            } else {
+                amount = withdrawn;
             }
+
             totalLent -= withdrawn;
         }
-        vaultBalance = want.balanceOf(address(this));
 
-        // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
-        if (amount > vaultBalance) {
-            amount = vaultBalance;
-            _shares = _sharesForAmount(amount);
-            emit Withdraw(_recipient, amount, _shares);
-        }
         _burn(msg.sender, _shares);
         emit Withdraw(_recipient, amount, _shares);
         want.safeTransfer(_recipient, amount);
