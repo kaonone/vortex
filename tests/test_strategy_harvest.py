@@ -51,27 +51,31 @@ def test_yield_harvest(
 ):
     
     test_strategy_deposited.harvest({"from": deployer})
-    # token.approve(mcLiquidityPool, token.balanceOf(deployer) - 1, {"from": deployer})
-    # price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
-    # mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
-    # mcLiquidityPool.deposit(0, deployer, token.balanceOf(deployer) - 1, {"from": deployer})
-    # mcLiquidityPool.trade(
-    #             0,
-    #             deployer,
-    #             (mcLiquidityPool.getMarginAccount(0, deployer)[0] * 1e18) / price,
-    #             price,
-    #             brownie.chain.time() + 10000,
-    #             deployer,
-    #             0x40000000,
-    #             {"from": deployer}
-    #         )
+    token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
+    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
+    mcLiquidityPool.deposit(0, deployer, (token.balanceOf(deployer)*1e12 - 1), {"from": deployer})
+    mcLiquidityPool.trade(
+                0,
+                deployer,
+                ((mcLiquidityPool.getMarginAccount(0, deployer)[0]/100) * 1e18) / price,
+                price,
+                brownie.chain.time() + 10000,
+                deployer,
+                0x40000000,
+                {"from": deployer}
+            )
     for n in range(100):
+
         brownie.chain.sleep(28800)
         before_margin = test_strategy_deposited.getMargin()
         before_lent = vault_deposited.totalLent()
         mcLiquidityPool.forceToSyncState({"from": deployer})
         bal = test_strategy_deposited.getMargin() - before_margin
         tx = test_strategy_deposited.harvest({"from": deployer})
+        # print("AMM situation:")
+        # print(mcLiquidityPool.getMarginAccount(0, mcLiquidityPool))
+        # print("Strategy situation:")
         print(test_strategy_deposited.getMarginAccount())
         assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
             test_strategy_deposited
