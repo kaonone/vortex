@@ -13,7 +13,9 @@ def test_deposit(vault, users, token):
         assert "Deposit" in tx.events
         assert tx.events["Deposit"]["user"] == user
         assert tx.events["Deposit"]["deposit"] == constants.DEPOSIT_AMOUNT
-        assert tx.events["Deposit"]["shares"] == (vault.balanceOf(user)) - u_v_bal_before
+        assert (
+            tx.events["Deposit"]["shares"] == (vault.balanceOf(user)) - u_v_bal_before
+        )
         assert vault.balanceOf(user) > u_v_bal_before
         assert v_t_bal_before + constants.DEPOSIT_AMOUNT == token.balanceOf(vault)
         assert u_t_bal_before - constants.DEPOSIT_AMOUNT == token.balanceOf(user)
@@ -23,21 +25,25 @@ def test_deposit(vault, users, token):
 def test_deposit_with_mal_funds(vault, users, token, randy, deployer):
     user = users[0]
     assert token.balanceOf(randy) == 0
-    token.approve(vault, 2 ** 256 -1, {"from": randy})
+    token.approve(vault, 2 ** 256 - 1, {"from": randy})
     with brownie.reverts():
         vault.deposit(constants.DEPOSIT_AMOUNT, randy, {"from": randy})
 
     balance = token.balanceOf(user) + 1
-    token.approve(vault, 2 ** 256 -1, {"from": user})
+    token.approve(vault, 2 ** 256 - 1, {"from": user})
     with brownie.reverts():
         vault.deposit(balance, user, {"from": user})
 
     with brownie.reverts("!_amount"):
         vault.deposit(0, user, {"from": user})
-    
+
     with brownie.reverts("!_recipient"):
-        vault.deposit(constants.DEPOSIT_AMOUNT, "0x0000000000000000000000000000000000000000", {"from": user})
-    
+        vault.deposit(
+            constants.DEPOSIT_AMOUNT,
+            "0x0000000000000000000000000000000000000000",
+            {"from": user},
+        )
+
     with brownie.reverts("!depositLimit"):
         vault.deposit(constants.DEPOSIT_LIMIT + 1e6, deployer, {"from": deployer})
 
@@ -73,7 +79,7 @@ def test_deposit_randomiser(vault, users, token):
         v_t_bal_before = token.balanceOf(vault)
         u_t_bal_before = token.balanceOf(user)
         u_v_bal_before = vault.balanceOf(user)
-        rand = random.randint(1,5)
+        rand = random.randint(1, 5)
         deposit = constants.DEPOSIT_AMOUNT * rand
         token.approve(vault, deposit, {"from": user})
         tx = vault.deposit(deposit, user, {"from": user})
@@ -115,7 +121,9 @@ def test_deposit_all_withdraw_all(vault, users, token, deployer):
         assert "Deposit" in tx.events
         assert tx.events["Deposit"]["user"] == user
         assert tx.events["Deposit"]["deposit"] == constants.DEPOSIT_AMOUNT
-        assert tx.events["Deposit"]["shares"] == (vault.balanceOf(user)) - u_v_bal_before
+        assert (
+            tx.events["Deposit"]["shares"] == (vault.balanceOf(user)) - u_v_bal_before
+        )
         assert vault.balanceOf(user) > u_v_bal_before
         assert v_t_bal_before + constants.DEPOSIT_AMOUNT == token.balanceOf(vault)
         assert u_t_bal_before - constants.DEPOSIT_AMOUNT == token.balanceOf(user)

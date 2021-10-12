@@ -13,14 +13,19 @@ def test_withdraw(vault_deposited, users, token):
         assert tx.events["Withdraw"]["user"] == user
         assert tx.events["Withdraw"]["withdrawal"] == constants.DEPOSIT_AMOUNT
         assert tx.events["Withdraw"]["shares"] == u_v_bal_before
-        assert token.balanceOf(vault_deposited) + constants.DEPOSIT_AMOUNT == v_t_bal_before
+        assert (
+            token.balanceOf(vault_deposited) + constants.DEPOSIT_AMOUNT
+            == v_t_bal_before
+        )
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) == int(constants.DEPOSIT_AMOUNT) + u_t_bal_before
 
 
 def test_withdraw_yield(vault_deposited, users, token, deployer):
     token.transfer(vault_deposited, constants.YIELD_AMOUNT, {"from": deployer})
-    expected_withdrawal = int(constants.DEPOSIT_AMOUNT + constants.YIELD_AMOUNT / len(users))
+    expected_withdrawal = int(
+        constants.DEPOSIT_AMOUNT + constants.YIELD_AMOUNT / len(users)
+    )
     for user in users:
         v_t_bal_before = token.balanceOf(vault_deposited)
         u_v_bal_before = vault_deposited.balanceOf(user)
@@ -28,16 +33,29 @@ def test_withdraw_yield(vault_deposited, users, token, deployer):
         tx = vault_deposited.withdraw(u_v_bal_before, user, {"from": user})
         assert "Withdraw" in tx.events
         assert tx.events["Withdraw"]["user"] == user
-        assert abs(tx.events["Withdraw"]["withdrawal"] - expected_withdrawal) < constants.ACCURACY
+        assert (
+            abs(tx.events["Withdraw"]["withdrawal"] - expected_withdrawal)
+            < constants.ACCURACY
+        )
         assert tx.events["Withdraw"]["shares"] == u_v_bal_before
-        assert abs(token.balanceOf(vault_deposited) + expected_withdrawal - v_t_bal_before) < constants.ACCURACY
+        assert (
+            abs(token.balanceOf(vault_deposited) + expected_withdrawal - v_t_bal_before)
+            < constants.ACCURACY
+        )
         assert vault_deposited.balanceOf(user) == 0
-        assert abs(token.balanceOf(user) - expected_withdrawal - u_t_bal_before) < constants.ACCURACY
+        assert (
+            abs(token.balanceOf(user) - expected_withdrawal - u_t_bal_before)
+            < constants.ACCURACY
+        )
 
 
 def test_withdraw_diff_recipient(vault_deposited, users, token, deployer):
-    token.approve(vault_deposited, constants.DEPOSIT_AMOUNT * len(users), {"from": deployer})
-    vault_deposited.deposit(constants.DEPOSIT_AMOUNT * len(users), deployer, {"from": deployer})
+    token.approve(
+        vault_deposited, constants.DEPOSIT_AMOUNT * len(users), {"from": deployer}
+    )
+    vault_deposited.deposit(
+        constants.DEPOSIT_AMOUNT * len(users), deployer, {"from": deployer}
+    )
     for user in users:
         v_t_bal_before = token.balanceOf(vault_deposited)
         u_v_bal_before = vault_deposited.balanceOf(user)
@@ -47,13 +65,18 @@ def test_withdraw_diff_recipient(vault_deposited, users, token, deployer):
         assert tx.events["Withdraw"]["user"] == user
         assert tx.events["Withdraw"]["withdrawal"] == constants.DEPOSIT_AMOUNT
         assert tx.events["Withdraw"]["shares"] == u_v_bal_before
-        assert token.balanceOf(vault_deposited) + constants.DEPOSIT_AMOUNT == v_t_bal_before
+        assert (
+            token.balanceOf(vault_deposited) + constants.DEPOSIT_AMOUNT
+            == v_t_bal_before
+        )
         assert token.balanceOf(user) == int(constants.DEPOSIT_AMOUNT) + u_t_bal_before
     assert vault_deposited.balanceOf(deployer) == 0
 
 
 def test_withdraw_empty(vault_deposited, users, token, deployer):
-    token.transfer(deployer, token.balanceOf(vault_deposited), {"from": vault_deposited})
+    token.transfer(
+        deployer, token.balanceOf(vault_deposited), {"from": vault_deposited}
+    )
     for user in users:
         v_t_bal_before = token.balanceOf(vault_deposited)
         u_v_bal_before = vault_deposited.balanceOf(user)

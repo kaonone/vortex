@@ -4,11 +4,13 @@ import random
 
 
 def test_vault_deployment(BasisVault, deployer):
-    vault = BasisVault.deploy(constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer})
+    vault = BasisVault.deploy(
+        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
+    )
     assert vault.owner() == deployer
     assert vault.want() == constants.USDC
     assert vault.depositLimit() == constants.DEPOSIT_LIMIT
-    
+
     assert vault.name() == "akBVUSDC-ETH"
     assert vault.symbol() == "akBasisVault-USDC-ETH"
 
@@ -21,11 +23,13 @@ def test_vault_deployment(BasisVault, deployer):
 
 
 def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
-    vault = BasisVault.deploy(constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer})
+    vault = BasisVault.deploy(
+        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
+    )
     with brownie.reverts():
         vault.setDepositLimit(0, {"from": accounts[9]})
     tx = vault.setDepositLimit(0, {"from": deployer})
-    assert vault.depositLimit() == 0 
+    assert vault.depositLimit() == 0
     assert "DepositLimitUpdated" in tx.events
     assert tx.events["DepositLimitUpdated"]["depositLimit"] == 0
 
@@ -33,27 +37,34 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
         vault.setProtocolFees(1, 1, {"from": accounts[9]})
     tx = vault.setProtocolFees(1, 1, {"from": deployer})
     assert vault.managementFee() == 1
-    assert vault.performanceFee() == 1 
+    assert vault.performanceFee() == 1
     assert "ProtocolFeesUpdated" in tx.events
-    assert tx.events["ProtocolFeesUpdated"]["oldManagementFee"] == constants.MANAGEMENT_FEE
-    assert tx.events["ProtocolFeesUpdated"]["oldPerformanceFee"] == constants.PERFORMANCE_FEE
+    assert (
+        tx.events["ProtocolFeesUpdated"]["oldManagementFee"] == constants.MANAGEMENT_FEE
+    )
+    assert (
+        tx.events["ProtocolFeesUpdated"]["oldPerformanceFee"]
+        == constants.PERFORMANCE_FEE
+    )
     assert tx.events["ProtocolFeesUpdated"]["newManagementFee"] == 1
     assert tx.events["ProtocolFeesUpdated"]["newPerformanceFee"] == 1
 
 
 def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
-    vault = BasisVault.deploy(constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer})
-    strategy = BasisStrategy.deploy(        
-        constants.LONG_ASSET, 
-        constants.UNI_POOL, 
-        vault, 
+    vault = BasisVault.deploy(
+        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
+    )
+    strategy = BasisStrategy.deploy(
+        constants.LONG_ASSET,
+        constants.UNI_POOL,
+        vault,
         constants.MCDEX_ORACLE,
-        constants.ROUTER, 
+        constants.ROUTER,
         deployer,
-        constants.MCLIQUIDITY, 
-        constants.PERP_INDEX, 
-        {"from": deployer}
-        )
+        constants.MCLIQUIDITY,
+        constants.PERP_INDEX,
+        {"from": deployer},
+    )
     with brownie.reverts():
         vault.setStrategy(strategy, {"from": accounts[9]})
     with brownie.reverts():
@@ -77,4 +88,3 @@ def test_pause_unpause(vault, deployer, randy):
         vault.unpause({"from": randy})
     vault.unpause({"from": deployer})
     assert vault.paused() == False
-    

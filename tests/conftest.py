@@ -2,12 +2,12 @@ import pytest
 import constants
 from brownie import (
     BasisVault,
-    BasicERC20, 
+    BasicERC20,
     TestStrategy,
     accounts,
     network,
     Contract,
-    interface
+    interface,
 )
 
 
@@ -20,7 +20,7 @@ def isolate_func(fn_isolation):
 
 @pytest.fixture(scope="function", autouse=True)
 def token(deployer, users, usdc_whale):
-    if network.show_active() == 'development':
+    if network.show_active() == "development":
         toke = BasicERC20.deploy("Test", "TT", {"from": deployer})
         toke.mint(1_000_000_000_000e18, {"from": deployer})
         for user in users:
@@ -28,11 +28,7 @@ def token(deployer, users, usdc_whale):
     else:
         toke = interface.IERC20(constants.USDC)
         for user in users:
-            toke.transfer(
-                user,
-                constants.DEPOSIT_AMOUNT * 10,
-                {"from": usdc_whale}
-            )
+            toke.transfer(user, constants.DEPOSIT_AMOUNT * 10, {"from": usdc_whale})
     # usdc
     yield toke
 
@@ -48,10 +44,12 @@ def oracle():
     oracle = interface.IOracle(constants.MCDEX_ORACLE)
     yield oracle
 
+
 @pytest.fixture(scope="function", autouse=True)
 def mcLiquidityPool():
     mc = interface.IMCLP(constants.MCLIQUIDITY)
     yield mc
+
 
 @pytest.fixture(scope="function")
 def usdc_whale():
@@ -60,10 +58,11 @@ def usdc_whale():
 
 @pytest.fixture
 def deployer(accounts):
-    if network.show_active() == 'development':
+    if network.show_active() == "development":
         yield accounts[0]
     else:
         yield accounts.at(constants.USDC_WHALE, force=True)
+
 
 @pytest.fixture
 def governance(accounts):
@@ -74,17 +73,15 @@ def governance(accounts):
 def users(accounts):
     yield accounts[1:10]
 
+
 @pytest.fixture(scope="function")
 def randy():
     yield accounts.at(constants.RANDOM, force=True)
 
+
 @pytest.fixture(scope="function")
 def vault(deployer, token):
-    yield BasisVault.deploy(
-        token,
-        constants.DEPOSIT_LIMIT,
-        {"from": deployer}
-    )
+    yield BasisVault.deploy(token, constants.DEPOSIT_LIMIT, {"from": deployer})
 
 
 @pytest.fixture(scope="function")
@@ -98,15 +95,15 @@ def vault_deposited(deployer, token, users, vault):
 @pytest.fixture(scope="function")
 def test_strategy(vault, deployer, governance):
     strategy = TestStrategy.deploy(
-        constants.LONG_ASSET, 
-        constants.UNI_POOL, 
-        vault, 
+        constants.LONG_ASSET,
+        constants.UNI_POOL,
+        vault,
         constants.MCDEX_ORACLE,
-        constants.ROUTER, 
+        constants.ROUTER,
         governance,
-        constants.MCLIQUIDITY, 
-        constants.PERP_INDEX, 
-        {"from": deployer}
+        constants.MCLIQUIDITY,
+        constants.PERP_INDEX,
+        {"from": deployer},
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     vault.setStrategy(strategy, {"from": deployer})
@@ -116,15 +113,15 @@ def test_strategy(vault, deployer, governance):
 @pytest.fixture(scope="function")
 def test_strategy_deposited(vault_deposited, deployer, governance):
     strategy = TestStrategy.deploy(
-        constants.LONG_ASSET, 
-        constants.UNI_POOL, 
-        vault_deposited, 
+        constants.LONG_ASSET,
+        constants.UNI_POOL,
+        vault_deposited,
         constants.MCDEX_ORACLE,
-        constants.ROUTER, 
+        constants.ROUTER,
         governance,
-        constants.MCLIQUIDITY, 
-        constants.PERP_INDEX, 
-        {"from": deployer}
+        constants.MCLIQUIDITY,
+        constants.PERP_INDEX,
+        {"from": deployer},
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     vault_deposited.setStrategy(strategy, {"from": deployer})
@@ -134,24 +131,20 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
 
 @pytest.fixture(scope="function")
 def test_other_strategy(token, deployer, governance, users):
-    vaulty = BasisVault.deploy(
-        token,
-        constants.DEPOSIT_LIMIT,
-        {"from": deployer}
-    )
+    vaulty = BasisVault.deploy(token, constants.DEPOSIT_LIMIT, {"from": deployer})
     for user in users:
         token.approve(vaulty, constants.DEPOSIT_AMOUNT, {"from": user})
         vaulty.deposit(constants.DEPOSIT_AMOUNT, user, {"from": user})
     strategy = TestStrategy.deploy(
-        constants.LONG_ASSET, 
-        constants.UNI_POOL, 
-        vaulty, 
+        constants.LONG_ASSET,
+        constants.UNI_POOL,
+        vaulty,
         constants.MCDEX_ORACLE,
-        constants.ROUTER, 
+        constants.ROUTER,
         governance,
-        constants.MCLIQUIDITY, 
-        constants.PERP_INDEX, 
-        {"from": deployer}
+        constants.MCLIQUIDITY,
+        constants.PERP_INDEX,
+        {"from": deployer},
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     vaulty.setStrategy(strategy, {"from": deployer})

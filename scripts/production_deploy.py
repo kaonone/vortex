@@ -133,10 +133,7 @@ def deploy_vault(controller, governance, keeper, guardian, dev, proxyAdmin):
     )  # SettV4 Logic
 
     vault_proxy = AdminUpgradeabilityProxy.deploy(
-        vault_logic,
-        proxyAdmin,
-        "0x",
-        {"from": dev},
+        vault_logic, proxyAdmin, "0x", {"from": dev},
     )
     time.sleep(sleep_between_tx)
 
@@ -177,10 +174,7 @@ def deploy_strategy(
     time.sleep(sleep_between_tx)
 
     strat_proxy = AdminUpgradeabilityProxy.deploy(
-        strat_logic,
-        proxyAdmin,
-        "0x",
-        {"from": dev},
+        strat_logic, proxyAdmin, "0x", {"from": dev},
     )
     time.sleep(sleep_between_tx)
 
