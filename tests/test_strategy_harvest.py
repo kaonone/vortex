@@ -21,8 +21,8 @@ def test_harvest(
         == test_strategy_deposited.getMarginPositions()
     )
     assert (
-        tx.events["Harvest"]["availableMargin"]
-        == test_strategy_deposited.getAvailableMargin()
+        tx.events["Harvest"]["margin"]
+        == test_strategy_deposited.getMargin()
     )
     assert vault_deposited.totalLent() == full_deposit / constants.DECIMAL_SHIFT
     assert (
@@ -34,8 +34,8 @@ def test_harvest(
         == test_strategy_deposited.positions()["perpContracts"]
     )
     assert (
-        test_strategy_deposited.positions()["availableMargin"]
-        == test_strategy_deposited.getAvailableMargin()
+        test_strategy_deposited.positions()["margin"]
+        == test_strategy_deposited.getMargin()
     )
 
 
@@ -49,40 +49,57 @@ def test_yield_harvest(
     long,
     mcLiquidityPool,
 ):
+    
     test_strategy_deposited.harvest({"from": deployer})
-    brownie.chain.sleep(1000000)
-    before_margin = test_strategy_deposited.getAvailableMargin()
-    before_lent = vault_deposited.totalLent()
-    mcLiquidityPool.forceToSyncState({"from": deployer})
-    bal = test_strategy_deposited.getAvailableMargin() - before_margin
-    tx = test_strategy_deposited.harvest({"from": deployer})
-    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
-        test_strategy_deposited
-    )
-    assert (
-        tx.events["Harvest"]["perpContracts"]
-        == test_strategy_deposited.getMarginPositions()
-    )
-    assert (
-        tx.events["Harvest"]["availableMargin"]
-        == test_strategy_deposited.getAvailableMargin()
-    )
-    assert vault_deposited.totalLent() != before_lent
-    assert (
-        abs(
-            test_strategy_deposited.getMarginPositions()
-            + long.balanceOf(test_strategy_deposited)
+    # token.approve(mcLiquidityPool, token.balanceOf(deployer) - 1, {"from": deployer})
+    # price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    # mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
+    # mcLiquidityPool.deposit(0, deployer, token.balanceOf(deployer) - 1, {"from": deployer})
+    # mcLiquidityPool.trade(
+    #             0,
+    #             deployer,
+    #             (mcLiquidityPool.getMarginAccount(0, deployer)[0] * 1e18) / price,
+    #             price,
+    #             brownie.chain.time() + 10000,
+    #             deployer,
+    #             0x40000000,
+    #             {"from": deployer}
+    #         )
+    for n in range(100):
+        brownie.chain.sleep(28800)
+        before_margin = test_strategy_deposited.getMargin()
+        before_lent = vault_deposited.totalLent()
+        mcLiquidityPool.forceToSyncState({"from": deployer})
+        bal = test_strategy_deposited.getMargin() - before_margin
+        tx = test_strategy_deposited.harvest({"from": deployer})
+        print(test_strategy_deposited.getMarginAccount())
+        assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
+            test_strategy_deposited
         )
-        <= constants.ACCURACY_USDC
-    )
-    assert (
-        tx.events["Harvest"]["perpContracts"]
-        == test_strategy_deposited.positions()["perpContracts"]
-    )
-    assert (
-        test_strategy_deposited.positions()["availableMargin"]
-        == test_strategy_deposited.getAvailableMargin()
-    )
+        assert (
+            tx.events["Harvest"]["perpContracts"]
+            == test_strategy_deposited.getMarginPositions()
+        )
+        assert (
+            tx.events["Harvest"]["margin"]
+            == test_strategy_deposited.getMargin()
+        )
+        assert vault_deposited.totalLent() != before_lent
+        assert (
+            abs(
+                test_strategy_deposited.getMarginPositions()
+                + long.balanceOf(test_strategy_deposited)
+            )
+            <= constants.ACCURACY_MC
+        )
+        assert (
+            tx.events["Harvest"]["perpContracts"]
+            == test_strategy_deposited.positions()["perpContracts"]
+        )
+        assert (
+            test_strategy_deposited.positions()["margin"]
+            == test_strategy_deposited.getMargin()
+        )
 
 
 def test_harvest_withdraw_all(
@@ -103,7 +120,7 @@ def test_harvest_withdraw_all(
     assert tx.events["Withdraw"]["withdrawal"] == (token.balanceOf(user) - bal_before)
     assert tx.events["Withdraw"]["shares"] == to_burn
     assert test_strategy.positions()["perpContracts"] == 0
-    assert test_strategy.positions()["availableMargin"] == 0
+    assert test_strategy.positions()["margin"] == 0
 
 
 def test_harvest_withdraw(
@@ -127,14 +144,14 @@ def test_harvest_withdraw(
             == test_strategy_deposited.getMarginPositions()
         )
         assert (
-            test_strategy_deposited.positions()["availableMargin"]
-            == test_strategy_deposited.getAvailableMargin()
+            test_strategy_deposited.positions()["margin"]
+            == test_strategy_deposited.getMargin()
         )
     assert vault_deposited.totalLent() == 0
     assert test_strategy_deposited.getMarginPositions() == 0
     assert long.balanceOf(test_strategy_deposited) == 0
     assert test_strategy_deposited.positions()["perpContracts"] == 0
-    assert test_strategy_deposited.positions()["availableMargin"] == 0
+    assert test_strategy_deposited.positions()["margin"] == 0
 
 
 def test_yield_harvest_withdraw(
@@ -181,7 +198,7 @@ def test_harvest_unwind(
         test_strategy_deposited
     )
     assert test_strategy_deposited.positions()["perpContracts"] == 0
-    assert test_strategy_deposited.positions()["availableMargin"] == 0
+    assert test_strategy_deposited.positions()["margin"] == 0
 
 
 def test_harvest_emergency_exit(

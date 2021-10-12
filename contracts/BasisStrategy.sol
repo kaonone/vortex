@@ -25,7 +25,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // struct to store the position state of the strategy
     struct Positions {
         int256 perpContracts;
-        int256 availableMargin;
+        int256 margin;
+        int256 unitAccumulativeFunding;
     }
 
     // MCDEX Liquidity and Perpetual Pool interface address
@@ -131,11 +132,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
 
     event DepositToMarginAccount(uint256 amount, uint256 perpetualIndex);
     event WithdrawStrategy(uint256 amountWithdrawn);
-    event Harvest(
-        int256 perpContracts,
-        uint256 longPosition,
-        int256 availableMargin
-    );
+    event Harvest(int256 perpContracts, uint256 longPosition, int256 margin);
     event StrategyUnwind(uint256 positionSize);
     event EmergencyExit(address indexed recipient, uint256 positionSize);
     event PerpPositionOpened(
@@ -196,7 +193,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @param   _buffer Basis strategy margin buffer
      * @dev     only callable by owner
      */
-    function setBuffer(uint256 _buffer) external onlyOwner {
+    function setBuffer(uint256 _buffer) public onlyOwner {
         require(_buffer < 10_000, "!_buffer");
         buffer = _buffer;
     }
@@ -270,7 +267,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      *          to the long asset. For the buffer position the funds are deposited to the margin account idle.
      * @dev     only callable by the owner
      */
-    function harvest() external onlyOwner {
+    function harvest() public onlyOwner {
         uint256 shortPosition;
         uint256 longPosition;
         uint256 bufferPosition;
@@ -279,7 +276,11 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         mcLiquidityPool.forceToSyncState();
         // determine the profit since the last harvest and remove profits from the margi
         // account to be redistributed
-        (uint256 amount, bool loss) = _determineFee();
+        uint256 amount;
+        bool loss;
+        if (positions.unitAccumulativeFunding > 0) {
+            (amount, loss) = _determineFee();
+        }
         // update the vault with profits/losses accrued and receive deposits
         uint256 newFunds = vault.update(amount, loss);
         // combine the funds and check that they are larger than 0
@@ -296,11 +297,12 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             positions.perpContracts += _openPerpPosition(shortPosition);
         }
         // record incremented positions
-        positions.availableMargin = getAvailableMargin();
+        positions.margin = getMargin();
+        positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
         emit Harvest(
             positions.perpContracts,
             IERC20(long).balanceOf(address(this)),
-            positions.availableMargin
+            positions.margin
         );
     }
 
@@ -325,7 +327,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         );
         // reset positions
         positions.perpContracts = 0;
-        positions.availableMargin = getAvailableMargin();
+        positions.margin = getMargin();
+        positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
         emit StrategyUnwind(IERC20(want).balanceOf(address(this)));
     }
 
@@ -387,7 +390,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 );
             }
             if (
-                getAvailableMargin() >
+                getMargin() >
                 int256(bufferPosition + shortPosition) * DECIMAL_SHIFT &&
                 getMarginPositions() < 0
             ) {
@@ -401,7 +404,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 mcLiquidityPool.withdraw(
                     perpetualIndex,
                     address(this),
-                    getAvailableMargin()
+                    getMargin()
                 );
             }
 
@@ -409,7 +412,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             // alter buffer and shorts which may experience underflow if profits are recorded
             // on the final withdrawal before a harvest recorded the change
             positions.perpContracts = getMarginPositions();
-            positions.availableMargin = getAvailableMargin();
+            positions.margin = getMargin();
+
             withdrawn = longPositionWant + shortPosition + bufferPosition;
         } else {
             withdrawn = _amount;
@@ -587,16 +591,17 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         int256 feeInt;
 
         // get the cash held in the margin cash, funding rates are saved as cash in the margin account
-        int256 newMarginCash = getAvailableMargin();
-        int256 oldMarginCash = positions.availableMargin;
-        if (oldMarginCash >= newMarginCash) {
+        int256 newAccFunding = getUnitAccumulativeFunding();
+        int256 prevAccFunding = positions.unitAccumulativeFunding;
+        int256 livePositions = getMarginPositions();
+        if (prevAccFunding >= newAccFunding) {
             // if the margin cash held has gone down then record a loss
             loss = true;
-            feeInt = oldMarginCash - newMarginCash;
+            feeInt = ((prevAccFunding - newAccFunding) * -livePositions) / 1e18;
             fee = uint256(feeInt / DECIMAL_SHIFT);
         } else {
             // if the margin cash held has gone up then record a profit and withdraw the excess for redistribution
-            feeInt = newMarginCash - oldMarginCash;
+            feeInt = ((newAccFunding - prevAccFunding) * -livePositions) / 1e18;
             mcLiquidityPool.withdraw(perpetualIndex, address(this), feeInt);
             fee = IERC20(want).balanceOf(address(this));
         }
@@ -698,10 +703,10 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
 
     /**
      * @notice  getter for the MCDEX margin  of the strategy
-     * @return  availableMargin of the margin account
+     * @return  margin of the margin account
      */
-    function getAvailableMargin() public view returns (int256 availableMargin) {
-        (, , availableMargin, , , , , , ) = mcLiquidityPool.getMarginAccount(
+    function getMargin() public view returns (int256 margin) {
+        (, , , margin, , , , , ) = mcLiquidityPool.getMarginAccount(
             perpetualIndex,
             address(this)
         );
