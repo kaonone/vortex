@@ -55,7 +55,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // margin buffer of the strategy, between 0 and 10_000
     uint256 public buffer;
     // max bips
-    uint256 public constant MAX_BPS = 10_000;
+    uint256 public constant MAX_BPS = 1_000_000;
     // decimal shift for USDC
     int256 public constant DECIMAL_SHIFT = 1e12;
     // dust for margin positions
@@ -156,6 +156,14 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         bool isMaintenanceMarginSafe,
         bool isMarginSafe // bankrupt
     );
+    event BufferAdjusted(
+        int256 oldMargin,
+        int256 newMargin,
+        int256 oldPerpContracts,
+        int256 newPerpContracts,
+        uint256 oldLong,
+        uint256 newLong
+    );
 
     /***********
      * SETTERS *
@@ -194,7 +202,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @dev     only callable by owner
      */
     function setBuffer(uint256 _buffer) public onlyOwner {
-        require(_buffer < 10_000, "!_buffer");
+        require(_buffer < 1_000_000, "!_buffer");
         buffer = _buffer;
     }
 
@@ -294,7 +302,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             // deposit the bufferPosition to the margin account
             _depositToMarginAccount(bufferPosition);
             // open a short perpetual position and store the number of perp contracts
-            positions.perpContracts += _openPerpPosition(shortPosition);
+            positions.perpContracts += _openPerpPosition(shortPosition, true);
         }
         // record incremented positions
         positions.margin = getMargin();
@@ -346,6 +354,73 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         // send funds to governance
         IERC20(want).safeTransfer(governance, wantBalance);
         emit EmergencyExit(governance, wantBalance);
+    }
+
+    /**
+     * @notice  adjust the buffer and redistribute funds within the strategy,
+     *          should only be called if absolutely certain
+     * @dev     only callable by owner
+     */
+    function adjustBuffer(uint256 _newBuffer) external onlyOwner {
+        uint256 oldBuffer = buffer;
+        setBuffer(_newBuffer);
+        // get the estimated assets of the margin position
+        int256 marginBalance = getMargin();
+        uint256 longBalance = IERC20(long).balanceOf(address(this));
+        // calculate the split of the margin balance between the short and buffer
+        // based on the old buffer
+        uint256 shortRatio = (MAX_BPS - oldBuffer);
+        uint256 shortBufferRatio = (oldBuffer * MAX_BPS) /
+            (oldBuffer + shortRatio);
+        int256 bufferSize = (int256(shortBufferRatio) * marginBalance) /
+            int256(MAX_BPS);
+        int256 newBufferSize = (bufferSize * int256(buffer)) /
+            int256(oldBuffer);
+
+        if (buffer > oldBuffer) {
+            // increase the buffer position
+            int256 fundsToFind = newBufferSize - bufferSize;
+            // take half of the funds from the shortPosition
+            int256 tradeAmount = _closePerpPosition(
+                uint256((fundsToFind / 2) / DECIMAL_SHIFT)
+            );
+            // take half of the funds from the longPosition and
+            // deposit it to the margin account
+            _swapTokenOut(
+                uint256((fundsToFind / 2) / DECIMAL_SHIFT),
+                long,
+                want
+            );
+            _depositToMarginAccount(IERC20(want).balanceOf(address(this)));
+        } else {
+            // decrease the buffer position
+            int256 fundsToLiquidate = bufferSize - newBufferSize;
+            // take half of the funds and open a short position
+            _openPerpPosition(
+                uint256((fundsToLiquidate / 2) / DECIMAL_SHIFT),
+                false
+            );
+            // withdraw the other half and open a long position
+            mcLiquidityPool.withdraw(
+                perpetualIndex,
+                address(this),
+                (fundsToLiquidate / 2)
+            );
+            _swap(IERC20(want).balanceOf(address(this)), want, long);
+        }
+        int256 perpContracts = positions.perpContracts;
+        positions.margin = getMargin();
+        positions.perpContracts = getMarginPositions();
+        positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
+
+        emit BufferAdjusted(
+            marginBalance,
+            positions.margin,
+            perpContracts,
+            positions.perpContracts,
+            longBalance,
+            IERC20(long).balanceOf(address(this))
+        );
     }
 
     /**
@@ -470,12 +545,15 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @param   _amount the collateral used to purchase the perpetual short position
      * @return  tradeAmount the amount of perpetual contracts opened
      */
-    function _openPerpPosition(uint256 _amount)
+    function _openPerpPosition(uint256 _amount, bool deposit)
         internal
         returns (int256 tradeAmount)
     {
-        // deposit funds to the margin account to enable trading
-        _depositToMarginAccount(_amount);
+        if (deposit) {
+            // deposit funds to the margin account to enable trading
+            _depositToMarginAccount(_amount);
+        }
+
         // get the long asset mark price from the MCDEX oracle
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)
@@ -673,6 +751,47 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         IERC20(_tokenIn).approve(address(router), _amount);
         // swap optimistically via the uniswap v3 router
         amountOut = router.exactInputSingle(params);
+    }
+
+    /**
+     * @notice  swap function using uniswapv3 to facilitate the swap, specifying the amount in
+     * @param   _amount    the amount to be swapped into want
+     * @param   _tokenIn   the asset sent in
+     * @param   _tokenOut  the asset taken out
+     * @return  out the amount of tokenOut exchanged for tokenIn
+     */
+    function _swapTokenOut(
+        uint256 _amount,
+        address _tokenIn,
+        address _tokenOut
+    ) internal returns (uint256 out) {
+        // set up swap params
+        uint256 deadline = block.timestamp;
+        address tokenIn = _tokenIn;
+        address tokenOut = _tokenOut;
+        uint24 fee = pool.fee();
+        address recipient = address(this);
+        uint256 amountOut = _amount;
+        uint256 amountInMaximum = IERC20(_tokenIn).balanceOf(address(this));
+        uint160 sqrtPriceLimitX96 = 0;
+        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter
+            .ExactOutputSingleParams(
+                tokenIn,
+                tokenOut,
+                fee,
+                recipient,
+                deadline,
+                amountOut,
+                amountInMaximum,
+                sqrtPriceLimitX96
+            );
+        // approve the router to spend the tokens
+        IERC20(_tokenIn).approve(
+            address(router),
+            IERC20(_tokenIn).balanceOf(address(this))
+        );
+        // swap optimistically via the uniswap v3 router
+        out = router.exactOutputSingle(params);
     }
 
     /***********

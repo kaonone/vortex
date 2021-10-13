@@ -72,7 +72,7 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
     with brownie.reverts():
         strategy.setBuffer(constants.BUFFER, {"from": accounts[9]})
     with brownie.reverts("!_buffer"):
-        strategy.setBuffer(10001, {"from": deployer})
+        strategy.setBuffer(1000001, {"from": deployer})
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     assert strategy.buffer() == constants.BUFFER
 
@@ -105,4 +105,3 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
         strategy.setGovernance(constants.UNI_POOL, {"from": deployer})
     strategy.setGovernance(constants.UNI_POOL, {"from": governance})
     assert strategy.governance() == constants.UNI_POOL
-

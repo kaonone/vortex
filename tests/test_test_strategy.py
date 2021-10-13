@@ -41,7 +41,7 @@ def test_calculate_split(test_strategy, deployer, token):
         test_strategy.calculateSplit(0, {"from": deployer})
     tx = test_strategy.calculateSplit(constants.DEPOSIT_AMOUNT, {"from": deployer})
     short, long_pos, buffer = tx.return_value
-    assert buffer == constants.DEPOSIT_AMOUNT * (constants.BUFFER / 10000)
+    assert buffer == constants.DEPOSIT_AMOUNT * (constants.BUFFER / 1000000)
     assert short == (constants.DEPOSIT_AMOUNT - buffer) / 2
     assert long_pos > 0
 
