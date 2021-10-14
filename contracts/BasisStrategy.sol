@@ -286,7 +286,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         // account to be redistributed
         uint256 amount;
         bool loss;
-        if (positions.unitAccumulativeFunding > 0) {
+        if (positions.unitAccumulativeFunding != 0) {
             (amount, loss) = _determineFee();
         }
         // update the vault with profits/losses accrued and receive deposits
@@ -466,8 +466,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             }
             if (
                 getMargin() >
-                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT &&
-                getMarginPositions() < 0
+                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
             ) {
                 // withdraw the short and buffer from the margin account
                 mcLiquidityPool.withdraw(

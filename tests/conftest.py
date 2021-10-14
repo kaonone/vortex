@@ -107,6 +107,7 @@ def test_strategy(vault, deployer, governance):
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     vault.setStrategy(strategy, {"from": deployer})
+    vault.setProtocolFees(2000, 100, {"from": deployer})
     yield strategy
 
 
@@ -126,6 +127,7 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
     vault_deposited.setStrategy(strategy, {"from": deployer})
     strategy.setSlippageTolerance(constants.TRADE_SLIPPAGE, {"from": deployer})
+    vault_deposited.setProtocolFees(2000, 200, {"from": deployer})
     yield strategy
 
 

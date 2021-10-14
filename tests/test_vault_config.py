@@ -18,7 +18,7 @@ def test_vault_deployment(BasisVault, deployer):
     assert vault.managementFee() == constants.MANAGEMENT_FEE
     assert vault.performanceFee() == constants.PERFORMANCE_FEE
     assert vault.totalAssets() == 0
-    assert vault.pricePerShare() == 1
+    assert vault.pricePerShare() == 1000000
     assert vault.strategy() == brownie.ZERO_ADDRESS
 
 

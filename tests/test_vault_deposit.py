@@ -128,7 +128,7 @@ def test_deposit_all_withdraw_all(vault, users, token, deployer):
         assert v_t_bal_before + constants.DEPOSIT_AMOUNT == token.balanceOf(vault)
         assert u_t_bal_before - constants.DEPOSIT_AMOUNT == token.balanceOf(user)
     assert vault.totalAssets() == constants.DEPOSIT_AMOUNT * len(users)
-    assert vault.pricePerShare() == 1
+    assert vault.pricePerShare() == 1000000
     for user in users:
         v_t_bal_before = token.balanceOf(vault)
         u_v_bal_before = vault.balanceOf(user)
@@ -142,13 +142,13 @@ def test_deposit_all_withdraw_all(vault, users, token, deployer):
         assert vault.balanceOf(user) == 0
         assert token.balanceOf(user) == int(constants.DEPOSIT_AMOUNT) + u_t_bal_before
     assert vault.totalAssets() == 0
-    assert vault.pricePerShare() == 1
+    assert vault.pricePerShare() == 1000000
 
 
 def test_not_issue_zero_shares(vault, deployer, users, token):
     token.approve(vault, constants.DEPOSIT_AMOUNT, {"from": deployer})
     vault.deposit(constants.DEPOSIT_AMOUNT, deployer, {"from": deployer})
     token.transfer(vault, constants.DEPOSIT_AMOUNT, {"from": deployer})
-    assert vault.pricePerShare() == 2
+    assert vault.pricePerShare() == 2000000
     with brownie.reverts():
         vault.deposit(1, deployer, {"from": deployer})

@@ -28,8 +28,12 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
     uint256 public depositLimit;
     // total amount of want lent out to strategies to perform yielding activities
     uint256 public totalLent;
+    // last time the vault was updated
+    uint256 public lastUpdate;
     // MAX_BPS
     uint256 public constant MAX_BPS = 10_000;
+    // Seconds in a year, taken from yearn
+    uint256 public constant SECS_PER_YEAR = 31_556_952;
     // strat address
     address public strategy;
     // management fee
@@ -74,6 +78,7 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         address oldRecipient,
         address newRecipient
     );
+    event ProtocolFeesIssued(uint256 wantAmount, uint256 sharesIssued);
 
     /***********
      * SETTERS *
@@ -237,14 +242,18 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         if (_loss) {
             totalLent -= _amount;
         } else {
+            _amount -= _determineProtocolFees(_amount);
             totalLent += _amount;
         }
         // increase the totalLent by the amount of deposits that havent yet been sent to the vault
         toDeposit = want.balanceOf(address(this));
         totalLent += toDeposit;
+        lastUpdate = block.timestamp;
         emit StrategyUpdate(_amount, _loss, toDeposit);
-        want.approve(strategy, toDeposit);
-        want.safeTransfer(msg.sender, toDeposit);
+        if (toDeposit > 0) {
+            want.approve(strategy, toDeposit);
+            want.safeTransfer(msg.sender, toDeposit);
+        }
     }
 
     /**********************
@@ -299,6 +308,34 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         }
     }
 
+    /**
+     * @dev    function for determining the performance and management fee of the vault
+     * @param  gain the profits to determine the fees from
+     * @return feeAmount the fees taken from the gain
+     */
+    function _determineProtocolFees(uint256 gain)
+        internal
+        returns (uint256 feeAmount)
+    {
+        if (gain == 0) {
+            return 0;
+        }
+        uint256 reward;
+        uint256 duration = block.timestamp - lastUpdate;
+        require(duration > 0, "!duration");
+        uint256 performance = (gain * performanceFee) / MAX_BPS;
+        uint256 management = ((totalLent * duration * managementFee) /
+            MAX_BPS) / SECS_PER_YEAR;
+        feeAmount = performance + management;
+        if (feeAmount > gain) {
+            feeAmount = gain;
+        }
+        if (feeAmount > 0) {
+            reward = _issueShares(feeAmount, protocolFeeRecipient);
+        }
+        emit ProtocolFeesIssued(feeAmount, reward);
+    }
+
     /***********
      * GETTERS *
      ***********/
@@ -316,6 +353,10 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      * @return the price per share in want
      */
     function pricePerShare() public view returns (uint256) {
-        return _calcShareValue(1**decimals());
+        return _calcShareValue(1e6);
+    }
+
+    function decimals() public view override returns (uint8) {
+        return 6;
     }
 }
