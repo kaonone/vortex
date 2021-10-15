@@ -284,6 +284,27 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev     function for handling share issuance viewing during a deposit
+     * @param  _amount    amount of want to be deposited
+     * @return shares the amount of shares being minted to the recipient
+     *                for their deposit
+     */
+    function _calcSharesIssuable(uint256 _amount)
+        internal
+        view
+        returns (uint256 shares)
+    {
+        if (totalSupply() > 0) {
+            // if there is supply then mint according to the proportion of the pool
+            require(totalAssets() > 0, "totalAssets == 0");
+            shares = (_amount * totalSupply()) / totalAssets();
+        } else {
+            // if there is no supply mint 1 for 1
+            shares = _amount;
+        }
+    }
+
+    /**
      * @dev     function for determining the value of a share of the vault
      * @param  _shares    amount of shares to convert
      * @return the value of the inputted amount of shares in want
@@ -354,6 +375,39 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      */
     function pricePerShare() public view returns (uint256) {
         return _calcShareValue(1e6);
+    }
+
+    /**
+     * @notice  view deposit function - where users can join the vault and
+     *          receive shares in the vault proportional to their ownership
+     *          of the funds.
+     * @param  _amount    amount of want to be deposited
+     * @return shares the amount of shares being minted to the recipient
+     *                for their deposit
+     */
+    function calculateVaultTokensForDeposit(uint256 _amount)
+        external
+        view
+        returns (uint256 shares)
+    {
+        require(_amount > 0, "!_amount");
+        require(totalAssets() + _amount <= depositLimit, "!depositLimit");
+
+        shares = _calcSharesIssuable(_amount);
+    }
+
+    /**
+     * @notice  view withdraw function - where users can exit their positions in a vault
+     *          users provide an amount of shares that will be returned to a recipient.
+     * @param  _shares    amount of shares to be redeemed
+     * @return amount the amount being withdrawn for the shares redeemed
+     */
+    function calculateWithdrawForVaultTokens(uint256 _shares)
+        external
+        view
+        returns (uint256 amount)
+    {
+        amount = _calcShareValue(_shares);
     }
 
     function decimals() public view override returns (uint8) {

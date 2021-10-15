@@ -9,12 +9,14 @@ def test_deposit(vault, users, token):
         u_t_bal_before = token.balanceOf(user)
         u_v_bal_before = vault.balanceOf(user)
         token.approve(vault, constants.DEPOSIT_AMOUNT, {"from": user})
+        vt = vault.calculateVaultTokensForDeposit(constants.DEPOSIT_AMOUNT)
         tx = vault.deposit(constants.DEPOSIT_AMOUNT, user, {"from": user})
         assert "Deposit" in tx.events
         assert tx.events["Deposit"]["user"] == user
         assert tx.events["Deposit"]["deposit"] == constants.DEPOSIT_AMOUNT
         assert (
             tx.events["Deposit"]["shares"] == (vault.balanceOf(user)) - u_v_bal_before
+            == vt
         )
         assert vault.balanceOf(user) > u_v_bal_before
         assert v_t_bal_before + constants.DEPOSIT_AMOUNT == token.balanceOf(vault)
@@ -152,3 +154,4 @@ def test_not_issue_zero_shares(vault, deployer, users, token):
     assert vault.pricePerShare() == 2000000
     with brownie.reverts():
         vault.deposit(1, deployer, {"from": deployer})
+
