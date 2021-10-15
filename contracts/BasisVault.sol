@@ -214,10 +214,7 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
                 totalLent -= loss;
                 // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
                 // _shares = _sharesForAmount(amount);
-            } else {
-                amount = withdrawn;
             }
-
             totalLent -= withdrawn;
         }
 
@@ -385,7 +382,7 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      * @return shares the amount of shares being minted to the recipient
      *                for their deposit
      */
-    function calculateVaultTokensForDeposit(uint256 _amount)
+    function calcSharesIssuable(uint256 _amount)
         external
         view
         returns (uint256 shares)
@@ -402,7 +399,7 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      * @param  _shares    amount of shares to be redeemed
      * @return amount the amount being withdrawn for the shares redeemed
      */
-    function calculateWithdrawForVaultTokens(uint256 _shares)
+    function calcWithdrawIssuable(uint256 _shares)
         external
         view
         returns (uint256 amount)

@@ -100,6 +100,34 @@ def test_harvest(
     )
 
 
+def test_harvest_deposit_withdraw(
+    oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
+):
+    full_deposit = constants.DEPOSIT_AMOUNT * len(users) * constants.DECIMAL_SHIFT
+    tx = test_strategy_deposited.harvest({"from": deployer})
+    token.approve(vault_deposited, constants.DEPOSIT_AMOUNT, {"from": users[-1]})
+    vault_deposited.deposit(constants.DEPOSIT_AMOUNT, users[-1], {"from": users[-1]})
+    for n, user in enumerate(users):
+        bal_before = token.balanceOf(user)
+        to_burn = vault_deposited.balanceOf(user)
+        tx = vault_deposited.withdraw(to_burn, user, {"from": user})
+        assert vault_deposited.balanceOf(user) == 0
+        assert token.balanceOf(user) > bal_before
+        assert "Withdraw" in tx.events
+        assert tx.events["Withdraw"]["user"] == user
+        assert tx.events["Withdraw"]["withdrawal"] == (
+            token.balanceOf(user) - bal_before
+        )
+        assert tx.events["Withdraw"]["shares"] == to_burn
+        assert (
+            test_strategy_deposited.positions()["perpContracts"]
+            == test_strategy_deposited.getMarginPositions()
+        )
+        assert (
+            test_strategy_deposited.positions()["margin"]
+            == test_strategy_deposited.getMargin()
+        )
+
 def whale_buy_long(deployer, token, mcLiquidityPool, price):
     if mcLiquidityPool.getMarginAccount(0, deployer)[0] == 0:
         token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})

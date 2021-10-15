@@ -9,7 +9,7 @@ def test_deposit(vault, users, token):
         u_t_bal_before = token.balanceOf(user)
         u_v_bal_before = vault.balanceOf(user)
         token.approve(vault, constants.DEPOSIT_AMOUNT, {"from": user})
-        vt = vault.calculateVaultTokensForDeposit(constants.DEPOSIT_AMOUNT)
+        vt = vault.calcSharesIssuable(constants.DEPOSIT_AMOUNT)
         tx = vault.deposit(constants.DEPOSIT_AMOUNT, user, {"from": user})
         assert "Deposit" in tx.events
         assert tx.events["Deposit"]["user"] == user
