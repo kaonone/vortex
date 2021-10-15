@@ -475,6 +475,10 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                     int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
                 );
             } else {
+                if (getMarginPositions() < 0) {
+                    _closeAllPerpPositions();
+                }
+
                 mcLiquidityPool.withdraw(
                     perpetualIndex,
                     address(this),
