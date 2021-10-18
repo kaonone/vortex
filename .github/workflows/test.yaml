@@ -31,6 +31,7 @@ jobs:
          solc-select use 0.8.4
          pip3 install slither-analyzer
          pip install -r requirements-dev.txt
+         brownie networks import network-config.yaml True
       - name: Prepare contracts
         shell: bash
         run: |
