@@ -12,7 +12,32 @@
   "scripts": {
     "lint": "pretty-quick --pattern '**/*.*(sol|json)' --verbose",
     "lint:check": "prettier --check **/*.sol **/*.json",
-    "lint:fix": "pretty-quick --pattern '**/*.*(sol|json)' --staged --verbose"
+    "lint:fix": "pretty-quick --pattern '**/*.*(sol|json)' --staged --verbose",
+    "compile": "brownie compile --all",
+    "clone-packages": "sh ./security/clone-packages.sh",
+    "deploy:rinkebyV1": "brownie run deploy_vault_savingsV1.py --network rinkeby",
+    "deploy:devV1": "brownie run deploy_vault_savingsV1.py",
+    "deploy:rinkebyV2": "brownie run deploy_vault_savingsV2.py --network rinkeby",
+    "deploy:devV2": "brownie run deploy_vault_savingsV2.py",
+    "ganache": "npx ganache-cli --gasLimit 0xfffffffffff -e 100000000 --port 8545",
+    "generate-abi": "npx truffle-abi -o ./abi",
+    "generate-artifacts": "npm run compile && npm run generate-abi",
+    "install": "pip3 install -r requirements-dev.txt",
+    "postinstall": "npm run clone-packages && npm run generate-artifacts && npx husky install",
+    "sec:flatten": "sh ./security/flattener-run.sh",
+    "sec:slither": "sh ./security/slither/slither-run.sh",
+    "sec:flatten-echidna": "sh ./security/flattener-run.sh echidna",
+    "sec:load-echidna": "sh ./security/echidna/echidna-download.sh",
+    "sec:echidna": "sh ./security/echidna/echidna-run.sh",
+    "test": "brownie test",
+    "test:add-fork": "brownie networks add Ethereum mainnet-test host=$ALCHEMY_ARCHIVE_NODE chainid=1 explorer=https://api.etherscan.io/api",
+    "test:swap-mainnet": "brownie test tests-mainnet/test_vakro_mainnet_fork.py --network mainnet-fork",
+    "format:fix": "npx prettier --write \"contracts/**/*.sol\" && npx prettier --write \"interfaces/**/*.sol\"",
+    "format:lint": "npx prettier --check \"contracts/**/*.sol\" && npx prettier --check \"interfaces/**/*.sol\"",
+    "format:test:lint": "black --check tests",
+    "format:test:fix": "black . tests",
+    "husky:hooks:install": "sh ./scripts/husky.sh",
+    "lint:check": "npx solhint contracts/**/*.sol  interfaces/**/*.sol"
   },
   "husky": {
     "hooks": {
@@ -21,6 +46,11 @@
     }
   },
   "dependencies": {
-    "hardhat": "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz"
+    "hardhat": "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz",
+    "@openzeppelin/cli": "^2.8.2",
+    "dotenv": "^8.2.0",
+    "solc": "^0.8.4",
+    "truffle-assertions": "^0.9.2",
+    "truffle-contract-size": "^2.0.1"
   }
 }

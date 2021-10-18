@@ -14,5 +14,10 @@ def _flattener(contracts_to_flatten):
 
 
 def main():
-    contracts_to_flatten = [BasisVault]
+    contracts_to_flatten = [ExploitCompVAkroSwap, VestedAkro, VaultSavings, VestedAkro, AdelVAkroSwap, AdelVAkroVestingSwap, UtilProxy, UtilProxyAdmin]
+    _flattener(contracts_to_flatten)
+
+
+def echidna():
+    contracts_to_flatten = [TestVaultSavings]
     _flattener(contracts_to_flatten)

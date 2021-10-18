@@ -1,0 +1,1 @@
+brownie analyze --mode deep

@@ -1,0 +1,5 @@
+deployer: "0x260dfB806B62baeBe10083142499f863528dD190"
+sender: ["0x260dfB806B62baeBe10083142499f863528dD190", "0x823Ec7f778dd67073a68F159F483971059B2d682", "0x977D12b956B04e560AdF1F55cfb3682e2F1104b3"]
+propMaxGas: 95000000
+testMaxGas: 95000000
+filterFunctions: ["renounceOwnership", "transferOwnership"]

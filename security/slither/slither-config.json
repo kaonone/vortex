@@ -1,0 +1,15 @@
+{
+    "compile_force_framework": "Truffle",
+    "detectors_to_exclude": "naming-convention|solc-version",
+    "exclude_informational": false,
+    "exclude_low": false,
+    "exclude_medium": false,
+    "exclude_high": false,
+    "disable_color": false,
+    "filter_paths": "test|OpenZeppelin|iearn-finance",
+    "ignore_compile": true,
+    "legacy_ast": false,
+    "solc": "0.6.12",
+    "truffle_build_directory": "./build/contracts",
+    "truffle_ignore_compile": true
+}
