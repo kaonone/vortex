@@ -11,7 +11,7 @@
   },
   "scripts": {
     "lint": "pretty-quick --pattern '**/*.*(sol|json)' --verbose",
-    "lint:check": "prettier --check **/*.sol **/*.json",
+    "lint:check": "npx solhint contracts/**/*.sol  interfaces/**/*.sol",
     "lint:fix": "pretty-quick --pattern '**/*.*(sol|json)' --staged --verbose",
     "compile": "brownie compile --all",
     "clone-packages": "sh ./security/clone-packages.sh",
@@ -36,8 +36,7 @@
     "format:lint": "npx prettier --check \"contracts/**/*.sol\" && npx prettier --check \"interfaces/**/*.sol\"",
     "format:test:lint": "black --check tests",
     "format:test:fix": "black . tests",
-    "husky:hooks:install": "sh ./scripts/husky.sh",
-    "lint:check": "npx solhint contracts/**/*.sol  interfaces/**/*.sol"
+    "husky:hooks:install": "sh ./scripts/husky.sh"
   },
   "husky": {
     "hooks": {
@@ -46,9 +45,9 @@
     }
   },
   "dependencies": {
-    "hardhat": "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz",
     "@openzeppelin/cli": "^2.8.2",
     "dotenv": "^8.2.0",
+    "hardhat": "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz",
     "solc": "^0.8.4",
     "truffle-assertions": "^0.9.2",
     "truffle-contract-size": "^2.0.1"
