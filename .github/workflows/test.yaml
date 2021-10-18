@@ -39,7 +39,7 @@ jobs:
       - name: Slither Static Analysis
         uses: luisfontes19/slither-static-analysis-action@v0.3.2
         with:
-          slither-version: '0.6.13'
+          slither-version: '0.8.4'
           run-npm-install: true
           high-threshold: 0
           medium-threshold: 20
