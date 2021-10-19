@@ -575,7 +575,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         int256 contracts = ((int256(_amount) * DECIMAL_SHIFT) * 1e18) / price;
         int256 longBalInt = -int256(IERC20(long).balanceOf(address(this)));
         // check that the long and short positions will be equal after the deposit
-        if (-contracts - getMarginPositions() >= longBalInt) {
+        if (-contracts + getMarginPositions() >= longBalInt) {
             // open short position
             tradeAmount = mcLiquidityPool.trade(
                 perpetualIndex,
