@@ -25,7 +25,7 @@ def test_harvest_increase_buffer(
     test_strategy_deposited,
     long,
 ):
-    new_buffer = 210000
+    new_buffer = 190000
     test_strategy_deposited.harvest({"from": deployer})
     tx = test_strategy_deposited.adjustBuffer(new_buffer, {"from": deployer})
     print(test_strategy_deposited.getMarginAccount())
@@ -141,7 +141,7 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
         token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
         mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
         mcLiquidityPool.deposit(
-            0, deployer, (token.balanceOf(deployer) * 1e12 - 1), {"from": deployer}
+            0, deployer, (token.balanceOf(deployer) - 1), {"from": deployer}
         )
     mcLiquidityPool.trade(
         0,
@@ -160,7 +160,7 @@ def whale_buy_short(deployer, token, mcLiquidityPool, price):
         token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
         mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
         mcLiquidityPool.deposit(
-            0, deployer, (token.balanceOf(deployer) * 1e12 - 1), {"from": deployer}
+            0, deployer, (token.balanceOf(deployer) - 1), {"from": deployer}
         )
     mcLiquidityPool.trade(
         0,
