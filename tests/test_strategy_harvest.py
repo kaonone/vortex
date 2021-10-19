@@ -19,7 +19,7 @@ def test_harvest_unwind(
     mcLiquidityPool.forceToSyncState({"from": deployer})
     tx = test_strategy_deposited.harvest({"from": deployer})
 
-    
+
 def test_harvest_increase_buffer(
     deployer,
     test_strategy_deposited,
@@ -27,27 +27,21 @@ def test_harvest_increase_buffer(
 ):
     new_buffer = 500000
     test_strategy_deposited.harvest({"from": deployer})
-    margin_before = test_strategy_deposited.getMargin()
-    perps_before = test_strategy_deposited.getMarginPositions()
-    long_before = long.balanceOf(test_strategy_deposited)
     tx = test_strategy_deposited.adjustBuffer(new_buffer, {"from": deployer})
     print(test_strategy_deposited.getMarginAccount())
     print(long.balanceOf(test_strategy_deposited))
     assert test_strategy_deposited.buffer() == new_buffer
     assert "BufferAdjusted" in tx.events
-    assert tx.events["BufferAdjusted"]["oldMargin"] == margin_before
     assert (
         tx.events["BufferAdjusted"]["newMargin"]
         == test_strategy_deposited.getMargin()
         == test_strategy_deposited.positions()["margin"]
     )
-    assert tx.events["BufferAdjusted"]["oldPerpContracts"] == perps_before
     assert (
         tx.events["BufferAdjusted"]["newPerpContracts"]
         == test_strategy_deposited.getMarginPositions()
         == test_strategy_deposited.positions()["perpContracts"]
     )
-    assert tx.events["BufferAdjusted"]["oldLong"] == long_before
     assert tx.events["BufferAdjusted"]["newLong"] == long.balanceOf(
         test_strategy_deposited
     )
@@ -60,28 +54,22 @@ def test_harvest_decrease_buffer(
 ):
     new_buffer = 100000
     test_strategy_deposited.harvest({"from": deployer})
-    margin_before = test_strategy_deposited.getMargin()
-    perps_before = test_strategy_deposited.getMarginPositions()
-    long_before = long.balanceOf(test_strategy_deposited)
 
     tx = test_strategy_deposited.adjustBuffer(new_buffer, {"from": deployer})
     print(test_strategy_deposited.getMarginAccount())
     print(long.balanceOf(test_strategy_deposited))
     assert test_strategy_deposited.buffer() == new_buffer
     assert "BufferAdjusted" in tx.events
-    assert tx.events["BufferAdjusted"]["oldMargin"] == margin_before
     assert (
         tx.events["BufferAdjusted"]["newMargin"]
         == test_strategy_deposited.getMargin()
         == test_strategy_deposited.positions()["margin"]
     )
-    assert tx.events["BufferAdjusted"]["oldPerpContracts"] == perps_before
     assert (
         tx.events["BufferAdjusted"]["newPerpContracts"]
         == test_strategy_deposited.getMarginPositions()
         == test_strategy_deposited.positions()["perpContracts"]
     )
-    assert tx.events["BufferAdjusted"]["oldLong"] == long_before
     assert tx.events["BufferAdjusted"]["newLong"] == long.balanceOf(
         test_strategy_deposited
     )

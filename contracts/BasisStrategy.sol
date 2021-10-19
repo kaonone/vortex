@@ -327,12 +327,20 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         require(!isUnwind, "unwound");
         isUnwind = true;
         mcLiquidityPool.forceToSyncState();
-        // close the short position
-        _closeAllPerpPositions();
         // swap long asset back to want
         _swap(IERC20(long).balanceOf(address(this)), long, want);
-        // withdraw all cash in the margin account
-        mcLiquidityPool.withdraw(perpetualIndex, address(this), getMargin());
+        // check if the perpetual is in settlement, if it is then settle it
+        // otherwise unwind the fund as normal.
+        if (!_settle()) {
+            // close the short position
+            _closeAllPerpPositions();
+            // withdraw all cash in the margin account
+            mcLiquidityPool.withdraw(
+                perpetualIndex,
+                address(this),
+                getMargin()
+            );
+        }
         // reset positions
         positions.perpContracts = 0;
         positions.margin = getMargin();
@@ -362,7 +370,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @dev     only callable by owner
      */
     function adjustBuffer(uint256 _newBuffer) external onlyOwner {
-        mcLiquidityPool.forceToSyncState();
+        harvest();
         uint256 oldBuffer = buffer;
         setBuffer(_newBuffer);
         // get the estimated assets of the margin position
@@ -802,6 +810,15 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         );
         // swap optimistically via the uniswap v3 router
         out = router.exactOutputSingle(params);
+    }
+
+    function _settle() internal returns (bool isSettled) {
+        (IMCLP.PerpetualState perpetualState, , ) = mcLiquidityPool
+            .getPerpetualInfo(perpetualIndex);
+        if (perpetualState == IMCLP.PerpetualState.CLEARED) {
+            mcLiquidityPool.settle(perpetualIndex, address(this));
+            isSettled = true;
+        }
     }
 
     /***********
