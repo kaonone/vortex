@@ -292,7 +292,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         // update the vault with profits/losses accrued and receive deposits
         uint256 newFunds = vault.update(amount, loss);
         // combine the funds and check that they are larger than 0
-        uint256 toActivate = loss ? newFunds : newFunds + amount;
+        uint256 toActivate = IERC20(want).balanceOf(address(this));
 
         if (toActivate > 0) {
             // determine the split of the funds and trade for the spot position of long
@@ -328,11 +328,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         // swap long asset back to want
         _swap(IERC20(long).balanceOf(address(this)), long, want);
         // withdraw all cash in the margin account
-        mcLiquidityPool.withdraw(
-            perpetualIndex,
-            address(this),
-            getMarginCash()
-        );
+        mcLiquidityPool.withdraw(perpetualIndex, address(this), getMargin());
         // reset positions
         positions.perpContracts = 0;
         positions.margin = getMargin();
@@ -683,8 +679,11 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         } else {
             // if the margin cash held has gone up then record a profit and withdraw the excess for redistribution
             feeInt = ((newAccFunding - prevAccFunding) * -livePositions) / 1e18;
-            mcLiquidityPool.withdraw(perpetualIndex, address(this), feeInt);
-            fee = IERC20(want).balanceOf(address(this));
+            uint256 balanceBefore = IERC20(want).balanceOf(address(this));
+            if (feeInt > 0) {
+                mcLiquidityPool.withdraw(perpetualIndex, address(this), feeInt);
+            }
+            fee = IERC20(want).balanceOf(address(this)) - balanceBefore;
         }
     }
 

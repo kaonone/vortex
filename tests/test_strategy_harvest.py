@@ -2,7 +2,24 @@ import brownie
 import constants
 import random
 
+def test_harvest_unwind(
+    oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long, mcLiquidityPool
+):
+    test_strategy_deposited.harvest({"from": deployer})
+    test_strategy_deposited.unwind({"from": deployer})
+    # assert "StrategyUnwind" in tx.events
+    # assert test_strategy_deposited.isUnwind() == True
+    # assert tx.events["StrategyUnwind"]["positionSize"] == token.balanceOf(
+    #     test_strategy_deposited
+    # )
+    # assert test_strategy_deposited.positions()["perpContracts"] == 0
+    # assert test_strategy_deposited.positions()["margin"] == 0
+    tx = test_strategy_deposited.harvest({"from": deployer})
+    brownie.chain.sleep(1000000)
+    mcLiquidityPool.forceToSyncState({"from": deployer})
+    tx = test_strategy_deposited.harvest({"from": deployer})
 
+    
 def test_harvest_increase_buffer(
     deployer,
     test_strategy_deposited,
@@ -14,6 +31,8 @@ def test_harvest_increase_buffer(
     perps_before = test_strategy_deposited.getMarginPositions()
     long_before = long.balanceOf(test_strategy_deposited)
     tx = test_strategy_deposited.adjustBuffer(new_buffer, {"from": deployer})
+    print(test_strategy_deposited.getMarginAccount())
+    print(long.balanceOf(test_strategy_deposited))
     assert test_strategy_deposited.buffer() == new_buffer
     assert "BufferAdjusted" in tx.events
     assert tx.events["BufferAdjusted"]["oldMargin"] == margin_before
@@ -46,7 +65,8 @@ def test_harvest_decrease_buffer(
     long_before = long.balanceOf(test_strategy_deposited)
 
     tx = test_strategy_deposited.adjustBuffer(new_buffer, {"from": deployer})
-
+    print(test_strategy_deposited.getMarginAccount())
+    print(long.balanceOf(test_strategy_deposited))
     assert test_strategy_deposited.buffer() == new_buffer
     assert "BufferAdjusted" in tx.events
     assert tx.events["BufferAdjusted"]["oldMargin"] == margin_before
@@ -380,18 +400,6 @@ def test_yield_harvest_withdraw(
 
 
 
-def test_harvest_unwind(
-    oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
-):
-    tx = test_strategy_deposited.harvest({"from": deployer})
-    tx = test_strategy_deposited.unwind({"from": deployer})
-    assert "StrategyUnwind" in tx.events
-    assert test_strategy_deposited.isUnwind() == True
-    assert tx.events["StrategyUnwind"]["positionSize"] == token.balanceOf(
-        test_strategy_deposited
-    )
-    assert test_strategy_deposited.positions()["perpContracts"] == 0
-    assert test_strategy_deposited.positions()["margin"] == 0
 
 
 def test_harvest_emergency_exit(
