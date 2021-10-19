@@ -57,7 +57,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // max bips
     uint256 public constant MAX_BPS = 1_000_000;
     // decimal shift for USDC
-    int256 public constant DECIMAL_SHIFT = 1e12;
+    int256 public immutable DECIMAL_SHIFT;
     // dust for margin positions
     int256 public dust = 1000;
     // slippage Tolerance for the perpetual trade
@@ -124,6 +124,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         perpetualIndex = _perpetualIndex;
         want = address(vault.want());
         mcLiquidityPool.setTargetLeverage(perpetualIndex, address(this), 1e18);
+        (, , , , uint256[6] memory stores) = mcLiquidityPool
+            .getLiquidityPoolInfo();
+        DECIMAL_SHIFT = int256(1e18 / 10**(stores[0]));
     }
 
     /**********
