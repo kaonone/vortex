@@ -326,6 +326,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     function unwind() public onlyAuthorised {
         require(!isUnwind, "unwound");
         isUnwind = true;
+        mcLiquidityPool.forceToSyncState();
         // close the short position
         _closeAllPerpPositions();
         // swap long asset back to want
@@ -361,6 +362,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @dev     only callable by owner
      */
     function adjustBuffer(uint256 _newBuffer) external onlyOwner {
+        mcLiquidityPool.forceToSyncState();
         uint256 oldBuffer = buffer;
         setBuffer(_newBuffer);
         // get the estimated assets of the margin position
@@ -435,7 +437,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         returns (uint256 loss, uint256 withdrawn)
     {
         require(_amount > 0, "withdraw: _amount is 0");
+        
         if (!isUnwind) {
+            mcLiquidityPool.forceToSyncState();
             // remove the buffer from the amount
             uint256 bufferPosition = (_amount * buffer) / MAX_BPS;
             // decrement the amount by buffer position
