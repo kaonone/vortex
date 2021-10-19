@@ -8,6 +8,7 @@ reports/
 venv/
 cache/
 artifacts/
+hardhat/
 
 # Node/npm
 node_modules/

@@ -14,6 +14,8 @@ import "../interfaces/IMCLP.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IBasisVault.sol";
 
+import "../interfaces/IRouterV2.sol";
+
 /**
  * @title  BasisStrategy
  * @author akropolis.io
@@ -32,9 +34,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // MCDEX Liquidity and Perpetual Pool interface address
     IMCLP public mcLiquidityPool;
     // Uniswap v3 pair pool interface address
-    IUniswapV3Pool public pool;
+    address public pool;
     // Uniswap v3 router interface address
-    ISwapRouter public immutable router;
+    address public router;
     // Basis Vault interface address
     IBasisVault public vault;
     // MCDEX oracle
@@ -66,6 +68,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     bool public isUnwind;
     // trade mode of the perp
     uint32 public tradeMode = 0x40000000;
+    // bool determine layer version
+    bool isV2;
     // modifier to check that the caller is governance
     modifier onlyGovernance() {
         require(msg.sender == governance, "!governance");
@@ -105,7 +109,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         address _router,
         address _governance,
         address _mcLiquidityPool,
-        uint256 _perpetualIndex
+        uint256 _perpetualIndex,
+        bool _isV2
     ) {
         require(_long != address(0), "!_long");
         require(_pool != address(0), "!_pool");
@@ -115,13 +120,14 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         require(_governance != address(0), "!_governance");
         require(_mcLiquidityPool != address(0), "!_mcLiquidityPool");
         long = _long;
-        pool = IUniswapV3Pool(_pool);
+        pool = _pool;
         vault = IBasisVault(_vault);
         oracle = IOracle(_oracle);
-        router = ISwapRouter(_router);
+        router = _router;
         governance = _governance;
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
         perpetualIndex = _perpetualIndex;
+        isV2 = _isV2;
         want = address(vault.want());
         mcLiquidityPool.setTargetLeverage(perpetualIndex, address(this), 1e18);
         (, , , , uint256[6] memory stores) = mcLiquidityPool
@@ -187,7 +193,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @dev     only callable by owner
      */
     function setUniswapPool(address _pool) external onlyOwner {
-        pool = IUniswapV3Pool(_pool);
+        pool = _pool;
     }
 
     /**
@@ -746,29 +752,53 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         address _tokenOut
     ) internal returns (uint256 amountOut) {
         // set up swap params
-        uint256 deadline = block.timestamp;
-        address tokenIn = _tokenIn;
-        address tokenOut = _tokenOut;
-        uint24 fee = pool.fee();
-        address recipient = address(this);
-        uint256 amountIn = _amount;
-        uint256 amountOutMinimum = 0;
-        uint160 sqrtPriceLimitX96 = 0;
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams(
-                tokenIn,
-                tokenOut,
-                fee,
-                recipient,
-                deadline,
-                amountIn,
-                amountOutMinimum,
-                sqrtPriceLimitX96
+        if (!isV2) {
+            uint256 deadline = block.timestamp;
+            address tokenIn = _tokenIn;
+            address tokenOut = _tokenOut;
+            uint24 fee = IUniswapV3Pool(pool).fee();
+            address recipient = address(this);
+            uint256 amountIn = _amount;
+            uint256 amountOutMinimum = 0;
+            uint160 sqrtPriceLimitX96 = 0;
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+                .ExactInputSingleParams(
+                    tokenIn,
+                    tokenOut,
+                    fee,
+                    recipient,
+                    deadline,
+                    amountIn,
+                    amountOutMinimum,
+                    sqrtPriceLimitX96
+                );
+            // approve the router to spend the tokens
+            IERC20(_tokenIn).safeApprove(router, _amount);
+            // swap optimistically via the uniswap v3 router
+            amountOut = ISwapRouter(router).exactInputSingle(params);
+        } else {
+            //get balance of tokenOut
+            uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
+            // set the swap params
+            uint256 deadline = block.timestamp;
+            address[] memory path;
+            path = new address[](2);
+            path[0] = _tokenIn;
+            path[1] = _tokenOut;
+            // approve the router to spend the token
+            IERC20(_tokenIn).safeApprove(router, _amount);
+            IRouterV2(router).swapExactTokensForTokens(
+                _amount,
+                1,
+                path,
+                address(this),
+                deadline
             );
-        // approve the router to spend the tokens
-        IERC20(_tokenIn).approve(address(router), _amount);
-        // swap optimistically via the uniswap v3 router
-        amountOut = router.exactInputSingle(params);
+
+            amountOut =
+                IERC20(_tokenOut).balanceOf(address(this)) -
+                amountTokenOut;
+        }
     }
 
     /**
@@ -783,33 +813,55 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         address _tokenIn,
         address _tokenOut
     ) internal returns (uint256 out) {
-        // set up swap params
-        uint256 deadline = block.timestamp;
-        address tokenIn = _tokenIn;
-        address tokenOut = _tokenOut;
-        uint24 fee = pool.fee();
-        address recipient = address(this);
-        uint256 amountOut = _amount;
-        uint256 amountInMaximum = IERC20(_tokenIn).balanceOf(address(this));
-        uint160 sqrtPriceLimitX96 = 0;
-        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter
-            .ExactOutputSingleParams(
-                tokenIn,
-                tokenOut,
-                fee,
-                recipient,
-                deadline,
-                amountOut,
-                amountInMaximum,
-                sqrtPriceLimitX96
+        if (!isV2) {
+            // set up swap params
+            uint256 deadline = block.timestamp;
+            address tokenIn = _tokenIn;
+            address tokenOut = _tokenOut;
+            uint24 fee = IUniswapV3Pool(pool).fee();
+            address recipient = address(this);
+            uint256 amountOut = _amount;
+            uint256 amountInMaximum = IERC20(_tokenIn).balanceOf(address(this));
+            uint160 sqrtPriceLimitX96 = 0;
+            ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter
+                .ExactOutputSingleParams(
+                    tokenIn,
+                    tokenOut,
+                    fee,
+                    recipient,
+                    deadline,
+                    amountOut,
+                    amountInMaximum,
+                    sqrtPriceLimitX96
+                );
+            // approve the router to spend the tokens
+            IERC20(_tokenIn).approve(
+                router,
+                IERC20(_tokenIn).balanceOf(address(this))
             );
-        // approve the router to spend the tokens
-        IERC20(_tokenIn).approve(
-            address(router),
-            IERC20(_tokenIn).balanceOf(address(this))
-        );
-        // swap optimistically via the uniswap v3 router
-        out = router.exactOutputSingle(params);
+            // swap optimistically via the uniswap v3 router
+            out = ISwapRouter(router).exactOutputSingle(params);
+        } else {
+            //get balance of tokenOut
+            uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
+            // set the swap params
+            uint256 deadline = block.timestamp;
+            address[] memory path;
+            path = new address[](2);
+            path[0] = _tokenIn;
+            path[1] = _tokenOut;
+            // approve the router to spend the token
+            IERC20(_tokenIn).safeApprove(router, _amount);
+            IRouterV2(router).swapExactTokensForTokens(
+                _amount,
+                1,
+                path,
+                address(this),
+                deadline
+            );
+
+            out = IERC20(_tokenOut).balanceOf(address(this)) - amountTokenOut;
+        }
     }
 
     function _settle() internal returns (bool isSettled) {

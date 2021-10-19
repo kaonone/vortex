@@ -13,6 +13,7 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
         governance,
         constants.MCLIQUIDITY,
         constants.PERP_INDEX,
+        False,
         {"from": deployer},
     )
     assert strategy.owner() == deployer
@@ -52,6 +53,7 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
         governance,
         constants.MCLIQUIDITY,
         constants.PERP_INDEX,
+        False,
         {"from": deployer},
     )
     with brownie.reverts():

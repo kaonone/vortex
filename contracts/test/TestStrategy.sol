@@ -16,7 +16,8 @@ contract TestStrategy is BasisStrategy {
         address _router,
         address _governance,
         address _mcLiquidityPool,
-        uint256 _perpetualIndex
+        uint256 _perpetualIndex,
+        bool _isV2
     )
         BasisStrategy(
             _long,
@@ -26,7 +27,8 @@ contract TestStrategy is BasisStrategy {
             _router,
             _governance,
             _mcLiquidityPool,
-            _perpetualIndex
+            _perpetualIndex,
+            _isV2
         )
     {}
 

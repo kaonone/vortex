@@ -5,14 +5,14 @@ import random
 
 def test_vault_deployment(BasisVault, deployer):
     vault = BasisVault.deploy(
-        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
+        constants.BUSD, constants.DEPOSIT_LIMIT, {"from": deployer}
     )
     assert vault.owner() == deployer
-    assert vault.want() == constants.USDC
+    assert vault.want() == constants.BUSD
     assert vault.depositLimit() == constants.DEPOSIT_LIMIT
 
-    assert vault.name() == "akBVUSDC-ETH"
-    assert vault.symbol() == "akBasisVault-USDC-ETH"
+    assert vault.name() == "akBVBUSD-ETH"
+    assert vault.symbol() == "akBasisVault-BUSD-ETH"
 
     assert vault.totalLent() == 0
     assert vault.managementFee() == constants.MANAGEMENT_FEE
@@ -24,7 +24,7 @@ def test_vault_deployment(BasisVault, deployer):
 
 def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
     vault = BasisVault.deploy(
-        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
+        constants.BUSD, constants.DEPOSIT_LIMIT, {"from": deployer}
     )
     with brownie.reverts():
         vault.setDepositLimit(0, {"from": accounts[9]})
@@ -52,7 +52,7 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
 
 def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
     vault = BasisVault.deploy(
-        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
+        constants.BUSD, constants.DEPOSIT_LIMIT, {"from": deployer}
     )
     strategy = BasisStrategy.deploy(
         constants.LONG_ASSET,

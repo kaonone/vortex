@@ -103,6 +103,7 @@ def test_strategy(vault, deployer, governance):
         governance,
         constants.MCLIQUIDITY,
         constants.PERP_INDEX,
+        False,
         {"from": deployer},
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
@@ -122,6 +123,7 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
         governance,
         constants.MCLIQUIDITY,
         constants.PERP_INDEX,
+        False,
         {"from": deployer},
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
@@ -146,6 +148,7 @@ def test_other_strategy(token, deployer, governance, users):
         governance,
         constants.MCLIQUIDITY,
         constants.PERP_INDEX,
+        False,
         {"from": deployer},
     )
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
