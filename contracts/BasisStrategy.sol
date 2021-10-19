@@ -437,7 +437,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         returns (uint256 loss, uint256 withdrawn)
     {
         require(_amount > 0, "withdraw: _amount is 0");
-        
+
         if (!isUnwind) {
             mcLiquidityPool.forceToSyncState();
             // remove the buffer from the amount
@@ -519,6 +519,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @notice  emit a snapshot of the margin account
      */
     function snapshot() public {
+        mcLiquidityPool.forceToSyncState();
         (
             int256 cash,
             int256 position,
