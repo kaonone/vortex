@@ -172,6 +172,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 oldLong,
         uint256 newLong
     );
+    event Remargined(int256 Z);
 
     /***********
      * SETTERS *
@@ -384,70 +385,42 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice  adjust the buffer and redistribute funds within the strategy,
-     *          should only be called if absolutely certain
+     * @notice  remargin the strategy such that margin call risk is reduced
      * @dev     only callable by owner
      */
-    function adjustBuffer(uint256 _newBuffer) external onlyOwner {
+    function remargin() external onlyOwner {
+        // harvest the funds so the positions are up to date
         harvest();
-        uint256 oldBuffer = buffer;
-        setBuffer(_newBuffer);
-        // get the estimated assets of the margin position
-        int256 marginBalance = getMargin();
-        uint256 longBalance = IERC20(long).balanceOf(address(this));
-        // calculate the split of the margin balance between the short and buffer
-        // based on the old buffer
-        uint256 shortRatio = (MAX_BPS - oldBuffer);
-        uint256 shortBufferRatio = (oldBuffer * MAX_BPS) / (shortRatio);
-        int256 bufferSize = (int256(shortBufferRatio) * marginBalance) /
-            int256(MAX_BPS);
-        int256 newBufferSize = (bufferSize * int256(buffer)) /
-            int256(oldBuffer);
-
-        if (buffer > oldBuffer) {
-            // increase the buffer position
-            int256 fundsToFind = newBufferSize - bufferSize;
-            // take half of the funds from the shortPosition
-            int256 tradeAmount = _closePerpPosition(
-                uint256((fundsToFind / 2) / DECIMAL_SHIFT)
-            );
-            // take half of the funds from the longPosition and
-            // deposit it to the margin account
-            _swapTokenOut(
-                uint256((fundsToFind / 2) / DECIMAL_SHIFT),
-                long,
-                want
-            );
-            _depositToMarginAccount(IERC20(want).balanceOf(address(this)));
-        } else {
-            // decrease the buffer position
-            int256 fundsToLiquidate = bufferSize - newBufferSize;
-            // take half of the funds and open a short position
-            _openPerpPosition(
-                uint256((fundsToLiquidate / 2) / DECIMAL_SHIFT),
-                false
-            );
-            // withdraw the other half and open a long position
-            mcLiquidityPool.withdraw(
-                perpetualIndex,
-                address(this),
-                (fundsToLiquidate / 2)
-            );
-            _swap(IERC20(want).balanceOf(address(this)), want, long);
-        }
-        int256 perpContracts = positions.perpContracts;
-        positions.margin = getMargin();
-        positions.perpContracts = getMarginPositions();
-        positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
-
-        emit BufferAdjusted(
-            marginBalance,
-            positions.margin,
-            perpContracts,
-            positions.perpContracts,
-            longBalance,
-            IERC20(long).balanceOf(address(this))
+        // ratio of the short in the short and buffera
+        int256 K = (((int256(MAX_BPS) - int256(buffer)) / 2) * 1e18) /
+            (((int256(MAX_BPS) - int256(buffer)) / 2) + int256(buffer));
+        // get the price of ETH
+        (int256 price, ) = oracle.priceTWAPLong();
+        // calculate amount to unwind
+        int256 Z = ((price * -getMarginPositions()) - K * getMargin()) /
+            (2 * price);
+        // check if leverage is to be reduced or increased (currently do nothing if leverage
+        // wants to be increased as this is a risk function not a profit function)
+        require(Z > 0, "do not increase leverage");
+        // swap Z long to want
+        uint256 wantAmount = _swap(uint256(Z), long, want);
+        // close Z short to margin account
+        mcLiquidityPool.trade(
+            perpetualIndex,
+            address(this),
+            Z,
+            price + slippageTolerance,
+            block.timestamp,
+            referrer,
+            tradeMode
         );
+        // deposit long swapped collateral to margin account
+        _depositToMarginAccount(wantAmount);
+        positions.margin = getMargin();
+        positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
+        positions.perpContracts = getMarginPositions();
+
+        emit Remargined(Z);
     }
 
     /**
