@@ -47,6 +47,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     address public want;
     // address of the long asset of the strategy
     address public long;
+    // address of the mcb token
+    address public mcb;
     // address of the referrer for MCDEX
     address public referrer;
     // address of governance
@@ -272,10 +274,15 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     /**
      * @notice  setter for liquidity mining claim contract
      * @param   _lmClaimer the claim contract
+     * @param   _mcb the mcb token address
      * @dev     only callable by owner
      */
-    function setLmClaimer(address _lmClaimer) external onlyOwner {
+    function setLmClaimerAndMcb(address _lmClaimer, address _mcb)
+        external
+        onlyOwner
+    {
         lmClaimer = ILmClaimer(_lmClaimer);
+        mcb = _mcb;
     }
 
     /**********************
@@ -562,12 +569,24 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         );
     }
 
+    /**
+     * @notice  gather any liquidity mining rewards of mcb and transfer them to governance
+     *          further distribution
+     * @param   epoch the epoch to claim rewards for
+     * @param   amount the amount to redeem
+     * @param   merkleProof the proof to use on the claim
+     * @dev     only callable by governance
+     */
     function gatherLMrewards(
         uint256 epoch,
         uint256 amount,
         bytes32[] memory merkleProof
-    ) external onlyOwner {
+    ) external onlyGovernance {
         lmClaimer.claimEpoch(epoch, amount, merkleProof);
+        IERC20(mcb).safeTransfer(
+            governance,
+            IERC20(mcb).balanceOf(address(this))
+        );
     }
 
     /**********************
@@ -831,6 +850,10 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         out = router.exactOutputSingle(params);
     }
 
+    /**
+     * @notice  settle function for dealing with the perpetual if it has settled
+     * @return  isSettled whether the perp needed to be settled or not.
+     */
     function _settle() internal returns (bool isSettled) {
         (IMCLP.PerpetualState perpetualState, , ) = mcLiquidityPool
             .getPerpetualInfo(perpetualIndex);

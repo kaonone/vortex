@@ -6,14 +6,14 @@ def test_harvest_unwind(
     oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long, mcLiquidityPool
 ):
     test_strategy_deposited.harvest({"from": deployer})
-    test_strategy_deposited.unwind({"from": deployer})
-    # assert "StrategyUnwind" in tx.events
-    # assert test_strategy_deposited.isUnwind() == True
-    # assert tx.events["StrategyUnwind"]["positionSize"] == token.balanceOf(
-    #     test_strategy_deposited
-    # )
-    # assert test_strategy_deposited.positions()["perpContracts"] == 0
-    # assert test_strategy_deposited.positions()["margin"] == 0
+    tx = test_strategy_deposited.unwind({"from": deployer})
+    assert "StrategyUnwind" in tx.events
+    assert test_strategy_deposited.isUnwind() == True
+    assert tx.events["StrategyUnwind"]["positionSize"] == token.balanceOf(
+        test_strategy_deposited
+    )
+    assert test_strategy_deposited.positions()["perpContracts"] == 0
+    assert test_strategy_deposited.positions()["margin"] == 0
     tx = test_strategy_deposited.harvest({"from": deployer})
     brownie.chain.sleep(1000000)
     mcLiquidityPool.forceToSyncState({"from": deployer})
@@ -373,21 +373,18 @@ def test_yield_harvest_withdraw(
         bal_before = token.balanceOf(user)
         to_burn = vault_deposited.balanceOf(user)
         
-        vault_deposited.withdraw(
+        tx = vault_deposited.withdraw(
             vault_deposited.balanceOf(user), user, {"from": user}
         )
-        # assert vault_deposited.balanceOf(user) == 0
-        # assert token.balanceOf(user) > bal_before
-        # assert "Withdraw" in tx.events
-        # assert tx.events["Withdraw"]["user"] == user
-        # assert tx.events["Withdraw"]["withdrawal"] == (
-        #     token.balanceOf(user) - bal_before
-        # )
-        # assert tx.events["Withdraw"]["shares"] == to_burn
+        assert vault_deposited.balanceOf(user) == 0
+        assert token.balanceOf(user) > bal_before
+        assert "Withdraw" in tx.events
+        assert tx.events["Withdraw"]["user"] == user
+        assert tx.events["Withdraw"]["withdrawal"] == (
+            token.balanceOf(user) - bal_before
+        )
+        assert tx.events["Withdraw"]["shares"] == to_burn
     tx = vault_deposited.withdraw(vault_deposited.balanceOf(deployer), deployer, {"from": deployer})    
-
-
-
 
 
 def test_harvest_emergency_exit(
