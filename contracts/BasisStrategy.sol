@@ -272,6 +272,15 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         governance = _governance;
     }
 
+    /**
+     * @notice set router version for network
+     * @param _isV2 bool to set the version of rooter
+     * @dev only callable by owner
+     */
+    function setVersion(bool _isV2) external onlyOwner {
+        isV2 = _isV2;
+    }
+
     /**********************
      * EXTERNAL FUNCTIONS *
      **********************/
