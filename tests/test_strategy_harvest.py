@@ -52,7 +52,7 @@ def test_harvest_decrease_buffer(
     test_strategy_deposited,
     long,
 ):
-    new_buffer = 100000
+    new_buffer = 100_000
     test_strategy_deposited.harvest({"from": deployer})
 
     tx = test_strategy_deposited.adjustBuffer(new_buffer, {"from": deployer})

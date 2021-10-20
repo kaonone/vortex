@@ -13,6 +13,7 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../interfaces/IMCLP.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IBasisVault.sol";
+import "../interfaces/ILmClaimer.sol";
 
 /**
  * @title  BasisStrategy
@@ -39,6 +40,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     IBasisVault public vault;
     // MCDEX oracle
     IOracle public oracle;
+    // MCDEX trade reward claimer
+    ILmClaimer public lmClaimer;
 
     // address of the want (short collateral) of the strategy
     address public want;
@@ -266,6 +269,15 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         governance = _governance;
     }
 
+    /**
+     * @notice  setter for liquidity mining claim contract
+     * @param   _lmClaimer the claim contract
+     * @dev     only callable by owner
+     */
+    function setLmClaimer(address _lmClaimer) external onlyOwner {
+        lmClaimer = ILmClaimer(_lmClaimer);
+    }
+
     /**********************
      * EXTERNAL FUNCTIONS *
      **********************/
@@ -379,8 +391,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         // calculate the split of the margin balance between the short and buffer
         // based on the old buffer
         uint256 shortRatio = (MAX_BPS - oldBuffer);
-        uint256 shortBufferRatio = (oldBuffer * MAX_BPS) /
-            (oldBuffer + shortRatio);
+        uint256 shortBufferRatio = (oldBuffer * MAX_BPS) / (shortRatio);
         int256 bufferSize = (int256(shortBufferRatio) * marginBalance) /
             int256(MAX_BPS);
         int256 newBufferSize = (bufferSize * int256(buffer)) /
@@ -549,6 +560,14 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             isMaintenanceMarginSafe,
             isMarginSafe
         );
+    }
+
+    function gatherLMrewards(
+        uint256 epoch,
+        uint256 amount,
+        bytes32[] memory merkleProof
+    ) external onlyOwner {
+        lmClaimer.claimEpoch(epoch, amount, merkleProof);
     }
 
     /**********************
