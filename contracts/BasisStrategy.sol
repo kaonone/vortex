@@ -1046,7 +1046,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     function getAMMPositions() public view returns (int256 positions) {
         (, positions, , , , , , , ) = mcLiquidityPool.getMarginAccount(
             perpetualIndex,
-            address(this)
+            address(mcLiquidityPool)
         );
     }
 }
