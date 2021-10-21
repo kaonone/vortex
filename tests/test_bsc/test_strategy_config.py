@@ -33,7 +33,7 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
     assert strategy.buffer() == 0
     assert strategy.dust() == 1000
     assert strategy.slippageTolerance() == 0
-    assert strategy.isUnwind() == True
+    assert strategy.isUnwind() == False
     assert strategy.tradeMode() == 0x40000000
 
     strategy.setBuffer(constants.BUFFER, {"from": deployer})
