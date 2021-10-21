@@ -69,11 +69,17 @@ def test_loss_harvest_remargin(
     K = (((constants.MAX_BPS - constants.BUFFER)/2)*1e18)/(((constants.MAX_BPS - constants.BUFFER)/2) + constants.BUFFER)
     tx = test_strategy_deposited.remargin({"from": deployer})
     Z = tx.events["Remargined"]["Z"]
-    print((price * (bal_before - Z))/(K * margin_before + price * Z))
+    print(test_strategy_deposited.getMargin())
+    total = long.balanceOf(test_strategy_deposited)*price/1e18 + test_strategy_deposited.getMargin()
+    l = test_strategy_deposited.getMargin() + test_strategy_deposited.getMarginPositions()*price/1e18
+    print(l/total)
     print (tx.events["Remargined"])
     print(test_strategy_deposited.getMarginAccount())
     print(long.balanceOf(test_strategy_deposited))
     tx = test_strategy_deposited.remargin({"from": deployer})
+    total = long.balanceOf(test_strategy_deposited)*price/1e18 + test_strategy_deposited.getMargin()
+    l = test_strategy_deposited.getMargin() + test_strategy_deposited.getMarginPositions()*price/1e18
+    print(l/total)
     print (tx.events["Remargined"])
     print(test_strategy_deposited.getMarginAccount())
     print(long.balanceOf(test_strategy_deposited))
@@ -112,11 +118,6 @@ def test_harvest(
     assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
         test_strategy_deposited
     )
-    assert (
-        tx.events["Harvest"]["perpContracts"]
-        == test_strategy_deposited.getMarginPositions()
-    )
-    assert tx.events["Harvest"]["margin"] == test_strategy_deposited.getMargin()
     assert vault_deposited.totalLent() == full_deposit / constants.DECIMAL_SHIFT
     assert (
         abs(margin_account[1] / price + long.balanceOf(test_strategy_deposited) / price)
@@ -124,12 +125,16 @@ def test_harvest(
     )
     assert (
         tx.events["Harvest"]["perpContracts"]
+        == test_strategy_deposited.getMarginPositions()
         == test_strategy_deposited.positions()["perpContracts"]
     )
     assert (
-        test_strategy_deposited.positions()["margin"]
+        tx.events["Harvest"]["margin"] 
         == test_strategy_deposited.getMargin()
+        == test_strategy_deposited.positions()["margin"]
     )
+
+
 
 
 def test_harvest_deposit_withdraw(
@@ -152,50 +157,14 @@ def test_harvest_deposit_withdraw(
         )
         assert tx.events["Withdraw"]["shares"] == to_burn
         assert (
-            test_strategy_deposited.positions()["perpContracts"]
-            == test_strategy_deposited.getMarginPositions()
+            test_strategy_deposited.getMarginPositions()
+            == test_strategy_deposited.positions()["perpContracts"]
         )
         assert (
-            test_strategy_deposited.positions()["margin"]
-            == test_strategy_deposited.getMargin()
+            test_strategy_deposited.getMargin()
+            == test_strategy_deposited.positions()["margin"]
         )
-
-def whale_buy_long(deployer, token, mcLiquidityPool, price):
-    if mcLiquidityPool.getMarginAccount(0, deployer)[0] == 0:
-        token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
-        mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
-        mcLiquidityPool.deposit(
-            0, deployer, (token.balanceOf(deployer) * 1e12 - 1), {"from": deployer}
-        )
-    mcLiquidityPool.trade(
-        0,
-        deployer,
-        ((mcLiquidityPool.getMarginAccount(0, deployer)[3] / 100) * 1e18) / price,
-        price,
-        brownie.chain.time() + 10000,
-        deployer,
-        0x40000000,
-        {"from": deployer},
-    )
-
-
-def whale_buy_short(deployer, token, mcLiquidityPool, price):
-    if mcLiquidityPool.getMarginAccount(0, deployer)[0] == 0:
-        token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
-        mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
-        mcLiquidityPool.deposit(
-            0, deployer, (token.balanceOf(deployer) * 1e12 - 1), {"from": deployer}
-        )
-    mcLiquidityPool.trade(
-        0,
-        deployer,
-        -((mcLiquidityPool.getMarginAccount(0, deployer)[3] / 100) * 1e18) / price,
-        price,
-        brownie.chain.time() + 10000,
-        deployer,
-        0x40000000,
-        {"from": deployer},
-    )
+        
 
 def test_yield_harvest(
     oracle,
@@ -433,4 +402,41 @@ def test_harvest_emergency_exit(
     assert (
         token.balanceOf(governance)
         == tx.events["EmergencyExit"]["positionSize"] + gov_bal
+    )
+
+def whale_buy_long(deployer, token, mcLiquidityPool, price):
+    if mcLiquidityPool.getMarginAccount(0, deployer)[0] == 0:
+        token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
+        mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
+        mcLiquidityPool.deposit(
+            0, deployer, (token.balanceOf(deployer) * 1e12 - 1), {"from": deployer}
+        )
+    mcLiquidityPool.trade(
+        0,
+        deployer,
+        ((mcLiquidityPool.getMarginAccount(0, deployer)[3] / 100) * 1e18) / price,
+        price,
+        brownie.chain.time() + 10000,
+        deployer,
+        0x40000000,
+        {"from": deployer},
+    )
+
+
+def whale_buy_short(deployer, token, mcLiquidityPool, price):
+    if mcLiquidityPool.getMarginAccount(0, deployer)[0] == 0:
+        token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
+        mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
+        mcLiquidityPool.deposit(
+            0, deployer, (token.balanceOf(deployer) * 1e12 - 1), {"from": deployer}
+        )
+    mcLiquidityPool.trade(
+        0,
+        deployer,
+        -((mcLiquidityPool.getMarginAccount(0, deployer)[3] / 100) * 1e18) / price,
+        price,
+        brownie.chain.time() + 10000,
+        deployer,
+        0x40000000,
+        {"from": deployer},
     )

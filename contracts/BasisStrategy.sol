@@ -305,7 +305,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         isUnwind = false;
 
         mcLiquidityPool.forceToSyncState();
-        // determine the profit since the last harvest and remove profits from the margi
+        // determine the profit since the last harvest and remove profits from the margin
         // account to be redistributed
         uint256 amount;
         bool loss;
@@ -391,24 +391,25 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     function remargin() external onlyOwner {
         // harvest the funds so the positions are up to date
         harvest();
-        // ratio of the short in the short and buffera
+        // ratio of the short in the short and buffer
         int256 K = (((int256(MAX_BPS) - int256(buffer)) / 2) * 1e18) /
             (((int256(MAX_BPS) - int256(buffer)) / 2) + int256(buffer));
         // get the price of ETH
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate amount to unwind
-        int256 Z = ((price * -getMarginPositions()) - K * getMargin()) /
-            (2 * price);
+        int256 unwindAmount = (((price * -getMarginPositions()) -
+            K *
+            getMargin()) * 1e18) / ((1e18 + K) * price);
         // check if leverage is to be reduced or increased (currently do nothing if leverage
         // wants to be increased as this is a risk function not a profit function)
-        require(Z > 0, "do not increase leverage");
-        // swap Z long to want
-        uint256 wantAmount = _swap(uint256(Z), long, want);
-        // close Z short to margin account
+        require(unwindAmount > 0, "do not increase leverage");
+        // swap unwindAmount long to want
+        uint256 wantAmount = _swap(uint256(unwindAmount), long, want);
+        // close unwindAmount short to margin account
         mcLiquidityPool.trade(
             perpetualIndex,
             address(this),
-            Z,
+            unwindAmount,
             price + slippageTolerance,
             block.timestamp,
             referrer,
@@ -416,11 +417,11 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         );
         // deposit long swapped collateral to margin account
         _depositToMarginAccount(wantAmount);
+
         positions.margin = getMargin();
         positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
         positions.perpContracts = getMarginPositions();
-
-        emit Remargined(Z);
+        emit Remargined(unwindAmount);
     }
 
     /**
