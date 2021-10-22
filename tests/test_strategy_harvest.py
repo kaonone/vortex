@@ -67,6 +67,7 @@ def test_loss_harvest_remargin(
     bal_before = long.balanceOf(test_strategy_deposited)
     margin_before = test_strategy_deposited.getMargin()
     K = (((constants.MAX_BPS - constants.BUFFER)/2)*1e18)/(((constants.MAX_BPS - constants.BUFFER)/2) + constants.BUFFER)
+    test_strategy_deposited.setBuffer(100000, {"from": deployer})
     tx = test_strategy_deposited.remargin({"from": deployer})
     Z = tx.events["Remargined"]["Z"]
     print(test_strategy_deposited.getMargin())
@@ -76,6 +77,7 @@ def test_loss_harvest_remargin(
     print (tx.events["Remargined"])
     print(test_strategy_deposited.getMarginAccount())
     print(long.balanceOf(test_strategy_deposited))
+    test_strategy_deposited.setBuffer(400000, {"from": deployer})
     tx = test_strategy_deposited.remargin({"from": deployer})
     total = long.balanceOf(test_strategy_deposited)*price/1e18 + test_strategy_deposited.getMargin()
     l = test_strategy_deposited.getMargin() + test_strategy_deposited.getMarginPositions()*price/1e18
@@ -227,8 +229,6 @@ def test_yield_harvest(
         assert vault_deposited.pricePerShare() > pps_before
     print(test_strategy_deposited.getMarginAccount())
     print(long.balanceOf(test_strategy_deposited))
-    with brownie.reverts("do not increase leverage"):
-        tx = test_strategy_deposited.remargin({"from": deployer})
 
 
 def test_loss_harvest(

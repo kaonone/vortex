@@ -400,24 +400,45 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         int256 unwindAmount = (((price * -getMarginPositions()) -
             K *
             getMargin()) * 1e18) / ((1e18 + K) * price);
-        // check if leverage is to be reduced or increased (currently do nothing if leverage
-        // wants to be increased as this is a risk function not a profit function)
-        require(unwindAmount > 0, "do not increase leverage");
-        // swap unwindAmount long to want
-        uint256 wantAmount = _swap(uint256(unwindAmount), long, want);
-        // close unwindAmount short to margin account
-        mcLiquidityPool.trade(
-            perpetualIndex,
-            address(this),
-            unwindAmount,
-            price + slippageTolerance,
-            block.timestamp,
-            referrer,
-            tradeMode
-        );
-        // deposit long swapped collateral to margin account
-        _depositToMarginAccount(wantAmount);
-
+        require(unwindAmount != 0, "no changes to margin necessary");
+        // check if leverage is to be reduced or increased then act accordingly
+        if (unwindAmount > 0) {
+            // swap unwindAmount long to want
+            uint256 wantAmount = _swap(uint256(unwindAmount), long, want);
+            // close unwindAmount short to margin account
+            mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                unwindAmount,
+                price + slippageTolerance,
+                block.timestamp,
+                referrer,
+                tradeMode
+            );
+            // deposit long swapped collateral to margin account
+            _depositToMarginAccount(wantAmount);
+        } else if (unwindAmount < 0) {
+            // the buffer is too high so reduce it to the correct size
+            // open a perpetual short position using the unwindAmount
+            mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                unwindAmount,
+                price - slippageTolerance,
+                block.timestamp,
+                referrer,
+                tradeMode
+            );
+            // withdraw funds from the margin account
+            int256 withdrawAmount = (price * -unwindAmount) / 1e18;
+            mcLiquidityPool.withdraw(
+                perpetualIndex,
+                address(this),
+                withdrawAmount
+            );
+            // open a long position with the withdrawn funds
+            _swap(uint256(withdrawAmount / DECIMAL_SHIFT), want, long);
+        }
         positions.margin = getMargin();
         positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
         positions.perpContracts = getMarginPositions();
