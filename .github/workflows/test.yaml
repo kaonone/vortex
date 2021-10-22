@@ -1,13 +1,12 @@
 name: Test
 
+name: Security-checks
+
 on:
   push:
-    branches:
-    - main
-    - development
-  workflow_dispatch:
+    branches: [ development ]
   pull_request:
-    - development
+    branches: [ development ]
 
 jobs:
   test:
