@@ -16,7 +16,7 @@ contract VaultRegistry is Ownable {
 
     function registerVault(address _vault) external onlyOwner {
         require(_vault != address(0), "!_zeroAddress");
-        isVault[_vault] == true;
+        isVault[_vault] = true;
         emit VaultRegistered(_vault);
     }
 
