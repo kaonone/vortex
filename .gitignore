@@ -9,6 +9,7 @@ venv/
 cache/
 artifacts/
 hardhat/
+Uniswap/
 
 # Node/npm
 node_modules/
