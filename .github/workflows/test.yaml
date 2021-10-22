@@ -4,9 +4,10 @@ on:
   push:
     branches:
     - main
-    - develop
+    - development
   workflow_dispatch:
   pull_request:
+    - development
 
 jobs:
   test:
@@ -70,12 +71,12 @@ jobs:
     - name: Run Tests Arbitrum
       env:
         WEB3_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
-        MORALIS_PROJECT_ID: ${{ secrets.MORALIS_KEY }}
+        MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
       run: |
         brownie networks import network-config.yaml true
-        brownie test tests/test_arbitrum -s
+        brownie test  -s
     - name: Run Tests BSC
       run: |
-        brownie test tests/test_bsc --network bsc-main-fork
+        brownie test -s --network bsc-main-fork
         
 
