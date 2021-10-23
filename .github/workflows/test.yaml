@@ -75,6 +75,8 @@ jobs:
         brownie networks import network-config.yaml true
         brownie test  -s
     - name: Run Tests BSC
+      env:
+        MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
       run: |
         brownie test -s --network bsc-main-fork
         
