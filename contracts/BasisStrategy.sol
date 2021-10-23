@@ -145,7 +145,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      **********/
 
     event DepositToMarginAccount(uint256 amount, uint256 perpetualIndex);
-    event WithdrawStrategy(uint256 amountWithdrawn);
+    event WithdrawStrategy(uint256 amountWithdrawn, uint256 loss);
     event Harvest(int256 perpContracts, uint256 longPosition, int256 margin);
     event StrategyUnwind(uint256 positionSize);
     event EmergencyExit(address indexed recipient, uint256 positionSize);
@@ -506,7 +506,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             }
             if (
                 getMargin() >
-                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
+                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT &&
+                getMarginPositions() < 0
             ) {
                 // withdraw the short and buffer from the margin account
                 mcLiquidityPool.withdraw(
@@ -526,12 +527,6 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 );
             }
 
-            // alter position values to reflect withdrawal
-            // alter buffer and shorts which may experience underflow if profits are recorded
-            // on the final withdrawal before a harvest recorded the change
-            positions.perpContracts = getMarginPositions();
-            positions.margin = getMargin();
-
             withdrawn = longPositionWant + shortPosition + bufferPosition;
         } else {
             withdrawn = _amount;
@@ -549,7 +544,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             loss = 0;
         }
 
-        emit WithdrawStrategy(withdrawn);
+        positions.perpContracts = getMarginPositions();
+        positions.margin = getMargin();
+        emit WithdrawStrategy(withdrawn, loss);
     }
 
     /**

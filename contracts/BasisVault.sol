@@ -215,10 +215,19 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
                 // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
                 // _shares = _sharesForAmount(amount);
             }
-            totalLent -= withdrawn;
+            // reduce the totallent by the amount withdrawn, if the amount withdrawn is greater than the totallent
+            // then make it 0
+            if (totalLent >= withdrawn) {
+                totalLent -= withdrawn;
+            } else {
+                totalLent = 0;
+            }
         }
 
         _burn(msg.sender, _shares);
+        if (amount > vaultBalance) {
+            amount = vaultBalance;
+        }
         emit Withdraw(_recipient, amount, _shares);
         want.safeTransfer(_recipient, amount);
     }
