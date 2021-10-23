@@ -2,6 +2,100 @@ import brownie
 import constants
 import random
 
+def test_yield_harvest_withdraw(
+    oracle,
+    vault_deposited,
+    users,
+    deployer,
+    test_strategy_deposited,
+    token,
+    long,
+    mcLiquidityPool,
+):
+    test_strategy_deposited.harvest({"from": deployer})
+    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    whale_buy_long(
+        deployer, 
+        token, 
+        mcLiquidityPool, 
+        price
+    )
+    for n in range(100):
+
+        brownie.chain.sleep(28801)
+        test_strategy_deposited.harvest({"from": deployer})
+        print(test_strategy_deposited.getMarginAccount())
+
+    for n, user in enumerate(users):
+
+        bal_before = token.balanceOf(user)
+        to_burn = vault_deposited.balanceOf(user)
+        print(vault_deposited.balanceOf(user))
+        vault_deposited.withdraw(
+            vault_deposited.balanceOf(user), user, {"from": user}
+        )
+        print(vault_deposited.balanceOf(user))
+        print(test_strategy_deposited.getMarginAccount())
+        print(long.balanceOf(test_strategy_deposited))
+        print(token.balanceOf(user) - bal_before)
+        print(token.balanceOf(test_strategy_deposited))
+        print(token.balanceOf(vault_deposited))
+    bal_before = token.balanceOf(deployer)
+    print(vault_deposited.balanceOf(deployer))
+    test_strategy_deposited.harvest({"from": deployer})
+    tx = vault_deposited.withdraw(vault_deposited.balanceOf(deployer), deployer, {"from": deployer})   
+    print(vault_deposited.balanceOf(deployer)) 
+    print(test_strategy_deposited.getMarginAccount())
+    print(long.balanceOf(test_strategy_deposited))
+    print(token.balanceOf(deployer) - bal_before)
+    print(token.balanceOf(test_strategy_deposited))
+    print(token.balanceOf(vault_deposited))
+    print(vault_deposited.totalLent())
+    print(vault_deposited.totalSupply())
+
+def test_loss_harvest_withdraw(
+    oracle,
+    vault_deposited,
+    users,
+    deployer,
+    test_strategy_deposited,
+    token,
+    long,
+    mcLiquidityPool,
+):
+
+    test_strategy_deposited.harvest({"from": deployer})
+    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    whale_buy_short(
+        deployer, 
+        token, 
+        mcLiquidityPool, 
+        price
+    )
+    
+    for n in range(100):
+
+        brownie.chain.sleep(28801)
+        test_strategy_deposited.harvest({"from": deployer})
+
+    for n, user in enumerate(users):
+
+        bal_before = token.balanceOf(user)
+        to_burn = vault_deposited.balanceOf(user)
+        print(vault_deposited.balanceOf(user))
+        vault_deposited.withdraw(
+            vault_deposited.balanceOf(user), user, {"from": user}
+        )
+        print(vault_deposited.balanceOf(user))
+        print(test_strategy_deposited.getMarginAccount())
+        print(long.balanceOf(test_strategy_deposited))
+        print(token.balanceOf(user) - bal_before)
+        print(token.balanceOf(test_strategy_deposited))
+        print(token.balanceOf(vault_deposited))
+    bal_before = token.balanceOf(deployer)
+    print(vault_deposited.balanceOf(deployer))
+    test_strategy_deposited.harvest({"from": deployer})
+
 
 def test_loss_harvest_remargin(
     oracle,
@@ -137,8 +231,6 @@ def test_harvest(
     )
 
 
-
-
 def test_harvest_deposit_withdraw(
     oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
 ):
@@ -261,7 +353,6 @@ def test_loss_harvest(
         pps_before = vault_deposited.pricePerShare()
         dep_bal_before = vault_deposited.balanceOf(deployer)
         tx = test_strategy_deposited.harvest({"from": deployer})
-        print(test_strategy_deposited.getMarginAccount())
         assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
             test_strategy_deposited
         )
@@ -286,8 +377,6 @@ def test_loss_harvest(
             test_strategy_deposited.positions()["margin"]
             == test_strategy_deposited.getMargin()
         )
-        print(vault_deposited.totalLent())
-        print(vault_deposited.balanceOf(deployer))
         assert vault_deposited.balanceOf(deployer) == dep_bal_before
         assert vault_deposited.pricePerShare() <= pps_before
     
@@ -337,51 +426,17 @@ def test_harvest_withdraw(
             test_strategy_deposited.positions()["margin"]
             == test_strategy_deposited.getMargin()
         )
+        print(test_strategy_deposited.getMarginAccount())
+        print(long.balanceOf(test_strategy_deposited))
+        print(token.balanceOf(user) - bal_before)
+        print(token.balanceOf(test_strategy_deposited))
+        print(token.balanceOf(vault_deposited))
+    
     assert vault_deposited.totalLent() == 0
     assert test_strategy_deposited.getMarginPositions() == 0
     assert long.balanceOf(test_strategy_deposited) == 0
     assert test_strategy_deposited.positions()["perpContracts"] == 0
     assert test_strategy_deposited.positions()["margin"] == 0
-
-
-def test_yield_harvest_withdraw(
-    oracle,
-    vault_deposited,
-    users,
-    deployer,
-    test_strategy_deposited,
-    token,
-    long,
-    mcLiquidityPool,
-):
-    test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
-    whale_buy_long(
-        deployer, 
-        token, 
-        mcLiquidityPool, 
-        price
-    )
-    brownie.chain.sleep(1000000)
-    mcLiquidityPool.forceToSyncState({"from": deployer})
-    test_strategy_deposited.harvest({"from": deployer})
-    for n, user in enumerate(users):
-
-        bal_before = token.balanceOf(user)
-        to_burn = vault_deposited.balanceOf(user)
-        
-        tx = vault_deposited.withdraw(
-            vault_deposited.balanceOf(user), user, {"from": user}
-        )
-        assert vault_deposited.balanceOf(user) == 0
-        assert token.balanceOf(user) > bal_before
-        assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
-    tx = vault_deposited.withdraw(vault_deposited.balanceOf(deployer), deployer, {"from": deployer})    
 
 
 def test_harvest_emergency_exit(
