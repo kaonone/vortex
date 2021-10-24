@@ -15,6 +15,9 @@ def data():
 def test_vault_deployment(BasisVault, deployer):
     constant = data()
     vault = BasisVault.deploy(
+        {"from": deployer}
+    )
+    vault.initialize(
         constant.USDC, constant.DEPOSIT_LIMIT, {"from": deployer}
     )
     assert vault.owner() == deployer
@@ -35,6 +38,9 @@ def test_vault_deployment(BasisVault, deployer):
 def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
     constant = data()
     vault = BasisVault.deploy(
+        {"from": deployer}
+    )
+    vault.initialize(
         constant.USDC, constant.DEPOSIT_LIMIT, {"from": deployer}
     )
     with brownie.reverts():
@@ -64,9 +70,17 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
 def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
     constant = data()
     vault = BasisVault.deploy(
+        {"from": deployer}
+    )
+    vault.initialize(
         constant.USDC, constant.DEPOSIT_LIMIT, {"from": deployer}
     )
     strategy = BasisStrategy.deploy(
+
+        {"from": deployer}
+
+    )
+    strategy.initialize(
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault,
@@ -76,7 +90,7 @@ def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer},
+        {"from": deployer}
     )
     with brownie.reverts():
         vault.setStrategy(strategy, {"from": accounts[9]})

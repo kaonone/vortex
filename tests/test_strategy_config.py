@@ -14,6 +14,9 @@ def data():
 def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
     constant = data()
     strategy = BasisStrategy.deploy(
+        {"from": deployer},
+    )
+    strategy.initialize(
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault,
@@ -23,7 +26,7 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer},
+        {"from": deployer}, 
     )
     assert strategy.owner() == deployer
     assert strategy.governance() == governance
@@ -55,6 +58,9 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
 def test_setters(BasisStrategy, deployer, accounts, governance, vault):
     constant = data()
     strategy = BasisStrategy.deploy(
+        {"from": deployer},
+    )
+    strategy.initialize(
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault,
@@ -64,7 +70,7 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer},
+        {"from": deployer}, 
     )
     with brownie.reverts():
         strategy.setLiquidityPool(constant.UNI_POOL, {"from": accounts[9]})

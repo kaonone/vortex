@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@ozUpgradesV4/contracts/security/PausableUpgradeable.sol";
+import "@ozUpgradesV4/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
@@ -22,7 +22,11 @@ import "../interfaces/IRouterV2.sol";
  * @author akropolis.io
  * @notice A strategy used to perform basis trading using funds from a BasisVault
  */
-contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
+contract BasisStrategy is
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    OwnableUpgradeable
+{
     using SafeERC20 for IERC20;
 
     // struct to store the position state of the strategy
@@ -64,7 +68,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // max bips
     uint256 public constant MAX_BPS = 1_000_000;
     // decimal shift for USDC
-    int256 public immutable DECIMAL_SHIFT;
+    int256 public DECIMAL_SHIFT;
     // dust for margin positions
     int256 public dust = 1000;
     // slippage Tolerance for the perpetual trade
@@ -106,7 +110,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @param _mcLiquidityPool MCDEX Liquidity and Perpetual Pool address
      * @param _perpetualIndex  index of the perpetual market
      */
-    constructor(
+    function initialize(
         address _long,
         address _pool,
         address _vault,
@@ -116,7 +120,10 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
         bool _isV2
-    ) {
+    ) public initializer {
+        __Ownable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
         require(_long != address(0), "!_long");
         require(_pool != address(0), "!_pool");
         require(_vault != address(0), "!_vault");

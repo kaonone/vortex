@@ -34,7 +34,6 @@ def token(deployer, users, usdc_whale):
     # usdc
     yield toke
 
-# @pytest.fixture(scope="function")
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = constants
@@ -96,7 +95,9 @@ def randy():
 @pytest.fixture(scope="function")
 def vault(deployer, token):
     constant = data()
-    yield BasisVault.deploy(token, constant.DEPOSIT_LIMIT, {"from": deployer})
+    vaulty = BasisVault.deploy({"from": deployer})
+    vaulty.initialize(token, constant.DEPOSIT_LIMIT, {"from": deployer})
+    yield vaulty
 
 
 @pytest.fixture(scope="function")
@@ -112,6 +113,9 @@ def vault_deposited(deployer, token, users, vault):
 def test_strategy(vault, deployer, governance):
     constant = data()
     strategy = TestStrategy.deploy(
+        {"from": deployer},
+    )
+    strategy.init(
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault,
@@ -121,8 +125,7 @@ def test_strategy(vault, deployer, governance):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-
-        {"from": deployer},
+        {"from": deployer} 
     )
     strategy.setBuffer(constant.BUFFER, {"from": deployer})
     vault.setStrategy(strategy, {"from": deployer})
@@ -134,6 +137,9 @@ def test_strategy(vault, deployer, governance):
 def test_strategy_deposited(vault_deposited, deployer, governance):
     constant = data()
     strategy = TestStrategy.deploy(
+        {"from": deployer},
+    )
+    strategy.init(
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault_deposited,
@@ -143,7 +149,7 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer},
+        {"from": deployer} 
     )
     strategy.setBuffer(constant.BUFFER, {"from": deployer})
     vault_deposited.setStrategy(strategy, {"from": deployer})
@@ -155,21 +161,25 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
 @pytest.fixture(scope="function")
 def test_other_strategy(token, deployer, governance, users):
     constant = data()
-    vaulty = BasisVault.deploy(token, constant.DEPOSIT_LIMIT, {"from": deployer})
+    vault_deploy = BasisVault.deploy({"from": deployer})
+    vaulty = vault_deploy.initialize(token, constant.DEPOSIT_LIMIT, {"from": deployer})
     for user in users:
         token.approve(vaulty, constant.DEPOSIT_AMOUNT, {"from": user})
         vaulty.deposit(constant.DEPOSIT_AMOUNT, user, {"from": user})
     strategy = TestStrategy.deploy(
+        {"from": deployer},
+    )
+    strategy.init(
         constant.LONG_ASSET,
         constant.UNI_POOL,
-        vaulty,
+        vaulty.address,
         constant.MCDEX_ORACLE,
         constant.ROUTER,
         governance,
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer},
+        {"from": deployer} 
     )
     strategy.setBuffer(constant.BUFFER, {"from": deployer})
     vaulty.setStrategy(strategy, {"from": deployer})
