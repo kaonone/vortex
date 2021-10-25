@@ -6,7 +6,7 @@
   "exclude_medium": false,
   "exclude_high": false,
   "disable_color": false,
-  "filter_paths": "test|OpenZeppelin|",
+  "filter_paths": "test|OpenZeppelin",
   "ignore_compile": true,
   "legacy_ast": false,
   "solc": "0.6.12",

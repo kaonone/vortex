@@ -108,7 +108,7 @@ jobs:
             solc-select install 0.8.4
             solc-select use 0.8.4
             pip3 install slither-analyzer
-            pip install -r requirements-dev.txt
+            pip3 install -r requirements-dev.txt
         - name: Prepare contracts
           env:
             WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}

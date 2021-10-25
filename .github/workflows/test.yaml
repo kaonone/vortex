@@ -69,7 +69,7 @@ jobs:
 
     - name: Run Tests Arbitrum
       env:
-        WEB3_INFURA_PROJECT_ID: ${{ secrets.INFURA_PROJECT_ID }}
+        WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
         MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
       run: |
         brownie networks import network-config.yaml true
