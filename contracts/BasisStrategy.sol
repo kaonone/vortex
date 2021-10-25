@@ -526,7 +526,6 @@ contract BasisStrategy is
                 if (getMarginPositions() < 0) {
                     _closeAllPerpPositions();
                 }
-
                 mcLiquidityPool.withdraw(
                     perpetualIndex,
                     address(this),

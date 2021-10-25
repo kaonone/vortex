@@ -4,6 +4,131 @@ import constants_bsc
 import random
 from brownie import network
 
+def test_yield_harvest_withdraw(
+    oracle,
+    vault_deposited,
+    users,
+    deployer,
+    test_strategy_deposited,
+    token,
+    long,
+    mcLiquidityPool,
+):
+    test_strategy_deposited.harvest({"from": deployer})
+    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    whale_buy_long(
+        deployer, 
+        token, 
+        mcLiquidityPool, 
+        price
+    )
+    for n in range(100):
+
+        brownie.chain.sleep(28801)
+        test_strategy_deposited.harvest({"from": deployer})
+        print(test_strategy_deposited.getMarginAccount())
+
+    for n, user in enumerate(users):
+
+        bal_before = token.balanceOf(user)
+        to_burn = vault_deposited.balanceOf(user)
+        marg_pos_before = test_strategy_deposited.getMarginPositions()
+        marg_before = test_strategy_deposited.getMargin()
+        long_before = long.balanceOf(test_strategy_deposited)
+        tx = vault_deposited.withdraw(
+            vault_deposited.balanceOf(user), user, {"from": user}
+        )
+        assert vault_deposited.balanceOf(user) == 0
+        assert token.balanceOf(user) > bal_before
+        assert "Withdraw" in tx.events
+        assert tx.events["Withdraw"]["user"] == user
+        assert tx.events["Withdraw"]["withdrawal"] == (
+            token.balanceOf(user) - bal_before
+        )
+        assert tx.events["Withdraw"]["shares"] == to_burn
+        assert (
+            test_strategy_deposited.getMarginPositions()
+            == test_strategy_deposited.positions()["perpContracts"]
+        )
+        assert (
+            test_strategy_deposited.getMargin()
+            == test_strategy_deposited.positions()["margin"]
+        )
+        assert test_strategy_deposited.getMargin() < marg_before
+        assert test_strategy_deposited.getMarginPositions() > marg_pos_before
+        assert long.balanceOf(test_strategy_deposited) < long_before
+    assert vault_deposited.balanceOf(deployer) > 0
+    bal_before = token.balanceOf(deployer)
+    test_strategy_deposited.remargin({"from": deployer})
+    tx = vault_deposited.withdraw(vault_deposited.balanceOf(deployer), deployer, {"from": deployer})   
+    print(test_strategy_deposited.getMarginAccount())
+    assert test_strategy_deposited.getMargin() < marg_before
+    assert test_strategy_deposited.getMarginPositions() > marg_pos_before
+    assert long.balanceOf(test_strategy_deposited) < long_before
+    assert token.balanceOf(test_strategy_deposited) == 0
+    assert token.balanceOf(vault_deposited) == 0
+    assert vault_deposited.balanceOf(deployer) == 0
+    assert token.balanceOf(deployer) > bal_before
+    assert vault_deposited.totalLent() == 0
+    assert vault_deposited.totalSupply() == 0
+
+def test_loss_harvest_withdraw(
+    oracle,
+    vault_deposited,
+    users,
+    deployer,
+    test_strategy_deposited,
+    token,
+    long,
+    mcLiquidityPool,
+):
+
+    test_strategy_deposited.harvest({"from": deployer})
+    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    whale_buy_short(
+        deployer, 
+        token, 
+        mcLiquidityPool, 
+        price
+    )
+    
+    for n in range(100):
+
+        brownie.chain.sleep(28801)
+        test_strategy_deposited.harvest({"from": deployer})
+
+    for n, user in enumerate(users):
+
+        bal_before = token.balanceOf(user)
+        to_burn = vault_deposited.balanceOf(user)
+        marg_pos_before = test_strategy_deposited.getMarginPositions()
+        marg_before = test_strategy_deposited.getMargin()
+        long_before = long.balanceOf(test_strategy_deposited)
+        tx = vault_deposited.withdraw(
+            vault_deposited.balanceOf(user), user, {"from": user}
+        )
+        assert vault_deposited.balanceOf(user) == 0
+        assert token.balanceOf(user) > bal_before
+        assert "Withdraw" in tx.events
+        assert tx.events["Withdraw"]["user"] == user
+        assert tx.events["Withdraw"]["withdrawal"] == (
+            token.balanceOf(user) - bal_before
+        )
+        assert tx.events["Withdraw"]["shares"] == to_burn
+        assert (
+            test_strategy_deposited.getMarginPositions()
+            == test_strategy_deposited.positions()["perpContracts"]
+        )
+        assert (
+            test_strategy_deposited.getMargin()
+            == test_strategy_deposited.positions()["margin"]
+        )
+        assert test_strategy_deposited.getMargin() < marg_before
+        assert test_strategy_deposited.getMarginPositions() > marg_pos_before
+        assert long.balanceOf(test_strategy_deposited) < long_before
+    assert vault_deposited.balanceOf(deployer) == 0
+    test_strategy_deposited.harvest({"from": deployer})
+
 
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
@@ -198,7 +323,6 @@ def test_loss_harvest_remargin(
             assert vault_deposited.totalLent() <= before_lent
             assert vault_deposited.balanceOf(deployer) == dep_bal_before
             assert vault_deposited.pricePerShare() <= pps_before
-
     price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
     bal_before = long.balanceOf(test_strategy_deposited)
     margin_before = test_strategy_deposited.getMargin()
@@ -223,7 +347,6 @@ def test_loss_harvest_remargin(
         assert round(l/total, 2) == 400000/constant.MAX_BPS
     else:
         assert abs(round(l/total, 2) - 400000/constant.MAX_BPS) < 0.43
-    
     test_strategy_deposited.harvest({"from": deployer})
 
 def test_harvest_unwind(
@@ -418,8 +541,10 @@ def test_loss_harvest(
             test_strategy_deposited.positions()["margin"]
             == test_strategy_deposited.getMargin()
         )
-        # assert vault_deposited.balanceOf(deployer) == dep_bal_before
-        # assert vault_deposited.pricePerShare() <= pps_before
+        if network.show_active() == "hardhat-arbitrum-fork":
+            assert vault_deposited.balanceOf(deployer) == dep_bal_before
+            assert vault_deposited.pricePerShare() <= pps_before          
+
     
 
 def test_harvest_withdraw_all(
