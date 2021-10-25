@@ -172,7 +172,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 oldLong,
         uint256 newLong
     );
-    event Remargined(int256 Z);
+    event Remargined(int256 unwindAmount);
 
     /***********
      * SETTERS *
