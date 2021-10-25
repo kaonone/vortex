@@ -1,31 +1,41 @@
 import brownie
 import constants
+import constants_bsc
 import random
+from brownie import network
+
+
+def data():
+    if network.show_active() == "hardhat-arbitrum-fork":
+        constant = constants
+    else:
+        constant = constants_bsc
+    return constant
 
 
 def test_vault_deployment(BasisVault, deployer):
-    vault = BasisVault.deploy(
-        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
-    )
+    constant = data()
+    vault = BasisVault.deploy({"from": deployer})
+    vault.initialize(constant.USDC, constant.DEPOSIT_LIMIT, {"from": deployer})
     assert vault.owner() == deployer
-    assert vault.want() == constants.USDC
-    assert vault.depositLimit() == constants.DEPOSIT_LIMIT
+    assert vault.want() == constant.USDC
+    assert vault.depositLimit() == constant.DEPOSIT_LIMIT
 
     assert vault.name() == "akBVUSDC-ETH"
     assert vault.symbol() == "akBasisVault-USDC-ETH"
 
     assert vault.totalLent() == 0
-    assert vault.managementFee() == constants.MANAGEMENT_FEE
-    assert vault.performanceFee() == constants.PERFORMANCE_FEE
+    assert vault.managementFee() == constant.MANAGEMENT_FEE
+    assert vault.performanceFee() == constant.PERFORMANCE_FEE
     assert vault.totalAssets() == 0
     assert vault.pricePerShare() == 1000000
     assert vault.strategy() == brownie.ZERO_ADDRESS
 
 
 def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
-    vault = BasisVault.deploy(
-        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
-    )
+    constant = data()
+    vault = BasisVault.deploy({"from": deployer})
+    vault.initialize(constant.USDC, constant.DEPOSIT_LIMIT, {"from": deployer})
     with brownie.reverts():
         vault.setDepositLimit(0, {"from": accounts[9]})
     tx = vault.setDepositLimit(0, {"from": deployer})
@@ -40,29 +50,32 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
     assert vault.performanceFee() == 1
     assert "ProtocolFeesUpdated" in tx.events
     assert (
-        tx.events["ProtocolFeesUpdated"]["oldManagementFee"] == constants.MANAGEMENT_FEE
+        tx.events["ProtocolFeesUpdated"]["oldManagementFee"] == constant.MANAGEMENT_FEE
     )
     assert (
         tx.events["ProtocolFeesUpdated"]["oldPerformanceFee"]
-        == constants.PERFORMANCE_FEE
+        == constant.PERFORMANCE_FEE
     )
     assert tx.events["ProtocolFeesUpdated"]["newManagementFee"] == 1
     assert tx.events["ProtocolFeesUpdated"]["newPerformanceFee"] == 1
 
 
 def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
-    vault = BasisVault.deploy(
-        constants.USDC, constants.DEPOSIT_LIMIT, {"from": deployer}
-    )
-    strategy = BasisStrategy.deploy(
-        constants.LONG_ASSET,
-        constants.UNI_POOL,
+    constant = data()
+    vault = BasisVault.deploy({"from": deployer})
+    vault.initialize(constant.USDC, constant.DEPOSIT_LIMIT, {"from": deployer})
+    strategy = BasisStrategy.deploy({"from": deployer})
+    strategy.initialize(
+        constant.LONG_ASSET,
+        constant.UNI_POOL,
         vault,
-        constants.MCDEX_ORACLE,
-        constants.ROUTER,
+        constant.MCDEX_ORACLE,
+        constant.ROUTER,
+        constant.WETH,
         deployer,
-        constants.MCLIQUIDITY,
-        constants.PERP_INDEX,
+        constant.MCLIQUIDITY,
+        constant.PERP_INDEX,
+        constant.isV2,
         {"from": deployer},
     )
     with brownie.reverts():

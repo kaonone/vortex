@@ -14,5 +14,5 @@ def _flattener(contracts_to_flatten):
 
 
 def main():
-    contracts_to_flatten = [BasisVault, BasisStrategy]
+    contracts_to_flatten = [BasisVault, BasisStrategy, VaultRegistry]
     _flattener(contracts_to_flatten)
