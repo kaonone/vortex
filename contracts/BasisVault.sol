@@ -54,11 +54,6 @@ contract BasisVault is
         _;
     }
 
-    // constructor()
-    //     ERC20("akBVUSDC-ETH", "akBasisVault-USDC-ETH")
-    // {
-    // }
-
     function initialize(address _want, uint256 _depositLimit)
         public
         initializer

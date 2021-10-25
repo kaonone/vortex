@@ -59,6 +59,8 @@ contract BasisStrategy is
     address public referrer;
     // address of governance
     address public governance;
+    // address eth bsc
+    address private constant eth = 0x2170Ed0880ac9A755fd29B2688956BD959F933F8;
     // Positions of the strategy
     Positions public positions;
     // perpetual index in MCDEX
@@ -828,14 +830,21 @@ contract BasisStrategy is
             // set the swap params
             uint256 deadline = block.timestamp;
             address[] memory path;
-            path = new address[](2);
-            path[0] = _tokenIn;
-            path[1] = _tokenOut;
+            if (_tokenIn == eth || _tokenOut == eth) {
+                path = new address[](2);
+                path[0] = _tokenIn;
+                path[1] = _tokenOut;
+            } else {
+                path = new address[](3);
+                path[0] = _tokenIn;
+                path[1] = eth;
+                path[2] = _tokenOut;
+            }
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
                 _amount,
-                1,
+                0,
                 path,
                 address(this),
                 deadline
@@ -893,14 +902,21 @@ contract BasisStrategy is
             // set the swap params
             uint256 deadline = block.timestamp;
             address[] memory path;
-            path = new address[](2);
-            path[0] = _tokenIn;
-            path[1] = _tokenOut;
+            if (_tokenIn == eth || _tokenOut == eth) {
+                path = new address[](2);
+                path[0] = _tokenIn;
+                path[1] = _tokenOut;
+            } else {
+                path = new address[](3);
+                path[0] = _tokenIn;
+                path[1] = eth;
+                path[2] = _tokenOut;
+            }
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
                 _amount,
-                1,
+                0,
                 path,
                 address(this),
                 deadline

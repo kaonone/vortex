@@ -191,12 +191,12 @@ def test_yield_harvest_withdraw(
     assert test_strategy_deposited.getMarginPositions() > marg_pos_before
     assert long.balanceOf(test_strategy_deposited) < long_before
     assert token.balanceOf(test_strategy_deposited) == 0
-    if network.show_active() == "hardhat-arbitrum-fork":
-        assert token.balanceOf(vault_deposited) == 0
     assert vault_deposited.balanceOf(deployer) == 0
     assert token.balanceOf(deployer) > bal_before
     assert vault_deposited.totalLent() == 0
     assert vault_deposited.totalSupply() == 0
+    if network.show_active() == "hardhat-arbitrum-fork":
+        assert token.balanceOf(vault_deposited) == 0
 
 
 def test_loss_harvest_withdraw(
@@ -629,98 +629,58 @@ def test_harvest_emergency_exit(
 
 def whale_buy_long(deployer, token, mcLiquidityPool, price):
     constant = data()
-    if network.show_active() == "hardhat-arbitrum-fork":
-        if mcLiquidityPool.getMarginAccount(0, deployer)[0] == 0:
-            token.approve(
-                mcLiquidityPool, token.balanceOf(deployer), {"from": deployer}
-            )
-            mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
-            mcLiquidityPool.deposit(
-                0,
-                deployer,
-                (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
-                {"from": deployer},
-            )
-        mcLiquidityPool.trade(
-            0,
+    if mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[0] == 0:
+        token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
+        mcLiquidityPool.setTargetLeverage(
+            constant.PERP_INDEX, deployer, 1e18, {"from": deployer}
+        )
+        mcLiquidityPool.deposit(
+            constant.PERP_INDEX,
             deployer,
-            ((mcLiquidityPool.getMarginAccount(0, deployer)[3] / 100) * 1e18) / price,
-            price,
-            brownie.chain.time() + 10000,
-            deployer,
-            0x40000000,
+            (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    else:
-        if mcLiquidityPool.getMarginAccount(1, deployer)[0] == 0:
-            token.approve(
-                mcLiquidityPool, token.balanceOf(deployer), {"from": deployer}
-            )
-            mcLiquidityPool.setTargetLeverage(1, deployer, 1e18, {"from": deployer})
-            mcLiquidityPool.deposit(
-                1,
-                deployer,
-                (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
-                {"from": deployer},
-            )
-        mcLiquidityPool.trade(
-            1,
-            deployer,
-            ((mcLiquidityPool.getMarginAccount(1, deployer)[3] / 100) * 1e18) / price,
-            # ((2_800_000) * 1e18) / price,
-            price,
-            brownie.chain.time() + 10000,
-            deployer,
-            0x40000000,
-            {"from": deployer},
+    mcLiquidityPool.trade(
+        constant.PERP_INDEX,
+        deployer,
+        (
+            (mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[3] / 100)
+            * 1e18
         )
+        / price,
+        price,
+        brownie.chain.time() + 10000,
+        deployer,
+        0x40000000,
+        {"from": deployer},
+    )
 
 
 def whale_buy_short(deployer, token, mcLiquidityPool, price):
     constant = data()
-    if network.show_active() == "hardhat-arbitrum-fork":
 
-        if mcLiquidityPool.getMarginAccount(0, deployer)[0] == 0:
-            token.approve(
-                mcLiquidityPool, token.balanceOf(deployer), {"from": deployer}
-            )
-            mcLiquidityPool.setTargetLeverage(0, deployer, 1e18, {"from": deployer})
-            mcLiquidityPool.deposit(
-                0,
-                deployer,
-                (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
-                {"from": deployer},
-            )
-        mcLiquidityPool.trade(
-            0,
+    if mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[0] == 0:
+        token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
+        mcLiquidityPool.setTargetLeverage(
+            constant.PERP_INDEX, deployer, 1e18, {"from": deployer}
+        )
+        mcLiquidityPool.deposit(
+            constant.PERP_INDEX,
             deployer,
-            -((mcLiquidityPool.getMarginAccount(0, deployer)[3] / 100) * 1e18) / price,
-            price,
-            brownie.chain.time() + 10000,
-            deployer,
-            0x40000000,
+            (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    else:
-        if mcLiquidityPool.getMarginAccount(1, deployer)[0] == 0:
-            token.approve(
-                mcLiquidityPool, token.balanceOf(deployer), {"from": deployer}
-            )
-            mcLiquidityPool.setTargetLeverage(1, deployer, 1e18, {"from": deployer})
-            mcLiquidityPool.deposit(
-                1,
-                deployer,
-                (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
-                {"from": deployer},
-            )
-        mcLiquidityPool.trade(
-            1,
-            deployer,
-            -((mcLiquidityPool.getMarginAccount(1, deployer)[3] / 100) * 1e18) / price,
-            # -((2_800_000) * 1e18) / price,
-            price,
-            brownie.chain.time() + 10000,
-            deployer,
-            0x40000000,
-            {"from": deployer},
+    mcLiquidityPool.trade(
+        constant.PERP_INDEX,
+        deployer,
+        -(
+            (mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[3] / 100)
+            * 1e18
         )
+        / price,
+        price,
+        brownie.chain.time() + 10000,
+        deployer,
+        0x40000000,
+        {"from": deployer},
+    )
