@@ -59,8 +59,8 @@ contract BasisStrategy is
     address public referrer;
     // address of governance
     address public governance;
-    // address eth bsc
-    address private constant eth = 0x2170Ed0880ac9A755fd29B2688956BD959F933F8;
+    // address weth bsc
+    address public weth;
     // Positions of the strategy
     Positions public positions;
     // perpetual index in MCDEX
@@ -118,6 +118,7 @@ contract BasisStrategy is
         address _vault,
         address _oracle,
         address _router,
+        address _weth,
         address _governance,
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
@@ -133,11 +134,13 @@ contract BasisStrategy is
         require(_router != address(0), "!_router");
         require(_governance != address(0), "!_governance");
         require(_mcLiquidityPool != address(0), "!_mcLiquidityPool");
+        require(_weth != address(0), "!_weth");
         long = _long;
         pool = _pool;
         vault = IBasisVault(_vault);
         oracle = IOracle(_oracle);
         router = _router;
+        weth = _weth;
         governance = _governance;
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
         perpetualIndex = _perpetualIndex;
@@ -309,6 +312,16 @@ contract BasisStrategy is
     {
         lmClaimer = ILmClaimer(_lmClaimer);
         mcb = _mcb;
+    }
+
+    /**
+     * @notice  setter for weth depending on the network
+     * @param   _weth the claim contract
+     * @dev     only callable by owner
+     */
+    function setWeth(address _weth) external onlyOwner {
+        require(_weth != address(0), "!_weth");
+        weth = _weth;
     }
 
     /**********************
@@ -830,14 +843,14 @@ contract BasisStrategy is
             // set the swap params
             uint256 deadline = block.timestamp;
             address[] memory path;
-            if (_tokenIn == eth || _tokenOut == eth) {
+            if (_tokenIn == weth || _tokenOut == weth) {
                 path = new address[](2);
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
             } else {
                 path = new address[](3);
                 path[0] = _tokenIn;
-                path[1] = eth;
+                path[1] = weth;
                 path[2] = _tokenOut;
             }
             // approve the router to spend the token
@@ -902,14 +915,14 @@ contract BasisStrategy is
             // set the swap params
             uint256 deadline = block.timestamp;
             address[] memory path;
-            if (_tokenIn == eth || _tokenOut == eth) {
+            if (_tokenIn == weth || _tokenOut == weth) {
                 path = new address[](2);
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
             } else {
                 path = new address[](3);
                 path[0] = _tokenIn;
-                path[1] = eth;
+                path[1] = weth;
                 path[2] = _tokenOut;
             }
             // approve the router to spend the token

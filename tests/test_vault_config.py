@@ -71,6 +71,7 @@ def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
         vault,
         constant.MCDEX_ORACLE,
         constant.ROUTER,
+        constant.WETH,
         deployer,
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
