@@ -78,6 +78,7 @@ def main():
         vault_contract_impl,  # constant vault
         constant.MCDEX_ORACLE,
         constant.ROUTER,
+        constant.WETH,
         constant.GOVERNANCE,
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
