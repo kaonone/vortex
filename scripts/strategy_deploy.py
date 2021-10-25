@@ -71,7 +71,7 @@ def main():
         BasisStrategy, 
         constant.LONG_ASSET,
         constant.UNI_POOL,
-        vault_contract_impl,
+        vault_contract_impl, #constant vault
         constant.MCDEX_ORACLE,
         constant.ROUTER,
         constant.GOVERNANCE,
@@ -80,8 +80,8 @@ def main():
         constant.isV2,
     )
 
-    print(f"vault implementation proxy at {strategy_implementation_proxy}")
-    print(f"vault proxy contract at {strategy_proxy_contract}")
-    print(f"vault implementation contract at {strategy_contract_impl}")
+    print(f"strategy implementation proxy at {strategy_implementation_proxy}")
+    print(f"strategy proxy contract at {strategy_proxy_contract}")
+    print(f"strategy implementation contract at {strategy_contract_impl}")
 
     time.sleep(2)
