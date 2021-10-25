@@ -59,7 +59,7 @@ contract BasisStrategy is
     address public referrer;
     // address of governance
     address public governance;
-    // address weth bsc
+    // address weth
     address public weth;
     // Positions of the strategy
     Positions public positions;
@@ -316,7 +316,7 @@ contract BasisStrategy is
 
     /**
      * @notice  setter for weth depending on the network
-     * @param   _weth the claim contract
+     * @param   _weth for weth
      * @dev     only callable by owner
      */
     function setWeth(address _weth) external onlyOwner {
