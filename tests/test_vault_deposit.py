@@ -4,6 +4,7 @@ import constants_bsc
 import random
 from brownie import network
 
+
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = constants
@@ -25,7 +26,8 @@ def test_deposit(vault, users, token):
         assert tx.events["Deposit"]["user"] == user
         assert tx.events["Deposit"]["deposit"] == constant.DEPOSIT_AMOUNT
         assert (
-            tx.events["Deposit"]["shares"] == (vault.balanceOf(user)) - u_v_bal_before
+            tx.events["Deposit"]["shares"]
+            == (vault.balanceOf(user)) - u_v_bal_before
             == vt
         )
         assert vault.balanceOf(user) > u_v_bal_before
@@ -59,7 +61,9 @@ def test_deposit_with_mal_funds(vault, users, token, randy, deployer):
 
     with brownie.reverts("!depositLimit"):
         token.approve(vault, constant.DEPOSIT_LIMIT, {"from": deployer})
-        vault.deposit(constant.DEPOSIT_LIMIT + constant.ADD_VALUE, deployer, {"from": deployer})
+        vault.deposit(
+            constant.DEPOSIT_LIMIT + constant.ADD_VALUE, deployer, {"from": deployer}
+        )
 
 
 def test_deposit_paused(vault, users, token, deployer):
@@ -172,4 +176,3 @@ def test_not_issue_zero_shares(vault, deployer, users, token):
     assert vault.pricePerShare() == 2000000
     with brownie.reverts():
         vault.deposit(1, deployer, {"from": deployer})
-

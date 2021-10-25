@@ -13,7 +13,9 @@
     "lint": "pretty-quick --pattern '**/*.*(sol|json)' --verbose",
     "lint:check": "prettier --check **/*.sol **/*.json",
     "lint:fix": "pretty-quick --pattern '**/*.*(sol|json)' --staged --verbose",
-    "sec:flatten": "sh ./security/flattener-run.sh"
+    "sec:flatten": "sh ./security/flattener-run.sh",
+    "format:test:lint": "black --check tests",
+    "format:test:fix": "black . tests"
   },
   "husky": {
     "hooks": {

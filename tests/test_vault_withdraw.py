@@ -4,6 +4,7 @@ import constants_bsc
 import random
 from brownie import network
 
+
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = constants
@@ -24,8 +25,7 @@ def test_withdraw(vault_deposited, users, token):
         assert tx.events["Withdraw"]["withdrawal"] == constant.DEPOSIT_AMOUNT
         assert tx.events["Withdraw"]["shares"] == u_v_bal_before
         assert (
-            token.balanceOf(vault_deposited) + constant.DEPOSIT_AMOUNT
-            == v_t_bal_before
+            token.balanceOf(vault_deposited) + constant.DEPOSIT_AMOUNT == v_t_bal_before
         )
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) == int(constant.DEPOSIT_AMOUNT) + u_t_bal_before
@@ -78,8 +78,7 @@ def test_withdraw_diff_recipient(vault_deposited, users, token, deployer):
         assert tx.events["Withdraw"]["withdrawal"] == constant.DEPOSIT_AMOUNT
         assert tx.events["Withdraw"]["shares"] == u_v_bal_before
         assert (
-            token.balanceOf(vault_deposited) + constant.DEPOSIT_AMOUNT
-            == v_t_bal_before
+            token.balanceOf(vault_deposited) + constant.DEPOSIT_AMOUNT == v_t_bal_before
         )
         assert token.balanceOf(user) == int(constant.DEPOSIT_AMOUNT) + u_t_bal_before
     assert vault_deposited.balanceOf(deployer) == 0

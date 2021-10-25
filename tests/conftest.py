@@ -34,12 +34,14 @@ def token(deployer, users, usdc_whale):
     # usdc
     yield toke
 
+
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = constants
     else:
         constant = constants_bsc
     return constant
+
 
 @pytest.fixture(scope="function", autouse=True)
 def long():
@@ -125,7 +127,7 @@ def test_strategy(vault, deployer, governance):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer} 
+        {"from": deployer},
     )
     strategy.setBuffer(constant.BUFFER, {"from": deployer})
     vault.setStrategy(strategy, {"from": deployer})
@@ -149,7 +151,7 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer} 
+        {"from": deployer},
     )
     strategy.setBuffer(constant.BUFFER, {"from": deployer})
     vault_deposited.setStrategy(strategy, {"from": deployer})
@@ -179,7 +181,7 @@ def test_other_strategy(token, deployer, governance, users):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer} 
+        {"from": deployer},
     )
     strategy.setBuffer(constant.BUFFER, {"from": deployer})
     vaulty.setStrategy(strategy, {"from": deployer})

@@ -6,13 +6,13 @@ from brownie import network
 import math
 
 
-
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = constants
     else:
         constant = constants_bsc
     return constant
+
 
 def test_open_perp_position(test_strategy, deployer, accounts, governance, token):
     constant = data()

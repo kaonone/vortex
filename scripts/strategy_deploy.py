@@ -22,8 +22,6 @@ from brownie import (
 )
 
 
-
-
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = scripts.constants
@@ -54,24 +52,30 @@ def main():
         print(f"You are using: 'deployer' [{deployer.address}]")
         print(f"Proxy Admin at {proxy_admin.address}")
 
-
-    
     token = interface.IERC20(constant.USDC)
-    vault_implementation_proxy, vault_proxy_contract, vault_contract_impl = deploy_proxy(deployer, proxy_admin, BasisVault, token, constant.DEPOSIT_LIMIT)
+    (
+        vault_implementation_proxy,
+        vault_proxy_contract,
+        vault_contract_impl,
+    ) = deploy_proxy(deployer, proxy_admin, BasisVault, token, constant.DEPOSIT_LIMIT)
 
     print(f"vault implementation proxy at {vault_implementation_proxy}")
     print(f"vault proxy contract at {vault_proxy_contract}")
     print(f"vault implementation contract at {vault_contract_impl}")
-    
+
     time.sleep(3)
 
-    strategy_implementation_proxy, strategy_proxy_contract, strategy_contract_impl = deploy_proxy(
+    (
+        strategy_implementation_proxy,
+        strategy_proxy_contract,
+        strategy_contract_impl,
+    ) = deploy_proxy(
         deployer,
         proxy_admin,
-        BasisStrategy, 
+        BasisStrategy,
         constant.LONG_ASSET,
         constant.UNI_POOL,
-        vault_contract_impl, #constant vault
+        vault_contract_impl,  # constant vault
         constant.MCDEX_ORACLE,
         constant.ROUTER,
         constant.GOVERNANCE,

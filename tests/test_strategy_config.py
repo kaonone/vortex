@@ -4,12 +4,14 @@ import constants_bsc
 import random
 from brownie import network
 
+
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = constants
     else:
         constant = constants_bsc
     return constant
+
 
 def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
     constant = data()
@@ -26,7 +28,7 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer}, 
+        {"from": deployer},
     )
     assert strategy.owner() == deployer
     assert strategy.governance() == governance
@@ -70,7 +72,7 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
         constant.isV2,
-        {"from": deployer}, 
+        {"from": deployer},
     )
     with brownie.reverts():
         strategy.setLiquidityPool(constant.UNI_POOL, {"from": accounts[9]})
