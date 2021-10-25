@@ -38,7 +38,16 @@ jobs:
             ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
             ${{ runner.os }}-yarn-
       - name: Install node.js dependencies
-        run: yarn --frozen-lockfile
+        run: |
+          git clone https://github.com/shuklaayush/hardhat.git
+          cd hardhat
+          git checkout fix/arbitrum
+          yarn --frozen-lockfile
+          yarn build
+          cd packages/hardhat-core
+          yarn pack
+          cd ../../..
+          yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
 
       - name: Run linter on *.sol and *.json
         run: yarn lint:check
