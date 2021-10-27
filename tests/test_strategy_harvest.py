@@ -1,3 +1,4 @@
+from typing import NewType
 import brownie
 import constants
 import constants_bsc
@@ -18,7 +19,7 @@ def test_yield_harvest_withdraw(
     test_strategy_deposited.harvest({"from": deployer})
     price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
-    for n in range(20):
+    for n in range(100):
 
         brownie.chain.sleep(28801)
         test_strategy_deposited.harvest({"from": deployer})
@@ -534,20 +535,36 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
             (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    mcLiquidityPool.trade(
-        constant.PERP_INDEX,
-        deployer,
-        (
-            (mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[3] / 100)
-            * 1e18
+    if network.show_active() == "hardhat-arbitrum-fork":
+
+        mcLiquidityPool.trade(
+            constant.PERP_INDEX,
+            deployer,
+            (
+                (
+                    mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[3]
+                    / 100
+                )
+                * 1e18
+            )
+            / price,
+            price,
+            brownie.chain.time() + 10000,
+            deployer,
+            0x40000000,
+            {"from": deployer},
         )
-        / price,
-        price,
-        brownie.chain.time() + 10000,
-        deployer,
-        0x40000000,
-        {"from": deployer},
-    )
+    else:
+        mcLiquidityPool.trade(
+            constant.PERP_INDEX,
+            deployer,
+            (2_800_000e18 * 1e18) / price,
+            price,
+            brownie.chain.time() + 10000,
+            deployer,
+            0x40000000,
+            {"from": deployer},
+        )
 
 
 def whale_buy_short(deployer, token, mcLiquidityPool, price):
@@ -564,20 +581,37 @@ def whale_buy_short(deployer, token, mcLiquidityPool, price):
             (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    mcLiquidityPool.trade(
-        constant.PERP_INDEX,
-        deployer,
-        -(
-            (mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[3] / 100)
-            * 1e18
+    if network.show_active() == "hardhat-arbitrum-fork":
+
+        mcLiquidityPool.trade(
+            constant.PERP_INDEX,
+            deployer,
+            -(
+                (
+                    mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[3]
+                    / 100
+                )
+                * 1e18
+            )
+            / price,
+            price,
+            brownie.chain.time() + 10000,
+            deployer,
+            0x40000000,
+            {"from": deployer},
         )
-        / price,
-        price,
-        brownie.chain.time() + 10000,
-        deployer,
-        0x40000000,
-        {"from": deployer},
-    )
+    else:
+        mcLiquidityPool.trade(
+            constant.PERP_INDEX,
+            deployer,
+            -(2_800_000e18 * 1e18) / price,
+            price,
+            brownie.chain.time() + 10000,
+            deployer,
+            0x40000000,
+            {"from": deployer},
+        )
+
 
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":

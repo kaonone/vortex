@@ -13,7 +13,7 @@ def data():
     return constant
 
 
-def test_vault_deployment(BasisVault, deployer):
+def test_vault_deployment(BasisVault, deployer, token):
     constant = data()
     vault = BasisVault.deploy({"from": deployer})
     vault.initialize(constant.USDC, constant.DEPOSIT_LIMIT, {"from": deployer})
@@ -27,8 +27,9 @@ def test_vault_deployment(BasisVault, deployer):
     assert vault.totalLent() == 0
     assert vault.managementFee() == constant.MANAGEMENT_FEE
     assert vault.performanceFee() == constant.PERFORMANCE_FEE
+    assert vault.pricePerShare() == constant.DECIMAL
+    assert vault.decimals() == constant.VALUE_DEC
     assert vault.totalAssets() == 0
-    assert vault.pricePerShare() == 1000000
     assert vault.strategy() == brownie.ZERO_ADDRESS
 
 
