@@ -390,7 +390,8 @@ contract BasisVault is
      * @return the price per share in want
      */
     function pricePerShare() public view returns (uint256) {
-        return _calcShareValue(1e6);
+        uint8 decimal = decimals();
+        return _calcShareValue(10**decimal);
     }
 
     /**
