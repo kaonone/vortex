@@ -427,6 +427,6 @@ contract BasisVault is
     }
 
     function decimals() public view override returns (uint8) {
-        return 6;
+        return ERC20Upgradeable(address(want)).decimals();
     }
 }
