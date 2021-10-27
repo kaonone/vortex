@@ -18,7 +18,7 @@ def test_yield_harvest_withdraw(
     test_strategy_deposited.harvest({"from": deployer})
     price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
-    for n in range(100):
+    for n in range(20):
 
         brownie.chain.sleep(28801)
         test_strategy_deposited.harvest({"from": deployer})
@@ -53,13 +53,36 @@ def test_yield_harvest_withdraw(
         assert test_strategy_deposited.getMargin() < marg_before
         assert test_strategy_deposited.getMarginPositions() > marg_pos_before
         assert long.balanceOf(test_strategy_deposited) < long_before
+        print("Margin account: " + str(test_strategy_deposited.getMarginAccount()))
+        print("User gain: " + str(token.balanceOf(user) - bal_before))
+        print("Long strategy balance: " + str(long.balanceOf(test_strategy_deposited)))
+        print("Total lent: " + str(vault_deposited.totalLent()))
+        print("Total supply: " + str(vault_deposited.totalSupply()))
+        print("Strategy want balance: " + str(token.balanceOf(test_strategy_deposited)))
+        print("Vault want balance: " + str(token.balanceOf(vault_deposited)))
+        print("Price per share: " + str(vault_deposited.pricePerShare()))
     assert vault_deposited.balanceOf(deployer) > 0
+    test_strategy_deposited.harvest({"from": deployer})
+    print("Margin account: " + str(test_strategy_deposited.getMarginAccount()))
+    print("Long strategy balance: " + str(long.balanceOf(test_strategy_deposited)))
+    print("Total lent: " + str(vault_deposited.totalLent()))
+    print("Total supply: " + str(vault_deposited.totalSupply()))
+    print("Strategy want balance: " + str(token.balanceOf(test_strategy_deposited)))
+    print("Vault want balance: " + str(token.balanceOf(vault_deposited)))
+    print("Price per share: " + str(vault_deposited.pricePerShare()))
+    dep_bal = vault_deposited.balanceOf(deployer)
     bal_before = token.balanceOf(deployer)
-    test_strategy_deposited.remargin({"from": deployer})
     tx = vault_deposited.withdraw(
         vault_deposited.balanceOf(deployer), deployer, {"from": deployer}
     )
-    print(test_strategy_deposited.getMarginAccount())
+    print("Margin account: " + str(test_strategy_deposited.getMarginAccount()))
+    print("Deployer gain: " + str(token.balanceOf(deployer) - bal_before))
+    print("Long strategy balance: " + str(long.balanceOf(test_strategy_deposited)))
+    print("Total lent: " + str(vault_deposited.totalLent()))
+    print("Total supply: " + str(vault_deposited.totalSupply()))
+    print("Strategy want balance: " + str(token.balanceOf(test_strategy_deposited)))
+    print("Vault want balance: " + str(token.balanceOf(vault_deposited)))
+    print("Price per share: " + str(vault_deposited.pricePerShare()))
     assert test_strategy_deposited.getMargin() < marg_before
     assert test_strategy_deposited.getMarginPositions() > marg_pos_before
     assert long.balanceOf(test_strategy_deposited) < long_before
@@ -86,7 +109,7 @@ def test_loss_harvest_withdraw(
     price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
-    for n in range(100):
+    for n in range(20):
 
         brownie.chain.sleep(28801)
         test_strategy_deposited.harvest({"from": deployer})
@@ -121,135 +144,6 @@ def test_loss_harvest_withdraw(
         assert test_strategy_deposited.getMarginPositions() > marg_pos_before
         assert long.balanceOf(test_strategy_deposited) < long_before
     assert vault_deposited.balanceOf(deployer) == 0
-    test_strategy_deposited.harvest({"from": deployer})
-
-
-def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
-        constant = constants
-    else:
-        constant = constants_bsc
-    return constant
-
-
-def test_yield_harvest_withdraw(
-    oracle,
-    vault_deposited,
-    users,
-    deployer,
-    test_strategy_deposited,
-    token,
-    long,
-    mcLiquidityPool,
-):
-    test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
-    whale_buy_long(deployer, token, mcLiquidityPool, price)
-    for n in range(100):
-
-        brownie.chain.sleep(28801)
-        test_strategy_deposited.harvest({"from": deployer})
-        print(test_strategy_deposited.getMarginAccount())
-
-    for n, user in enumerate(users):
-
-        bal_before = token.balanceOf(user)
-        to_burn = vault_deposited.balanceOf(user)
-        marg_pos_before = test_strategy_deposited.getMarginPositions()
-        marg_before = test_strategy_deposited.getMargin()
-        long_before = long.balanceOf(test_strategy_deposited)
-        tx = vault_deposited.withdraw(
-            vault_deposited.balanceOf(user), user, {"from": user}
-        )
-        assert vault_deposited.balanceOf(user) == 0
-        assert token.balanceOf(user) > bal_before
-        assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
-        assert (
-            test_strategy_deposited.getMarginPositions()
-            == test_strategy_deposited.positions()["perpContracts"]
-        )
-        assert (
-            test_strategy_deposited.getMargin()
-            == test_strategy_deposited.positions()["margin"]
-        )
-        assert test_strategy_deposited.getMargin() < marg_before
-        assert test_strategy_deposited.getMarginPositions() > marg_pos_before
-        assert long.balanceOf(test_strategy_deposited) < long_before
-    assert vault_deposited.balanceOf(deployer) > 0
-    bal_before = token.balanceOf(deployer)
-    test_strategy_deposited.remargin({"from": deployer})
-    tx = vault_deposited.withdraw(
-        vault_deposited.balanceOf(deployer), deployer, {"from": deployer}
-    )
-    print(test_strategy_deposited.getMarginAccount())
-    assert test_strategy_deposited.getMargin() < marg_before
-    assert test_strategy_deposited.getMarginPositions() > marg_pos_before
-    assert long.balanceOf(test_strategy_deposited) < long_before
-    assert token.balanceOf(test_strategy_deposited) == 0
-    assert vault_deposited.balanceOf(deployer) == 0
-    assert token.balanceOf(deployer) > bal_before
-    assert vault_deposited.totalLent() == 0
-    assert vault_deposited.totalSupply() == 0
-    if network.show_active() == "hardhat-arbitrum-fork":
-        assert token.balanceOf(vault_deposited) == 0
-
-
-def test_loss_harvest_withdraw(
-    oracle,
-    vault_deposited,
-    users,
-    deployer,
-    test_strategy_deposited,
-    token,
-    long,
-    mcLiquidityPool,
-):
-
-    test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
-    whale_buy_short(deployer, token, mcLiquidityPool, price)
-
-    for n in range(100):
-
-        brownie.chain.sleep(28801)
-        test_strategy_deposited.harvest({"from": deployer})
-
-    for n, user in enumerate(users):
-
-        bal_before = token.balanceOf(user)
-        to_burn = vault_deposited.balanceOf(user)
-        marg_pos_before = test_strategy_deposited.getMarginPositions()
-        marg_before = test_strategy_deposited.getMargin()
-        long_before = long.balanceOf(test_strategy_deposited)
-        tx = vault_deposited.withdraw(
-            vault_deposited.balanceOf(user), user, {"from": user}
-        )
-        assert vault_deposited.balanceOf(user) == 0
-        assert token.balanceOf(user) > bal_before
-        assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
-        assert (
-            test_strategy_deposited.getMarginPositions()
-            == test_strategy_deposited.positions()["perpContracts"]
-        )
-        assert (
-            test_strategy_deposited.getMargin()
-            == test_strategy_deposited.positions()["margin"]
-        )
-        assert test_strategy_deposited.getMargin() < marg_before
-        assert test_strategy_deposited.getMarginPositions() > marg_pos_before
-        assert long.balanceOf(test_strategy_deposited) < long_before
-    if network.show_active() == "hardhat-arbitrum-fork":
-        assert vault_deposited.balanceOf(deployer) == 0
     test_strategy_deposited.harvest({"from": deployer})
 
 
@@ -684,3 +578,10 @@ def whale_buy_short(deployer, token, mcLiquidityPool, price):
         0x40000000,
         {"from": deployer},
     )
+
+def data():
+    if network.show_active() == "hardhat-arbitrum-fork":
+        constant = constants
+    else:
+        constant = constants_bsc
+    return constant
