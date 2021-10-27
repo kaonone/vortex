@@ -324,6 +324,16 @@ contract BasisStrategy is
         weth = _weth;
     }
 
+    /**
+     * @notice  setter for long asset
+     * @param   _long for long
+     * @dev     only callable by owner
+     */
+    function setLong(address _long) external onlyOwner {
+        require(_long != address(0), "!_long");
+        long = _long;
+    }
+
     /**********************
      * EXTERNAL FUNCTIONS *
      **********************/
