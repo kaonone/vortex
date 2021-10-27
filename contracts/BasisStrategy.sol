@@ -324,6 +324,16 @@ contract BasisStrategy is
         weth = _weth;
     }
 
+    /**
+     * @notice  setter for long asset
+     * @param   _long for long
+     * @dev     only callable by owner
+     */
+    function setLong(address _long) external onlyOwner {
+        require(_long != address(0), "!_long");
+        long = _long;
+    }
+
     /**********************
      * EXTERNAL FUNCTIONS *
      **********************/
@@ -496,17 +506,15 @@ contract BasisStrategy is
         returns (uint256 loss, uint256 withdrawn)
     {
         require(_amount > 0, "withdraw: _amount is 0");
-
+        uint256 longPositionWant;
         if (!isUnwind) {
             mcLiquidityPool.forceToSyncState();
             // remove the buffer from the amount
             uint256 bufferPosition = (_amount * buffer) / MAX_BPS;
             // decrement the amount by buffer position
             uint256 _remAmount = _amount - bufferPosition;
-            // determine the longPosition in want
-            uint256 longPositionWant = _remAmount / 2;
-            // determine the short position
-            uint256 shortPosition = _remAmount - longPositionWant;
+            // determine the shortPosition
+            uint256 shortPosition = _remAmount / 2;
             // close the short position
             int256 positionsClosed = _closePerpPosition(shortPosition);
             // determine the long position
@@ -561,8 +569,9 @@ contract BasisStrategy is
             loss = _amount - wantBalance;
             withdrawn = wantBalance;
         } else {
-            IERC20(want).safeTransfer(address(vault), withdrawn);
+            IERC20(want).safeTransfer(address(vault), _amount);
             loss = 0;
+            withdrawn = _amount;
         }
 
         positions.perpContracts = getMarginPositions();
@@ -664,7 +673,6 @@ contract BasisStrategy is
                 tradeMode
             );
         }
-
         emit PerpPositionOpened(tradeAmount, perpetualIndex, _amount);
     }
 
@@ -703,9 +711,9 @@ contract BasisStrategy is
                 referrer,
                 tradeMode
             );
-        }
 
-        emit PerpPositionClosed(tradeAmount, perpetualIndex, _amount);
+            emit PerpPositionClosed(tradeAmount, perpetualIndex, _amount);
+        }
     }
 
     /**
