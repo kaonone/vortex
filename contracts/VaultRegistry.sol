@@ -4,7 +4,7 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title Registry
+ * @title VaultRegistry
  * @author akropolis.io
  * @notice Registry contract for storing basis vaults
  */
