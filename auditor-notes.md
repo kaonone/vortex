@@ -1,0 +1,3 @@
+# Notes for auditors and reviewers
+
+- Please play close attention to the withdrawal function and flow - there have been a variety of issues with the final withdrawal as either funds are left over in the pool when they shouldnt be or their arent enough funds to service the final withdrawal resulting in an invalid amount error from the MCDEX protocol. In the latest iteration, this is fixed but would appreciate more attention to the entire withdrawal flow.
