@@ -519,6 +519,7 @@ contract BasisStrategy is
             int256 positionsClosed = _closePerpPosition(shortPosition);
             // determine the long position
             uint256 longPosition = uint256(positionsClosed);
+            // check that there are enough long positions, if there is not then close all longs
             if (longPosition < IERC20(long).balanceOf(address(this))) {
                 // if for whatever reason there are funds left in long when there shouldnt be then liquidate them
                 if (getMarginPositions() == 0) {
@@ -534,6 +535,9 @@ contract BasisStrategy is
                     want
                 );
             }
+            // check if there is enough margin to cover the buffer and short withdrawal
+            // also make sure there are margin positions, as if there are none you can
+            // withdraw most of the position
             if (
                 getMargin() >
                 int256(bufferPosition + shortPosition) * DECIMAL_SHIFT &&
@@ -555,7 +559,6 @@ contract BasisStrategy is
                     getMargin()
                 );
             }
-
             withdrawn = longPositionWant + shortPosition + bufferPosition;
         } else {
             withdrawn = _amount;
