@@ -258,7 +258,7 @@ contract BasisVault is
         if (_loss) {
             totalLent -= _amount;
         } else {
-            _amount -= _determineProtocolFees(_amount);
+            _determineProtocolFees(_amount);
             totalLent += _amount;
         }
         // increase the totalLent by the amount of deposits that havent yet been sent to the vault
