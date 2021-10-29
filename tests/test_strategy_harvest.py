@@ -33,13 +33,13 @@ def test_deposit_harvest_deposit_harvest_withdraw(
 
     test_strategy.harvest({"from": deployer})
 
-    for n in range(10):
+    for n in range(100):
         brownie.chain.sleep(28801)
         test_strategy.harvest({"from": deployer})
 
     vault.deposit(token.balanceOf(user_2), user_2, {"from": user_2})
 
-    for n in range(10):
+    for n in range(100):
         brownie.chain.sleep(28801)
         test_strategy.remargin({"from": deployer})
         print(test_strategy.getMarginAccount())
@@ -47,7 +47,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     for n, user in enumerate(user_l):
         vault.withdraw(amounts[n], user, {"from": user})
 
-    for n in range(10):
+    for n in range(100):
         brownie.chain.sleep(28801)
         test_strategy.harvest({"from": deployer})
         print("Margin account: " + str(test_strategy.getMarginAccount()))
@@ -805,7 +805,6 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
             (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    if network.show_active() == "hardhat-arbitrum-fork":
 
         mcLiquidityPool.trade(
             constant.PERP_INDEX,
@@ -818,17 +817,6 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
                 * 1e18
             )
             / price,
-            price,
-            brownie.chain.time() + 10000,
-            deployer,
-            0x40000000,
-            {"from": deployer},
-        )
-    else:
-        mcLiquidityPool.trade(
-            constant.PERP_INDEX,
-            deployer,
-            (2_800_000e18 * 1e18) / price,
             price,
             brownie.chain.time() + 10000,
             deployer,
