@@ -15,7 +15,8 @@
     "lint:fix": "pretty-quick --pattern '**/*.*(sol|json)' --staged --verbose",
     "sec:flatten": "sh ./security/flattener-run.sh",
     "format:test:lint": "black --check tests",
-    "format:test:fix": "black . tests"
+    "format:test:fix": "black . tests",
+    "clone-packages": "sh ./security/clone-packages.sh"
   },
   "husky": {
     "hooks": {
