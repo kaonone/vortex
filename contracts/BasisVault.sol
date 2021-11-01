@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@ozUpgradesV4/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@ozUpgradesV4/contracts/security/PausableUpgradeable.sol";
+import "@ozUpgradesV4/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "../interfaces/IStrategy.sol";
@@ -18,7 +18,12 @@ import "../interfaces/IStrategy.sol";
  * @author akropolis.io
  * @notice A vault used as the management system for a basis trading protocol
  */
-contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
+contract BasisVault is
+    ERC20Upgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    OwnableUpgradeable
+{
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -49,9 +54,14 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         _;
     }
 
-    constructor(address _want, uint256 _depositLimit)
-        ERC20("akBVUSDC-ETH", "akBasisVault-USDC-ETH")
+    function initialize(address _want, uint256 _depositLimit)
+        public
+        initializer
     {
+        __ERC20_init("akBVUSDC-ETH", "akBasisVault-USDC-ETH");
+        __Ownable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
         require(_want != address(0), "!_want");
         want = IERC20(_want);
         depositLimit = _depositLimit;
@@ -215,10 +225,19 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
                 // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
                 // _shares = _sharesForAmount(amount);
             }
-            totalLent -= withdrawn;
+            // reduce the totallent by the amount withdrawn, if the amount withdrawn is greater than the totallent
+            // then make it 0
+            if (totalLent >= withdrawn) {
+                totalLent -= withdrawn;
+            } else {
+                totalLent = 0;
+            }
         }
 
         _burn(msg.sender, _shares);
+        if (amount > vaultBalance) {
+            amount = vaultBalance;
+        }
         emit Withdraw(_recipient, amount, _shares);
         want.safeTransfer(_recipient, amount);
     }
@@ -239,7 +258,7 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
         if (_loss) {
             totalLent -= _amount;
         } else {
-            _amount -= _determineProtocolFees(_amount);
+            _determineProtocolFees(_amount);
             totalLent += _amount;
         }
         // increase the totalLent by the amount of deposits that havent yet been sent to the vault
@@ -371,7 +390,8 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
      * @return the price per share in want
      */
     function pricePerShare() public view returns (uint256) {
-        return _calcShareValue(1e6);
+        uint8 decimal = decimals();
+        return _calcShareValue(10**decimal);
     }
 
     /**
@@ -408,6 +428,6 @@ contract BasisVault is ERC20, Pausable, ReentrancyGuard, Ownable {
     }
 
     function decimals() public view override returns (uint8) {
-        return 6;
+        return ERC20Upgradeable(address(want)).decimals();
     }
 }

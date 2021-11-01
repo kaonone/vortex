@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@ozUpgradesV4/contracts/security/PausableUpgradeable.sol";
+import "@ozUpgradesV4/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
@@ -13,13 +13,20 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../interfaces/IMCLP.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IBasisVault.sol";
+import "../interfaces/ILmClaimer.sol";
+
+import "../interfaces/IRouterV2.sol";
 
 /**
  * @title  BasisStrategy
  * @author akropolis.io
  * @notice A strategy used to perform basis trading using funds from a BasisVault
  */
-contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
+contract BasisStrategy is
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    OwnableUpgradeable
+{
     using SafeERC20 for IERC20;
 
     // struct to store the position state of the strategy
@@ -32,22 +39,28 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // MCDEX Liquidity and Perpetual Pool interface address
     IMCLP public mcLiquidityPool;
     // Uniswap v3 pair pool interface address
-    IUniswapV3Pool public pool;
+    address public pool;
     // Uniswap v3 router interface address
-    ISwapRouter public immutable router;
+    address public router;
     // Basis Vault interface address
     IBasisVault public vault;
     // MCDEX oracle
     IOracle public oracle;
+    // MCDEX trade reward claimer
+    ILmClaimer public lmClaimer;
 
     // address of the want (short collateral) of the strategy
     address public want;
     // address of the long asset of the strategy
     address public long;
+    // address of the mcb token
+    address public mcb;
     // address of the referrer for MCDEX
     address public referrer;
     // address of governance
     address public governance;
+    // address weth
+    address public weth;
     // Positions of the strategy
     Positions public positions;
     // perpetual index in MCDEX
@@ -57,7 +70,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     // max bips
     uint256 public constant MAX_BPS = 1_000_000;
     // decimal shift for USDC
-    int256 public immutable DECIMAL_SHIFT;
+    int256 public DECIMAL_SHIFT;
     // dust for margin positions
     int256 public dust = 1000;
     // slippage Tolerance for the perpetual trade
@@ -66,6 +79,8 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     bool public isUnwind;
     // trade mode of the perp
     uint32 public tradeMode = 0x40000000;
+    // bool determine layer version
+    bool isV2;
     // modifier to check that the caller is governance
     modifier onlyGovernance() {
         require(msg.sender == governance, "!governance");
@@ -97,16 +112,21 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @param _mcLiquidityPool MCDEX Liquidity and Perpetual Pool address
      * @param _perpetualIndex  index of the perpetual market
      */
-    constructor(
+    function initialize(
         address _long,
         address _pool,
         address _vault,
         address _oracle,
         address _router,
+        address _weth,
         address _governance,
         address _mcLiquidityPool,
-        uint256 _perpetualIndex
-    ) {
+        uint256 _perpetualIndex,
+        bool _isV2
+    ) public initializer {
+        __Ownable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
         require(_long != address(0), "!_long");
         require(_pool != address(0), "!_pool");
         require(_vault != address(0), "!_vault");
@@ -114,14 +134,17 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         require(_router != address(0), "!_router");
         require(_governance != address(0), "!_governance");
         require(_mcLiquidityPool != address(0), "!_mcLiquidityPool");
+        require(_weth != address(0), "!_weth");
         long = _long;
-        pool = IUniswapV3Pool(_pool);
+        pool = _pool;
         vault = IBasisVault(_vault);
         oracle = IOracle(_oracle);
-        router = ISwapRouter(_router);
+        router = _router;
+        weth = _weth;
         governance = _governance;
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
         perpetualIndex = _perpetualIndex;
+        isV2 = _isV2;
         want = address(vault.want());
         mcLiquidityPool.setTargetLeverage(perpetualIndex, address(this), 1e18);
         (, , , , uint256[6] memory stores) = mcLiquidityPool
@@ -134,7 +157,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      **********/
 
     event DepositToMarginAccount(uint256 amount, uint256 perpetualIndex);
-    event WithdrawStrategy(uint256 amountWithdrawn);
+    event WithdrawStrategy(uint256 amountWithdrawn, uint256 loss);
     event Harvest(int256 perpContracts, uint256 longPosition, int256 margin);
     event StrategyUnwind(uint256 positionSize);
     event EmergencyExit(address indexed recipient, uint256 positionSize);
@@ -167,6 +190,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         uint256 oldLong,
         uint256 newLong
     );
+    event Remargined(int256 unwindAmount);
 
     /***********
      * SETTERS *
@@ -187,7 +211,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
      * @dev     only callable by owner
      */
     function setUniswapPool(address _pool) external onlyOwner {
-        pool = IUniswapV3Pool(_pool);
+        pool = _pool;
     }
 
     /**
@@ -266,6 +290,50 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         governance = _governance;
     }
 
+    /**
+
+     * @notice set router version for network
+     * @param _isV2 bool to set the version of rooter
+     * @dev only callable by owner
+     */
+    function setVersion(bool _isV2) external onlyOwner {
+        isV2 = _isV2;
+    }
+
+    /**
+     * @notice  setter for liquidity mining claim contract
+     * @param   _lmClaimer the claim contract
+     * @param   _mcb the mcb token address
+     * @dev     only callable by owner
+     */
+    function setLmClaimerAndMcb(address _lmClaimer, address _mcb)
+        external
+        onlyOwner
+    {
+        lmClaimer = ILmClaimer(_lmClaimer);
+        mcb = _mcb;
+    }
+
+    /**
+     * @notice  setter for weth depending on the network
+     * @param   _weth for weth
+     * @dev     only callable by owner
+     */
+    function setWeth(address _weth) external onlyOwner {
+        require(_weth != address(0), "!_weth");
+        weth = _weth;
+    }
+
+    /**
+     * @notice  setter for long asset
+     * @param   _long for long
+     * @dev     only callable by owner
+     */
+    function setLong(address _long) external onlyOwner {
+        require(_long != address(0), "!_long");
+        long = _long;
+    }
+
     /**********************
      * EXTERNAL FUNCTIONS *
      **********************/
@@ -285,7 +353,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         isUnwind = false;
 
         mcLiquidityPool.forceToSyncState();
-        // determine the profit since the last harvest and remove profits from the margi
+        // determine the profit since the last harvest and remove profits from the margin
         // account to be redistributed
         uint256 amount;
         bool loss;
@@ -326,12 +394,21 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     function unwind() public onlyAuthorised {
         require(!isUnwind, "unwound");
         isUnwind = true;
-        // close the short position
-        _closeAllPerpPositions();
+        mcLiquidityPool.forceToSyncState();
         // swap long asset back to want
         _swap(IERC20(long).balanceOf(address(this)), long, want);
-        // withdraw all cash in the margin account
-        mcLiquidityPool.withdraw(perpetualIndex, address(this), getMargin());
+        // check if the perpetual is in settlement, if it is then settle it
+        // otherwise unwind the fund as normal.
+        if (!_settle()) {
+            // close the short position
+            _closeAllPerpPositions();
+            // withdraw all cash in the margin account
+            mcLiquidityPool.withdraw(
+                perpetualIndex,
+                address(this),
+                getMargin()
+            );
+        }
         // reset positions
         positions.perpContracts = 0;
         positions.margin = getMargin();
@@ -356,70 +433,64 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice  adjust the buffer and redistribute funds within the strategy,
-     *          should only be called if absolutely certain
+     * @notice  remargin the strategy such that margin call risk is reduced
      * @dev     only callable by owner
      */
-    function adjustBuffer(uint256 _newBuffer) external onlyOwner {
-        uint256 oldBuffer = buffer;
-        setBuffer(_newBuffer);
-        // get the estimated assets of the margin position
-        int256 marginBalance = getMargin();
-        uint256 longBalance = IERC20(long).balanceOf(address(this));
-        // calculate the split of the margin balance between the short and buffer
-        // based on the old buffer
-        uint256 shortRatio = (MAX_BPS - oldBuffer);
-        uint256 shortBufferRatio = (oldBuffer * MAX_BPS) /
-            (oldBuffer + shortRatio);
-        int256 bufferSize = (int256(shortBufferRatio) * marginBalance) /
-            int256(MAX_BPS);
-        int256 newBufferSize = (bufferSize * int256(buffer)) /
-            int256(oldBuffer);
-
-        if (buffer > oldBuffer) {
-            // increase the buffer position
-            int256 fundsToFind = newBufferSize - bufferSize;
-            // take half of the funds from the shortPosition
-            int256 tradeAmount = _closePerpPosition(
-                uint256((fundsToFind / 2) / DECIMAL_SHIFT)
+    function remargin() external onlyOwner {
+        // harvest the funds so the positions are up to date
+        harvest();
+        // ratio of the short in the short and buffer
+        int256 K = (((int256(MAX_BPS) - int256(buffer)) / 2) * 1e18) /
+            (((int256(MAX_BPS) - int256(buffer)) / 2) + int256(buffer));
+        // get the price of ETH
+        (int256 price, ) = oracle.priceTWAPLong();
+        // calculate amount to unwind
+        int256 unwindAmount = (((price * -getMarginPositions()) -
+            K *
+            getMargin()) * 1e18) / ((1e18 + K) * price);
+        require(unwindAmount != 0, "no changes to margin necessary");
+        // check if leverage is to be reduced or increased then act accordingly
+        if (unwindAmount > 0) {
+            // swap unwindAmount long to want
+            uint256 wantAmount = _swap(uint256(unwindAmount), long, want);
+            // close unwindAmount short to margin account
+            mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                unwindAmount,
+                price + slippageTolerance,
+                block.timestamp,
+                referrer,
+                tradeMode
             );
-            // take half of the funds from the longPosition and
-            // deposit it to the margin account
-            _swapTokenOut(
-                uint256((fundsToFind / 2) / DECIMAL_SHIFT),
-                long,
-                want
+            // deposit long swapped collateral to margin account
+            _depositToMarginAccount(wantAmount);
+        } else if (unwindAmount < 0) {
+            // the buffer is too high so reduce it to the correct size
+            // open a perpetual short position using the unwindAmount
+            mcLiquidityPool.trade(
+                perpetualIndex,
+                address(this),
+                unwindAmount,
+                price - slippageTolerance,
+                block.timestamp,
+                referrer,
+                tradeMode
             );
-            _depositToMarginAccount(IERC20(want).balanceOf(address(this)));
-        } else {
-            // decrease the buffer position
-            int256 fundsToLiquidate = bufferSize - newBufferSize;
-            // take half of the funds and open a short position
-            _openPerpPosition(
-                uint256((fundsToLiquidate / 2) / DECIMAL_SHIFT),
-                false
-            );
-            // withdraw the other half and open a long position
+            // withdraw funds from the margin account
+            int256 withdrawAmount = (price * -unwindAmount) / 1e18;
             mcLiquidityPool.withdraw(
                 perpetualIndex,
                 address(this),
-                (fundsToLiquidate / 2)
+                withdrawAmount
             );
-            _swap(IERC20(want).balanceOf(address(this)), want, long);
+            // open a long position with the withdrawn funds
+            _swap(uint256(withdrawAmount / DECIMAL_SHIFT), want, long);
         }
-        int256 perpContracts = positions.perpContracts;
         positions.margin = getMargin();
-        positions.perpContracts = getMarginPositions();
         positions.unitAccumulativeFunding = getUnitAccumulativeFunding();
-
-        emit BufferAdjusted(
-            marginBalance,
-            positions.margin,
-            perpContracts,
-            positions.perpContracts,
-            longBalance,
-            IERC20(long).balanceOf(address(this))
-        );
+        positions.perpContracts = getMarginPositions();
+        emit Remargined(unwindAmount);
     }
 
     /**
@@ -435,19 +506,20 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         returns (uint256 loss, uint256 withdrawn)
     {
         require(_amount > 0, "withdraw: _amount is 0");
+        uint256 longPositionWant;
         if (!isUnwind) {
+            mcLiquidityPool.forceToSyncState();
             // remove the buffer from the amount
             uint256 bufferPosition = (_amount * buffer) / MAX_BPS;
             // decrement the amount by buffer position
             uint256 _remAmount = _amount - bufferPosition;
-            // determine the longPosition in want
-            uint256 longPositionWant = _remAmount / 2;
-            // determine the short position
-            uint256 shortPosition = _remAmount - longPositionWant;
+            // determine the shortPosition
+            uint256 shortPosition = _remAmount / 2;
             // close the short position
             int256 positionsClosed = _closePerpPosition(shortPosition);
             // determine the long position
             uint256 longPosition = uint256(positionsClosed);
+            // check that there are enough long positions, if there is not then close all longs
             if (longPosition < IERC20(long).balanceOf(address(this))) {
                 // if for whatever reason there are funds left in long when there shouldnt be then liquidate them
                 if (getMarginPositions() == 0) {
@@ -463,9 +535,13 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                     want
                 );
             }
+            // check if there is enough margin to cover the buffer and short withdrawal
+            // also make sure there are margin positions, as if there are none you can
+            // withdraw most of the position
             if (
                 getMargin() >
-                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT
+                int256(bufferPosition + shortPosition) * DECIMAL_SHIFT &&
+                getMarginPositions() < 0
             ) {
                 // withdraw the short and buffer from the margin account
                 mcLiquidityPool.withdraw(
@@ -477,20 +553,12 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 if (getMarginPositions() < 0) {
                     _closeAllPerpPositions();
                 }
-
                 mcLiquidityPool.withdraw(
                     perpetualIndex,
                     address(this),
                     getMargin()
                 );
             }
-
-            // alter position values to reflect withdrawal
-            // alter buffer and shorts which may experience underflow if profits are recorded
-            // on the final withdrawal before a harvest recorded the change
-            positions.perpContracts = getMarginPositions();
-            positions.margin = getMargin();
-
             withdrawn = longPositionWant + shortPosition + bufferPosition;
         } else {
             withdrawn = _amount;
@@ -504,17 +572,21 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             loss = _amount - wantBalance;
             withdrawn = wantBalance;
         } else {
-            IERC20(want).safeTransfer(address(vault), withdrawn);
+            IERC20(want).safeTransfer(address(vault), _amount);
             loss = 0;
+            withdrawn = _amount;
         }
 
-        emit WithdrawStrategy(withdrawn);
+        positions.perpContracts = getMarginPositions();
+        positions.margin = getMargin();
+        emit WithdrawStrategy(withdrawn, loss);
     }
 
     /**
      * @notice  emit a snapshot of the margin account
      */
     function snapshot() public {
+        mcLiquidityPool.forceToSyncState();
         (
             int256 cash,
             int256 position,
@@ -535,6 +607,26 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
             isInitialMarginSafe,
             isMaintenanceMarginSafe,
             isMarginSafe
+        );
+    }
+
+    /**
+     * @notice  gather any liquidity mining rewards of mcb and transfer them to governance
+     *          further distribution
+     * @param   epoch the epoch to claim rewards for
+     * @param   amount the amount to redeem
+     * @param   merkleProof the proof to use on the claim
+     * @dev     only callable by governance
+     */
+    function gatherLMrewards(
+        uint256 epoch,
+        uint256 amount,
+        bytes32[] memory merkleProof
+    ) external onlyGovernance {
+        lmClaimer.claimEpoch(epoch, amount, merkleProof);
+        IERC20(mcb).safeTransfer(
+            governance,
+            IERC20(mcb).balanceOf(address(this))
         );
     }
 
@@ -562,7 +654,7 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         int256 contracts = ((int256(_amount) * DECIMAL_SHIFT) * 1e18) / price;
         int256 longBalInt = -int256(IERC20(long).balanceOf(address(this)));
         // check that the long and short positions will be equal after the deposit
-        if (-contracts - getMarginPositions() >= longBalInt) {
+        if (-contracts + getMarginPositions() >= longBalInt) {
             // open short position
             tradeAmount = mcLiquidityPool.trade(
                 perpetualIndex,
@@ -584,7 +676,6 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 tradeMode
             );
         }
-
         emit PerpPositionOpened(tradeAmount, perpetualIndex, _amount);
     }
 
@@ -623,9 +714,9 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
                 referrer,
                 tradeMode
             );
-        }
 
-        emit PerpPositionClosed(tradeAmount, perpetualIndex, _amount);
+            emit PerpPositionClosed(tradeAmount, perpetualIndex, _amount);
+        }
     }
 
     /**
@@ -733,29 +824,60 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         address _tokenOut
     ) internal returns (uint256 amountOut) {
         // set up swap params
-        uint256 deadline = block.timestamp;
-        address tokenIn = _tokenIn;
-        address tokenOut = _tokenOut;
-        uint24 fee = pool.fee();
-        address recipient = address(this);
-        uint256 amountIn = _amount;
-        uint256 amountOutMinimum = 0;
-        uint160 sqrtPriceLimitX96 = 0;
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams(
-                tokenIn,
-                tokenOut,
-                fee,
-                recipient,
-                deadline,
-                amountIn,
-                amountOutMinimum,
-                sqrtPriceLimitX96
+        if (!isV2) {
+            uint256 deadline = block.timestamp;
+            address tokenIn = _tokenIn;
+            address tokenOut = _tokenOut;
+            uint24 fee = IUniswapV3Pool(pool).fee();
+            address recipient = address(this);
+            uint256 amountIn = _amount;
+            uint256 amountOutMinimum = 0;
+            uint160 sqrtPriceLimitX96 = 0;
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+                .ExactInputSingleParams(
+                    tokenIn,
+                    tokenOut,
+                    fee,
+                    recipient,
+                    deadline,
+                    amountIn,
+                    amountOutMinimum,
+                    sqrtPriceLimitX96
+                );
+            // approve the router to spend the tokens
+            IERC20(_tokenIn).safeApprove(router, _amount);
+            // swap optimistically via the uniswap v3 router
+            amountOut = ISwapRouter(router).exactInputSingle(params);
+        } else {
+            //get balance of tokenOut
+            uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
+            // set the swap params
+            uint256 deadline = block.timestamp;
+            address[] memory path;
+            if (_tokenIn == weth || _tokenOut == weth) {
+                path = new address[](2);
+                path[0] = _tokenIn;
+                path[1] = _tokenOut;
+            } else {
+                path = new address[](3);
+                path[0] = _tokenIn;
+                path[1] = weth;
+                path[2] = _tokenOut;
+            }
+            // approve the router to spend the token
+            IERC20(_tokenIn).safeApprove(router, _amount);
+            IRouterV2(router).swapExactTokensForTokens(
+                _amount,
+                0,
+                path,
+                address(this),
+                deadline
             );
-        // approve the router to spend the tokens
-        IERC20(_tokenIn).approve(address(router), _amount);
-        // swap optimistically via the uniswap v3 router
-        amountOut = router.exactInputSingle(params);
+
+            amountOut =
+                IERC20(_tokenOut).balanceOf(address(this)) -
+                amountTokenOut;
+        }
     }
 
     /**
@@ -770,33 +892,75 @@ contract BasisStrategy is Pausable, Ownable, ReentrancyGuard {
         address _tokenIn,
         address _tokenOut
     ) internal returns (uint256 out) {
-        // set up swap params
-        uint256 deadline = block.timestamp;
-        address tokenIn = _tokenIn;
-        address tokenOut = _tokenOut;
-        uint24 fee = pool.fee();
-        address recipient = address(this);
-        uint256 amountOut = _amount;
-        uint256 amountInMaximum = IERC20(_tokenIn).balanceOf(address(this));
-        uint160 sqrtPriceLimitX96 = 0;
-        ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter
-            .ExactOutputSingleParams(
-                tokenIn,
-                tokenOut,
-                fee,
-                recipient,
-                deadline,
-                amountOut,
-                amountInMaximum,
-                sqrtPriceLimitX96
+        if (!isV2) {
+            // set up swap params
+            uint256 deadline = block.timestamp;
+            address tokenIn = _tokenIn;
+            address tokenOut = _tokenOut;
+            uint24 fee = IUniswapV3Pool(pool).fee();
+            address recipient = address(this);
+            uint256 amountOut = _amount;
+            uint256 amountInMaximum = IERC20(_tokenIn).balanceOf(address(this));
+            uint160 sqrtPriceLimitX96 = 0;
+            ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter
+                .ExactOutputSingleParams(
+                    tokenIn,
+                    tokenOut,
+                    fee,
+                    recipient,
+                    deadline,
+                    amountOut,
+                    amountInMaximum,
+                    sqrtPriceLimitX96
+                );
+            // approve the router to spend the tokens
+            IERC20(_tokenIn).approve(
+                router,
+                IERC20(_tokenIn).balanceOf(address(this))
             );
-        // approve the router to spend the tokens
-        IERC20(_tokenIn).approve(
-            address(router),
-            IERC20(_tokenIn).balanceOf(address(this))
-        );
-        // swap optimistically via the uniswap v3 router
-        out = router.exactOutputSingle(params);
+            // swap optimistically via the uniswap v3 router
+            out = ISwapRouter(router).exactOutputSingle(params);
+        } else {
+            //get balance of tokenOut
+            uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
+            // set the swap params
+            uint256 deadline = block.timestamp;
+            address[] memory path;
+            if (_tokenIn == weth || _tokenOut == weth) {
+                path = new address[](2);
+                path[0] = _tokenIn;
+                path[1] = _tokenOut;
+            } else {
+                path = new address[](3);
+                path[0] = _tokenIn;
+                path[1] = weth;
+                path[2] = _tokenOut;
+            }
+            // approve the router to spend the token
+            IERC20(_tokenIn).safeApprove(router, _amount);
+            IRouterV2(router).swapExactTokensForTokens(
+                _amount,
+                0,
+                path,
+                address(this),
+                deadline
+            );
+
+            out = IERC20(_tokenOut).balanceOf(address(this)) - amountTokenOut;
+        }
+    }
+
+    /**
+     * @notice  settle function for dealing with the perpetual if it has settled
+     * @return  isSettled whether the perp needed to be settled or not.
+     */
+    function _settle() internal returns (bool isSettled) {
+        (IMCLP.PerpetualState perpetualState, , ) = mcLiquidityPool
+            .getPerpetualInfo(perpetualIndex);
+        if (perpetualState == IMCLP.PerpetualState.CLEARED) {
+            mcLiquidityPool.settle(perpetualIndex, address(this));
+            isSettled = true;
+        }
     }
 
     /***********

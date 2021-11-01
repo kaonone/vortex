@@ -8,27 +8,54 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract TestStrategy is BasisStrategy {
     using SafeERC20 for IERC20;
 
-    constructor(
+    // constructor(
+    //     address _long,
+    //     address _pool,
+    //     address _vault,
+    //     address _oracle,
+    //     address _router,
+    //     address _governance,
+    //     address _mcLiquidityPool,
+    //     uint256 _perpetualIndex,
+    //     bool _isV2
+    // )
+    //     BasisStrategy(
+    //         _long,
+    //         _pool,
+    //         _vault,
+    //         _oracle,
+    //         _router,
+    //         _governance,
+    //         _mcLiquidityPool,
+    //         _perpetualIndex,
+    //         _isV2
+    //     )
+    // {}
+    function init(
         address _long,
         address _pool,
         address _vault,
         address _oracle,
         address _router,
+        address _weth,
         address _governance,
         address _mcLiquidityPool,
-        uint256 _perpetualIndex
-    )
-        BasisStrategy(
+        uint256 _perpetualIndex,
+        bool _isV2
+    ) public {
+        BasisStrategy.initialize(
             _long,
             _pool,
             _vault,
             _oracle,
             _router,
+            _weth,
             _governance,
             _mcLiquidityPool,
-            _perpetualIndex
-        )
-    {}
+            _perpetualIndex,
+            _isV2
+        );
+    }
 
     function calculateSplit(uint256 _amount)
         external

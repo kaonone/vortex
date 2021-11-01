@@ -8,6 +8,9 @@ reports/
 venv/
 cache/
 artifacts/
+hardhat/
+Uniswap/
+flattened/
 
 # Node/npm
 node_modules/
