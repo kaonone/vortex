@@ -44,7 +44,7 @@ contract Faucet is Ownable, Pausable {
         return receiver[_account].lastClaimed + cooldown < block.timestamp;
     }
 
-    function distribute(address _account) external onlyOwner whenNotPaused {
+    function distribute(address _account) external whenNotPaused {
         require(lastUpdate(_account) == true, "wait cooldown");
         token.transfer(_account, amount);
         receiver[_account].lastClaimed = block.timestamp;

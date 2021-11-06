@@ -10,13 +10,10 @@ def test_faucet(faucet, deployer, users, token):
     with brownie.reverts("wait cooldown"):
         faucet.distribute(users[1], {"from": deployer})
     chain.sleep(100000)
-    tx = faucet.distribute(users[1], {"from": deployer})
+    tx = faucet.distribute(users[1], {"from": users[1]})
     assert "Distributed" in tx.events
     assert tx.events["Distributed"]["user"] == users[1]
     assert [tx.events["Distributed"]["block"], 2] == faucet.getUserDetail(users[1])
-    chain.sleep(100000)
-    with brownie.reverts():
-        faucet.distribute(users[2], {"from": users[3]})
 
 
 def test_faucet_management(faucet, deployer, users, token):
