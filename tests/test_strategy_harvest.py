@@ -18,7 +18,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
 ):
     constant = data()
     # users
-    user_1   = users[0]
+    user_1 = users[0]
     user_2 = users[1]
     user_l = [user_1, user_2]
     # amounts
@@ -79,6 +79,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     assert token.balanceOf(vault) == 0
     assert token.balanceOf(test_strategy) == 0
     assert vault.pricePerShare() == constant.DECIMAL
+
 
 def test_yield_harvest_withdraw(
     oracle,
@@ -361,7 +362,6 @@ def test_loss_remargin_withdraw(
         assert test_strategy_deposited.getMarginPositions() > marg_pos_before
         assert long.balanceOf(test_strategy_deposited) < long_before
     assert vault_deposited.balanceOf(deployer) == 0
-
 
 
 def test_loss_harvest_remargin(

@@ -5,6 +5,7 @@ from brownie import (
     BasisVault,
     BasicERC20,
     TestStrategy,
+    Faucet,
     accounts,
     network,
     Contract,

@@ -128,6 +128,7 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
     strategy.setGovernance(constant.UNI_POOL, {"from": governance})
     assert strategy.governance() == constant.UNI_POOL
 
+
 def test_registry(vault, deployer, VaultRegistry, accounts):
     reg = VaultRegistry.deploy({"from": deployer})
     with brownie.reverts():
