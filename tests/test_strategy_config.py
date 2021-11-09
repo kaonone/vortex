@@ -22,12 +22,12 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault,
-        constant.MCDEX_ORACLE,
         constant.ROUTER,
         constant.WETH,
         governance,
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
+        constant.BUFFER,
         constant.isV2,
         {"from": deployer},
     )
@@ -38,23 +38,19 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
     assert strategy.pool() == constant.UNI_POOL
     assert strategy.router() == constant.ROUTER
     assert strategy.vault() == vault
-    assert strategy.oracle() == constant.MCDEX_ORACLE
     assert strategy.want() == constant.USDC == vault.want()
     assert strategy.long() == constant.LONG_ASSET
-
+    assert strategy.buffer() == constant.BUFFER
     assert strategy.positions()["perpContracts"] == 0
     assert strategy.positions()["margin"] == 0
     assert strategy.perpetualIndex() == constant.PERP_INDEX
-    assert strategy.buffer() == 0
     assert strategy.dust() == 1000
     assert strategy.slippageTolerance() == 0
     assert strategy.isUnwind() == False
     assert strategy.tradeMode() == 0x40000000
 
-    strategy.setBuffer(constant.BUFFER, {"from": deployer})
     strategy.setSlippageTolerance(constant.TRADE_SLIPPAGE, {"from": deployer})
 
-    assert strategy.buffer() == constant.BUFFER
     assert strategy.slippageTolerance() == constant.TRADE_SLIPPAGE
 
 
@@ -67,12 +63,12 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault,
-        constant.MCDEX_ORACLE,
         constant.ROUTER,
         constant.WETH,
         governance,
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
+        constant.BUFFER,
         constant.isV2,
         {"from": deployer},
     )
@@ -127,6 +123,7 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
         strategy.setGovernance(constant.UNI_POOL, {"from": deployer})
     strategy.setGovernance(constant.UNI_POOL, {"from": governance})
     assert strategy.governance() == constant.UNI_POOL
+
 
 def test_registry(vault, deployer, VaultRegistry, accounts):
     reg = VaultRegistry.deploy({"from": deployer})
