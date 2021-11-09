@@ -81,6 +81,5 @@ jobs:
         brownie test -s --network bsc-main-fork
     - name: Run Faucet Test
       run: brownie test test_faucet/faucet --network development
-
         
 

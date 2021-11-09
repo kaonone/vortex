@@ -118,6 +118,7 @@ contract BasisStrategy is
         address _governance,
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
+
         uint256 _buffer,
         bool _isV2
     ) public initializer {
@@ -648,6 +649,7 @@ contract BasisStrategy is
             // deposit funds to the margin account to enable trading
             _depositToMarginAccount(_amount);
         }
+
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -692,6 +694,7 @@ contract BasisStrategy is
         internal
         returns (int256 tradeAmount)
     {
+
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -732,6 +735,7 @@ contract BasisStrategy is
      * @return  tradeAmount the amount of perpetual contracts closed
      */
     function _closeAllPerpPositions() internal returns (int256 tradeAmount) {
+
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );

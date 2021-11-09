@@ -50,7 +50,6 @@ def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
     assert strategy.tradeMode() == 0x40000000
 
     strategy.setSlippageTolerance(constant.TRADE_SLIPPAGE, {"from": deployer})
-
     assert strategy.slippageTolerance() == constant.TRADE_SLIPPAGE
 
 
@@ -139,3 +138,4 @@ def test_registry(vault, deployer, VaultRegistry, accounts):
     assert "VaultDeactivated" in tx.events
     assert tx.events["VaultDeactivated"]["vault"] == vault.address
     assert reg.isVault(vault.address) == False
+

@@ -5,6 +5,7 @@ import constants_bsc
 import random
 from brownie import network
 
+
 def test_harvest(
     oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
 ):

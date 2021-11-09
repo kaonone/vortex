@@ -103,10 +103,12 @@ contract TestStrategy is BasisStrategy {
 
     function closePerpPosition(uint256 _amount) external {
         // get the long asset mark price from the MCDEX oracle
+
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
         IOracle oracle = IOracle(oracleAddress);
+
         (int256 price, ) = oracle.priceTWAPLong();
         int256 tradeAmount;
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)
