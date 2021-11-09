@@ -35,24 +35,24 @@ contract TestStrategy is BasisStrategy {
         address _long,
         address _pool,
         address _vault,
-        address _oracle,
         address _router,
         address _weth,
         address _governance,
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
+        uint256 _buffer,
         bool _isV2
     ) public {
         BasisStrategy.initialize(
             _long,
             _pool,
             _vault,
-            _oracle,
             _router,
             _weth,
             _governance,
             _mcLiquidityPool,
             _perpetualIndex,
+            _buffer,
             _isV2
         );
     }
@@ -81,6 +81,10 @@ contract TestStrategy is BasisStrategy {
         // deposit funds to the margin account to enable trading
         _depositToMarginAccount(_amount);
         // get the long asset mark price from the MCDEX oracle
+        (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        IOracle oracle = IOracle(oracleAddress);
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)
         int256 contracts = ((int256(_amount) * DECIMAL_SHIFT) * 1e18) / price;
@@ -99,6 +103,12 @@ contract TestStrategy is BasisStrategy {
 
     function closePerpPosition(uint256 _amount) external {
         // get the long asset mark price from the MCDEX oracle
+
+        (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        IOracle oracle = IOracle(oracleAddress);
+
         (int256 price, ) = oracle.priceTWAPLong();
         int256 tradeAmount;
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)

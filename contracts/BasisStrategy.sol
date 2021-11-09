@@ -44,8 +44,6 @@ contract BasisStrategy is
     address public router;
     // Basis Vault interface address
     IBasisVault public vault;
-    // MCDEX oracle
-    IOracle public oracle;
     // MCDEX trade reward claimer
     ILmClaimer public lmClaimer;
 
@@ -106,7 +104,6 @@ contract BasisStrategy is
      * @param _long            address of the long asset of the strategy
      * @param _pool            Uniswap v3 pair pool address
      * @param _vault           Basis Vault address
-     * @param _oracle          MCDEX oracle address
      * @param _router          Uniswap v3 router address
      * @param _governance      Governance address
      * @param _mcLiquidityPool MCDEX Liquidity and Perpetual Pool address
@@ -116,12 +113,13 @@ contract BasisStrategy is
         address _long,
         address _pool,
         address _vault,
-        address _oracle,
         address _router,
         address _weth,
         address _governance,
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
+
+        uint256 _buffer,
         bool _isV2
     ) public initializer {
         __Ownable_init();
@@ -130,15 +128,14 @@ contract BasisStrategy is
         require(_long != address(0), "!_long");
         require(_pool != address(0), "!_pool");
         require(_vault != address(0), "!_vault");
-        require(_oracle != address(0), "!_oracle");
         require(_router != address(0), "!_router");
         require(_governance != address(0), "!_governance");
         require(_mcLiquidityPool != address(0), "!_mcLiquidityPool");
         require(_weth != address(0), "!_weth");
+        require(_buffer < MAX_BPS, "!_buffer");
         long = _long;
         pool = _pool;
         vault = IBasisVault(_vault);
-        oracle = IOracle(_oracle);
         router = _router;
         weth = _weth;
         governance = _governance;
@@ -146,6 +143,7 @@ contract BasisStrategy is
         perpetualIndex = _perpetualIndex;
         isV2 = _isV2;
         want = address(vault.want());
+        buffer = _buffer;
         mcLiquidityPool.setTargetLeverage(perpetualIndex, address(this), 1e18);
         (, , , , uint256[6] memory stores) = mcLiquidityPool
             .getLiquidityPoolInfo();
@@ -443,6 +441,10 @@ contract BasisStrategy is
         int256 K = (((int256(MAX_BPS) - int256(buffer)) / 2) * 1e18) /
             (((int256(MAX_BPS) - int256(buffer)) / 2) + int256(buffer));
         // get the price of ETH
+        (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        IOracle oracle = IOracle(oracleAddress);
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate amount to unwind
         int256 unwindAmount = (((price * -getMarginPositions()) -
@@ -648,6 +650,10 @@ contract BasisStrategy is
             _depositToMarginAccount(_amount);
         }
 
+        (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        IOracle oracle = IOracle(oracleAddress);
         // get the long asset mark price from the MCDEX oracle
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)
@@ -688,6 +694,11 @@ contract BasisStrategy is
         internal
         returns (int256 tradeAmount)
     {
+
+        (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        IOracle oracle = IOracle(oracleAddress);
         // get the long asset mark price from the MCDEX oracle
         (int256 price, ) = oracle.priceTWAPLong();
         // calculate the number of contracts (*1e12 because USDC is 6 decimals)
@@ -724,6 +735,11 @@ contract BasisStrategy is
      * @return  tradeAmount the amount of perpetual contracts closed
      */
     function _closeAllPerpPositions() internal returns (int256 tradeAmount) {
+
+        (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
+            perpetualIndex
+        );
+        IOracle oracle = IOracle(oracleAddress);
         // get the long asset mark price from the MCDEX oracle
         (int256 price, ) = oracle.priceTWAPLong();
         // close short position

@@ -70,12 +70,12 @@ def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
         constant.LONG_ASSET,
         constant.UNI_POOL,
         vault,
-        constant.MCDEX_ORACLE,
         constant.ROUTER,
         constant.WETH,
         deployer,
         constant.MCLIQUIDITY,
         constant.PERP_INDEX,
+        constant.BUFFER,
         constant.isV2,
         {"from": deployer},
     )

@@ -6,6 +6,37 @@ import random
 from brownie import network
 
 
+def test_harvest(
+    oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
+):
+    constant = data()
+    full_deposit = constant.DEPOSIT_AMOUNT * len(users) * constant.DECIMAL_SHIFT
+    tx = test_strategy_deposited.harvest({"from": deployer})
+    margin_account = test_strategy_deposited.getMarginAccount()
+    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    assert token.balanceOf(vault_deposited) == 0
+    assert token.balanceOf(test_strategy_deposited) == 0
+    assert "Harvest" in tx.events
+    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
+        test_strategy_deposited
+    )
+    assert vault_deposited.totalLent() == full_deposit / constant.DECIMAL_SHIFT
+    assert (
+        abs(margin_account[1] / price + long.balanceOf(test_strategy_deposited) / price)
+        <= constant.ACCURACY_USDC
+    )
+    assert (
+        tx.events["Harvest"]["perpContracts"]
+        == test_strategy_deposited.getMarginPositions()
+        == test_strategy_deposited.positions()["perpContracts"]
+    )
+    assert (
+        tx.events["Harvest"]["margin"]
+        == test_strategy_deposited.getMargin()
+        == test_strategy_deposited.positions()["margin"]
+    )
+
+
 def test_deposit_harvest_deposit_harvest_withdraw(
     oracle,
     vault,
@@ -18,7 +49,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
 ):
     constant = data()
     # users
-    user_1   = users[0]
+    user_1 = users[0]
     user_2 = users[1]
     user_l = [user_1, user_2]
     # amounts
@@ -79,6 +110,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     assert token.balanceOf(vault) == 0
     assert token.balanceOf(test_strategy) == 0
     assert vault.pricePerShare() == constant.DECIMAL
+
 
 def test_yield_harvest_withdraw(
     oracle,
@@ -363,7 +395,6 @@ def test_loss_remargin_withdraw(
     assert vault_deposited.balanceOf(deployer) == 0
 
 
-
 def test_loss_harvest_remargin(
     oracle,
     vault_deposited,
@@ -542,37 +573,6 @@ def test_harvest_unwind_withdraw(
         print("Strategy want balance: " + str(token.balanceOf(test_strategy_deposited)))
         print("Vault want balance: " + str(token.balanceOf(vault_deposited)))
         print("Price per share: " + str(vault_deposited.pricePerShare()))
-
-
-def test_harvest(
-    oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
-):
-    constant = data()
-    full_deposit = constant.DEPOSIT_AMOUNT * len(users) * constant.DECIMAL_SHIFT
-    tx = test_strategy_deposited.harvest({"from": deployer})
-    margin_account = test_strategy_deposited.getMarginAccount()
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
-    assert token.balanceOf(vault_deposited) == 0
-    assert token.balanceOf(test_strategy_deposited) == 0
-    assert "Harvest" in tx.events
-    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
-        test_strategy_deposited
-    )
-    assert vault_deposited.totalLent() == full_deposit / constant.DECIMAL_SHIFT
-    assert (
-        abs(margin_account[1] / price + long.balanceOf(test_strategy_deposited) / price)
-        <= constant.ACCURACY_USDC
-    )
-    assert (
-        tx.events["Harvest"]["perpContracts"]
-        == test_strategy_deposited.getMarginPositions()
-        == test_strategy_deposited.positions()["perpContracts"]
-    )
-    assert (
-        tx.events["Harvest"]["margin"]
-        == test_strategy_deposited.getMargin()
-        == test_strategy_deposited.positions()["margin"]
-    )
 
 
 def test_harvest_deposit_withdraw(
