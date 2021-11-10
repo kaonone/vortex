@@ -118,7 +118,6 @@ contract BasisStrategy is
         address _governance,
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
-
         uint256 _buffer,
         bool _isV2
     ) public initializer {
