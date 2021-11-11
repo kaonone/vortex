@@ -648,7 +648,6 @@ contract BasisStrategy is
         mcbStaking.stake(mcbBalance);
     }
 
-
     function restake() external onlyGovernance {
         uint256 stakedBalance = mcbStaking.balanceOf(address(this));
         require(stakedBalance > 0, "!nothing to restake");
@@ -656,14 +655,11 @@ contract BasisStrategy is
     }
 
     function withdrawMCB() external onlyGovernance {
-        uint256 unlockTime = mcbStaking.secondsUntilUnlock(address(this));
-        require(block.timestamp > unlockTime, "!not time");
         mcbStaking.redeem();
         IERC20(mcb).transfer(
             governance,
             IERC20(mcb).balanceOf(address(this))
         );
-
     }
 
     /**********************
