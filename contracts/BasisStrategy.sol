@@ -661,8 +661,8 @@ contract BasisStrategy is
         mcbStaking.redeem();
         IERC20(mcb).transfer(
             governance,
-            IERC20(mcb).balanceOf(address(this));
-        )
+            IERC20(mcb).balanceOf(address(this))
+        );
 
     }
 
