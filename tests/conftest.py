@@ -191,3 +191,26 @@ def test_other_strategy(token, deployer, governance, users):
     vaulty.setStrategy(strategy, {"from": deployer})
     strategy.setSlippageTolerance(constant.TRADE_SLIPPAGE, {"from": deployer})
     yield strategy
+
+
+@pytest.fixture
+def mcbStaking():
+    constant = data()
+    stakingContract = interface.IMcBStaking(constant.STAKING)
+    yield stakingContract
+
+
+@pytest.fixture
+def stakingOwner():
+    constant = data()
+    owner = accounts.at(constant.ST_OWNER, force=True)
+    yield owner
+
+
+@pytest.fixture
+def mcb(deployer):
+    constant = data()
+    toke = interface.IERC20(constant.MCB)
+    owner = accounts.at(constant.MCB_WHALE, force=True)
+    toke.transfer(deployer, 10_000e18, {"from": owner})
+    yield toke

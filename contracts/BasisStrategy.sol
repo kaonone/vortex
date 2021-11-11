@@ -17,7 +17,7 @@ import "../interfaces/ILmClaimer.sol";
 
 import "../interfaces/IRouterV2.sol";
 
-import "../interfaces/IMcbStaking.sol";
+import "../interfaces/IMcBStaking.sol";
 
 /**
  * @title  BasisStrategy
@@ -41,7 +41,7 @@ contract BasisStrategy is
     // MCDEX Liquidity and Perpetual Pool interface address
     IMCLP public mcLiquidityPool;
     // MCDEX staking contract
-    IMcBstaking public mcbStaking;
+    IMcBStaking public mcbStaking;
 
     // Uniswap v3 pair pool interface address
     address public pool;
@@ -123,7 +123,6 @@ contract BasisStrategy is
         address _governance,
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
-
         uint256 _buffer,
         bool _isV2
     ) public initializer {
@@ -209,7 +208,7 @@ contract BasisStrategy is
     }
 
     function setMcbStaking(address _mcbStaking) external onlyOwner {
-        mcbStaking = IMcBstaking(_mcbStaking);
+        mcbStaking = IMcBStaking(_mcbStaking);
     }
 
     /**
@@ -641,25 +640,26 @@ contract BasisStrategy is
         );
     }
 
-
-    function stake() external onlyGovernance {
+    function stake() external onlyOwner {
         uint256 mcbBalance = IERC20(mcb).balanceOf(address(this));
         require(mcbBalance > 0, "invalid mcb amount");
+        IERC20(mcb).approve(address(mcbStaking), mcbBalance);
         mcbStaking.stake(mcbBalance);
+        IERC20(mcb).approve(address(mcbStaking), 0);
     }
 
-    function restake() external onlyGovernance {
+    function restake() external onlyOwner {
         uint256 stakedBalance = mcbStaking.balanceOf(address(this));
         require(stakedBalance > 0, "!nothing to restake");
         mcbStaking.restake();
     }
 
-    function withdrawMCB() external onlyGovernance {
+    function withdrawMCB() external onlyOwner {
         mcbStaking.redeem();
-        IERC20(mcb).transfer(
-            governance,
-            IERC20(mcb).balanceOf(address(this))
-        );
+        // IERC20(mcb).transfer(
+        //     governance,
+        //     IERC20(mcb).balanceOf(address(this))
+        // );
     }
 
     /**********************
@@ -724,7 +724,6 @@ contract BasisStrategy is
         internal
         returns (int256 tradeAmount)
     {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -765,7 +764,6 @@ contract BasisStrategy is
      * @return  tradeAmount the amount of perpetual contracts closed
      */
     function _closeAllPerpPositions() internal returns (int256 tradeAmount) {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
