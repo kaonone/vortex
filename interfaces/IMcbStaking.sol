@@ -17,4 +17,8 @@ interface IMcBstaking {
     function restake() external;
 
     function redeem() external;
+
+    function secondsUntilUnlock(
+        address _account
+    ) external view returns (uint256);
 }

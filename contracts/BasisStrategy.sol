@@ -17,6 +17,8 @@ import "../interfaces/ILmClaimer.sol";
 
 import "../interfaces/IRouterV2.sol";
 
+import "../interfaces/IMcbStaking.sol";
+
 /**
  * @title  BasisStrategy
  * @author akropolis.io
@@ -38,6 +40,9 @@ contract BasisStrategy is
 
     // MCDEX Liquidity and Perpetual Pool interface address
     IMCLP public mcLiquidityPool;
+    // MCDEX staking contract
+    IMcBstaking public mcbStaking;
+
     // Uniswap v3 pair pool interface address
     address public pool;
     // Uniswap v3 router interface address
@@ -201,6 +206,10 @@ contract BasisStrategy is
      */
     function setLiquidityPool(address _mcLiquidityPool) external onlyOwner {
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
+    }
+
+    function setMcbStaking(address _mcbStaking) external onlyOwner {
+        mcbStaking = IMcBstaking(_mcbStaking);
     }
 
     /**
@@ -630,6 +639,31 @@ contract BasisStrategy is
             governance,
             IERC20(mcb).balanceOf(address(this))
         );
+    }
+
+
+    function stake() external onlyGovernance {
+        uint256 mcbBalance = IERC20(mcb).balanceOf(address(this));
+        require(mcbBalance > 0, "invalid mcb amount");
+        mcbStaking.stake(mcbBalance);
+    }
+
+
+    function restake() external onlyGovernance {
+        uint256 stakedBalance = mcbStaking.balanceOf(address(this));
+        require(stakedBalance > 0, "!nothing to restake");
+        mcbStaking.restake();
+    }
+
+    function withdrawMCB() external onlyGovernance {
+        uint256 unlockTime = mcbStaking.secondsUntilUnlock(address(this));
+        require(block.timestamp > unlockTime, "!not time");
+        mcbStaking.redeem();
+        IERC20(mcb).transfer(
+            governance,
+            IERC20(mcb).balanceOf(address(this));
+        )
+
     }
 
     /**********************
