@@ -212,5 +212,5 @@ def mcb(deployer):
     constant = data()
     toke = interface.IERC20(constant.MCB)
     owner = accounts.at(constant.MCB_WHALE, force=True)
-    toke.transfer(deployer, 10_000e18, {"from": owner})
+    toke.transfer(deployer, 5_000e18, {"from": owner})
     yield toke

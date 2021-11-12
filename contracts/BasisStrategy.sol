@@ -656,10 +656,10 @@ contract BasisStrategy is
 
     function withdrawMCB() external onlyOwner {
         mcbStaking.redeem();
-        // IERC20(mcb).transfer(
-        //     governance,
-        //     IERC20(mcb).balanceOf(address(this))
-        // );
+        IERC20(mcb).safeTransfer(
+            governance,
+            IERC20(mcb).balanceOf(address(this))
+        );
     }
 
     /**********************

@@ -2,7 +2,7 @@ import brownie
 import constants
 import constants_bsc
 import random
-from brownie import network
+from brownie import network, chain, accounts
 
 
 def data():
@@ -139,3 +139,28 @@ def test_registry(vault, deployer, VaultRegistry, accounts):
     assert tx.events["VaultDeactivated"]["vault"] == vault.address
     assert reg.isVault(vault.address) == False
 
+
+def test_staking(deployer, mcb, test_strategy_deposited, governance, mcbStaking):
+    constant = data()
+    test_strategy_deposited.setMcbStaking(constant.STAKING, {"from": deployer})
+    test_strategy_deposited.setLmClaimerAndMcb(
+        constant.CLAIMER_CONTRACT, constant.MCB, {"from": deployer}
+    )
+    assert mcb.balanceOf(test_strategy_deposited) == 0
+    mcb.transfer(test_strategy_deposited, 5000e18, {"from": deployer})
+    assert mcb.balanceOf(test_strategy_deposited) == 5000e18
+    test_strategy_deposited.stake({"from": deployer})
+    assert mcbStaking.balanceOf(test_strategy_deposited) == 5000e18
+    with brownie.reverts():
+        test_strategy_deposited.withdrawMCB({"from": deployer})
+    test_strategy_deposited.restake({"from": deployer})
+    with brownie.reverts():
+        test_strategy_deposited.withdrawMCB({"from": deployer})
+    chain.sleep(8_640_000)
+    chain.mine(1)
+    with brownie.reverts():
+        test_strategy_deposited.withdrawMCB({"from": accounts[0]})
+    test_strategy_deposited.withdrawMCB({"from": deployer})
+    assert mcbStaking.balanceOf(test_strategy_deposited) == 0
+    assert mcb.balanceOf(test_strategy_deposited) == 0
+    assert mcb.balanceOf(governance) == 5000e18
