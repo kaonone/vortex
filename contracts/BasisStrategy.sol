@@ -640,6 +640,11 @@ contract BasisStrategy is
         );
     }
 
+    /**
+     *@notice allow strategy contract to call stake() from staking mcb contract
+     * this function transfer available mcb on strategy to staking contract
+     *@dev only callable by strategy owner
+     */
     function stake() external onlyOwner {
         uint256 mcbBalance = IERC20(mcb).balanceOf(address(this));
         require(mcbBalance > 0, "invalid mcb amount");
@@ -648,12 +653,21 @@ contract BasisStrategy is
         IERC20(mcb).approve(address(mcbStaking), 0);
     }
 
+    /**
+     *@notice allow strategy contract to call restake() from staking mcb contract
+     * restake() extends the locking period
+     *@dev only callable by strategy owner
+     */
     function restake() external onlyOwner {
         uint256 stakedBalance = mcbStaking.balanceOf(address(this));
         require(stakedBalance > 0, "!nothing to restake");
         mcbStaking.restake();
     }
 
+    /**
+     *@notice function call redeem from staking contract and withdraw mcb when locked period is over
+     *@dev only callable by strategy owner
+     */
     function withdrawMCB() external onlyOwner {
         mcbStaking.redeem();
         IERC20(mcb).safeTransfer(
