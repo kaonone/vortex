@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-interface IMcBStaking {
+interface IMCBStaking {
     function initialize(address _token, uint256 _lockPeriod) external;
 
     function balanceOf(address _account) external view returns (uint256);

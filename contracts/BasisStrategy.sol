@@ -17,7 +17,7 @@ import "../interfaces/ILmClaimer.sol";
 
 import "../interfaces/IRouterV2.sol";
 
-import "../interfaces/IMcBStaking.sol";
+import "../interfaces/IMCBStaking.sol";
 
 /**
  * @title  BasisStrategy
@@ -41,7 +41,7 @@ contract BasisStrategy is
     // MCDEX Liquidity and Perpetual Pool interface address
     IMCLP public mcLiquidityPool;
     // MCDEX staking contract
-    IMcBStaking public mcbStaking;
+    IMCBStaking public mcbStaking;
 
     // Uniswap v3 pair pool interface address
     address public pool;
@@ -207,8 +207,13 @@ contract BasisStrategy is
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
     }
 
-    function setMcbStaking(address _mcbStaking) external onlyOwner {
-        mcbStaking = IMcBStaking(_mcbStaking);
+    /**
+     * @notice  setter for the mcdex staking contract
+     * @param   _mcbStaking MCDEX staking
+     * @dev     only callable by owner
+     */
+    function setMCBStaking(address _mcbStaking) external onlyOwner {
+        mcbStaking = IMCBStaking(_mcbStaking);
     }
 
     /**
@@ -640,26 +645,39 @@ contract BasisStrategy is
         );
     }
 
-    function stake() external onlyOwner {
+    /**
+     *@notice allow strategy contract to call stake() from staking mcb contract
+     * this function transfer available mcb on strategy to staking contract
+     *@dev only callable by strategy owner
+     */
+    function stake() external onlyGovernance {
         uint256 mcbBalance = IERC20(mcb).balanceOf(address(this));
         require(mcbBalance > 0, "invalid mcb amount");
         IERC20(mcb).approve(address(mcbStaking), mcbBalance);
         mcbStaking.stake(mcbBalance);
-        IERC20(mcb).approve(address(mcbStaking), 0);
     }
 
-    function restake() external onlyOwner {
+    /**
+     *@notice allow strategy contract to call restake() from staking mcb contract
+     * restake() extends the locking period
+     *@dev only callable by strategy owner
+     */
+    function restake() external onlyGovernance {
         uint256 stakedBalance = mcbStaking.balanceOf(address(this));
         require(stakedBalance > 0, "!nothing to restake");
         mcbStaking.restake();
     }
 
-    function withdrawMCB() external onlyOwner {
+    /**
+     *@notice function call redeem from staking contract and withdraw mcb when locked period is over
+     *@dev only callable by strategy owner
+     */
+    function withdrawMCB() external onlyGovernance {
         mcbStaking.redeem();
-        // IERC20(mcb).transfer(
-        //     governance,
-        //     IERC20(mcb).balanceOf(address(this))
-        // );
+        IERC20(mcb).safeTransfer(
+            governance,
+            IERC20(mcb).balanceOf(address(this))
+        );
     }
 
     /**********************
