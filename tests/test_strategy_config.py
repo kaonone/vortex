@@ -140,7 +140,6 @@ def test_registry(vault, deployer, VaultRegistry, accounts):
     assert reg.isVault(vault.address) == False
 
 
-
 def test_staking(deployer, mcb, test_strategy_deposited, governance, mcbStaking):
     constant = data()
     test_strategy_deposited.setMCBStaking(constant.STAKING, {"from": deployer})
