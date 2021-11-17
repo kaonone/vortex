@@ -693,7 +693,6 @@ contract BasisStrategy is
         internal
         returns (int256 tradeAmount)
     {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -734,7 +733,6 @@ contract BasisStrategy is
      * @return  tradeAmount the amount of perpetual contracts closed
      */
     function _closeAllPerpPositions() internal returns (int256 tradeAmount) {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -759,7 +757,7 @@ contract BasisStrategy is
      * @param   _amount the amount to deposit into the margin account
      */
     function _depositToMarginAccount(uint256 _amount) internal {
-        IERC20(want).approve(address(mcLiquidityPool), _amount);
+        IERC20(want).safeApprove(address(mcLiquidityPool), _amount);
         mcLiquidityPool.deposit(
             perpetualIndex,
             address(this),
@@ -775,7 +773,6 @@ contract BasisStrategy is
      */
     function _determineFee() internal returns (uint256 fee, bool loss) {
         int256 feeInt;
-
         // get the cash held in the margin cash, funding rates are saved as cash in the margin account
         int256 newAccFunding = getUnitAccumulativeFunding();
         int256 prevAccFunding = positions.unitAccumulativeFunding;
@@ -929,7 +926,7 @@ contract BasisStrategy is
                     sqrtPriceLimitX96
                 );
             // approve the router to spend the tokens
-            IERC20(_tokenIn).approve(
+            IERC20(_tokenIn).safeApprove(
                 router,
                 IERC20(_tokenIn).balanceOf(address(this))
             );
