@@ -267,7 +267,6 @@ contract BasisVault is
         lastUpdate = block.timestamp;
         emit StrategyUpdate(_amount, _loss, toDeposit);
         if (toDeposit > 0) {
-            want.approve(strategy, toDeposit);
             want.safeTransfer(msg.sender, toDeposit);
         }
     }
