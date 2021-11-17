@@ -254,7 +254,7 @@ def test_loss_harvest_withdraw(
     test_strategy_deposited.harvest({"from": deployer})
 
 
-def test_yield_remargin_withdraw(
+def test_yield_setBuffer_withdraw(
     oracle,
     vault_deposited,
     users,
@@ -272,7 +272,19 @@ def test_yield_remargin_withdraw(
         brownie.chain.sleep(28801)
         test_strategy_deposited.remargin({"from": deployer})
         print(test_strategy_deposited.getMarginAccount())
-
+    tx = test_strategy_deposited.setBufferAndRemargin(300_000, {"from": deployer})
+    assert test_strategy_deposited.buffer() == 300_000
+    assert "Remargined" in tx.events
+    assert "BufferSet" in tx.events
+    total = (
+        long.balanceOf(test_strategy_deposited) * price / 1e18
+        + test_strategy_deposited.getMargin()
+    )
+    l = (
+        test_strategy_deposited.getMargin()
+        + test_strategy_deposited.getMarginPositions() * price / 1e18
+    )
+    print("Buffer after remargin: " + str(l / total))
     for n, user in enumerate(users):
 
         bal_before = token.balanceOf(user)

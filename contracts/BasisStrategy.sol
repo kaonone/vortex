@@ -239,7 +239,7 @@ contract BasisStrategy is
     }
 
     /**
-     * @notice  setter for buffer
+     * @notice  setter for buffer, does not remargin immediately
      * @param   _buffer Basis strategy margin buffer
      * @dev     only callable by owner
      */
@@ -248,6 +248,19 @@ contract BasisStrategy is
         emit BufferSet(buffer, _buffer);
         buffer = _buffer;
     }
+
+    /**
+     * @notice  setter for buffer including a remargin for remargin timing safety
+     * @param   _buffer Basis strategy margin buffer
+     * @dev     only callable by owner, this is the safer way to set a buffer
+     */
+    function setBufferAndRemargin(uint256 _buffer) public onlyOwner {
+        require(_buffer < 1_000_000, "!_buffer");
+        emit BufferSet(buffer, _buffer);
+        buffer = _buffer;
+        remargin();
+    }
+
 
     /**
      * @notice  setter for perpetualIndex value
@@ -463,7 +476,7 @@ contract BasisStrategy is
      * @notice  remargin the strategy such that margin call risk is reduced
      * @dev     only callable by owner
      */
-    function remargin() external onlyOwner {
+    function remargin() public onlyOwner {
         // harvest the funds so the positions are up to date
         harvest();
         // ratio of the short in the short and buffer
