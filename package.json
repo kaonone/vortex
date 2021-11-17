@@ -17,7 +17,6 @@
     "format:test:lint": "black --check tests",
     "format:test:fix": "black . tests",
     "clone-packages": "sh ./security/clone-packages.sh"
-  }
   },
   "dependencies": {
     "hardhat": "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz"

@@ -188,6 +188,21 @@ contract BasisStrategy is
         uint256 newLong
     );
     event Remargined(int256 unwindAmount);
+    event LiquidityPoolSet(address indexed oldAddress, address newAddress);
+    event UniswapPoolSet(address indexed oldAddress, address newAddress);
+    event VaultSet(address indexed oldAddress, address newAddress);
+    event BufferSet(uint256 oldAmount, uint256 newAmount);
+    event PerpIndexSet(uint256 oldAmount, uint256 newAmount);
+    event ReferrerSet(address indexed oldAddress, address newAddress);
+    event SlippageToleranceSet(int256 oldAmount, int256 newAmount);
+    event DustSet(int256 oldAmount, int256 newAmount);
+    event TradeModeSet(uint32 oldAmount, uint32 newAmount);
+    event GovernanceSet(address indexed oldAddress, address newAddress);
+    event VersionSet(bool oldState, bool newState);
+    event LmClaimerSet(address indexed oldAddress, address newAddress);
+    event McbSet(address indexed oldAddress, address newAddress);
+    event WethSet(address indexed oldAddress, address newAddress);
+    event LongSet(address indexed oldAddress, address newAddress);
 
     /***********
      * SETTERS *
@@ -199,6 +214,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setLiquidityPool(address _mcLiquidityPool) external onlyOwner {
+        emit LiquidityPoolSet(address(mcLiquidityPool), _mcLiquidityPool);
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
     }
 
@@ -208,6 +224,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setUniswapPool(address _pool) external onlyOwner {
+        emit UniswapPoolSet(pool, _pool);
         pool = _pool;
     }
 
@@ -217,6 +234,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setBasisVault(address _vault) external onlyOwner {
+        emit VaultSet(address(vault), _vault);
         vault = IBasisVault(_vault);
     }
 
@@ -227,6 +245,7 @@ contract BasisStrategy is
      */
     function setBuffer(uint256 _buffer) public onlyOwner {
         require(_buffer < 1_000_000, "!_buffer");
+        emit BufferSet(buffer, _buffer);
         buffer = _buffer;
     }
 
@@ -236,6 +255,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setPerpetualIndex(uint256 _perpetualIndex) external onlyOwner {
+        emit PerpIndexSet(perpetualIndex, _perpetualIndex);
         perpetualIndex = _perpetualIndex;
     }
 
@@ -245,6 +265,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setReferrer(address _referrer) external onlyOwner {
+        emit ReferrerSet(referrer, _referrer);
         referrer = _referrer;
     }
 
@@ -257,6 +278,7 @@ contract BasisStrategy is
         external
         onlyOwner
     {
+        emit SlippageToleranceSet(slippageTolerance, _slippageTolerance);
         slippageTolerance = _slippageTolerance;
     }
 
@@ -266,6 +288,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setDust(int256 _dust) external onlyOwner {
+        emit DustSet(dust, _dust);
         dust = _dust;
     }
 
@@ -275,6 +298,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setTradeMode(uint32 _tradeMode) external onlyOwner {
+        emit TradeModeSet(tradeMode, _tradeMode);
         tradeMode = _tradeMode;
     }
 
@@ -284,6 +308,7 @@ contract BasisStrategy is
      * @dev     only callable by governance
      */
     function setGovernance(address _governance) external onlyGovernance {
+        emit GovernanceSet(governance, _governance);
         governance = _governance;
     }
 
@@ -294,6 +319,7 @@ contract BasisStrategy is
      * @dev only callable by owner
      */
     function setVersion(bool _isV2) external onlyOwner {
+        emit VersionSet(isV2, _isV2);
         isV2 = _isV2;
     }
 
@@ -307,6 +333,8 @@ contract BasisStrategy is
         external
         onlyOwner
     {
+        emit LmClaimerSet(address(lmClaimer), _lmClaimer);
+        emit McbSet(mcb, _mcb);
         lmClaimer = ILmClaimer(_lmClaimer);
         mcb = _mcb;
     }
@@ -318,6 +346,7 @@ contract BasisStrategy is
      */
     function setWeth(address _weth) external onlyOwner {
         require(_weth != address(0), "!_weth");
+        emit WethSet(weth, _weth);
         weth = _weth;
     }
 
@@ -328,6 +357,7 @@ contract BasisStrategy is
      */
     function setLong(address _long) external onlyOwner {
         require(_long != address(0), "!_long");
+        emit LongSet(long, _long);
         long = _long;
     }
 
