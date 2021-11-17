@@ -46,6 +46,10 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
 
     with brownie.reverts():
         vault.setProtocolFees(1, 1, {"from": accounts[9]})
+    with brownie.reverts("!_performanceFee"):
+        vault.setProtocolFees(10_001, 0, {"from": deployer})
+    with brownie.reverts("!_managementFee"):
+        vault.setProtocolFees(0, 10_001, {"from": deployer})
     tx = vault.setProtocolFees(1, 1, {"from": deployer})
     assert vault.managementFee() == 1
     assert vault.performanceFee() == 1

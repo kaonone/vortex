@@ -125,6 +125,8 @@ contract BasisVault is
         external
         onlyOwner
     {
+        require(_performanceFee < MAX_BPS, "!_performanceFee");
+        require(_managementFee < MAX_BPS, "!_managementFee");
         emit ProtocolFeesUpdated(
             managementFee,
             _managementFee,
