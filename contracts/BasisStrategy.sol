@@ -158,6 +158,7 @@ contract BasisStrategy is
     event Harvest(int256 perpContracts, uint256 longPosition, int256 margin);
     event StrategyUnwind(uint256 positionSize);
     event EmergencyExit(address indexed recipient, uint256 positionSize);
+    event Migrated(address indexed strategy, uint256 positionSize);
     event PerpPositionOpened(
         int256 perpPositions,
         uint256 perpetualIndex,
@@ -631,6 +632,23 @@ contract BasisStrategy is
         );
     }
 
+    /**
+     * @notice  migrate all strategy funds to a new strategy
+     *          unwind the strategy and send the funds to the new strategy
+     * @dev     only callable by governance, make sure the vault contract is paused
+     *          before calling this function
+     */
+    function migrate(address newStrategy) external onlyGovernance {
+        // unwind strategy unless it is already unwound
+        if (!isUnwind) {
+            unwind();
+        }
+        uint256 wantBalance = IERC20(want).balanceOf(address(this));
+        // migrate the funds to the new strategy
+        IERC20(want).safeTransfer(newStrategy, wantBalance);
+        emit Migrated(newStrategy, wantBalance);
+    }
+
     /**********************
      * INTERNAL FUNCTIONS *
      **********************/
@@ -693,7 +711,6 @@ contract BasisStrategy is
         internal
         returns (int256 tradeAmount)
     {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -734,7 +751,6 @@ contract BasisStrategy is
      * @return  tradeAmount the amount of perpetual contracts closed
      */
     function _closeAllPerpPositions() internal returns (int256 tradeAmount) {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );

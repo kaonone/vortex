@@ -6,6 +6,79 @@ import random
 from brownie import network
 
 
+def test_migration(BasisStrategy, oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long, governance):
+    constant = data()
+    full_deposit = constant.DEPOSIT_AMOUNT * len(users) * constant.DECIMAL_SHIFT
+    test_strategy_deposited.harvest({"from": deployer})
+    strategy = BasisStrategy.deploy(
+        {"from": deployer},
+    )
+    strategy.initialize(
+        constant.LONG_ASSET,
+        constant.UNI_POOL,
+        vault_deposited,
+        constant.ROUTER,
+        constant.WETH,
+        governance,
+        constant.MCLIQUIDITY,
+        constant.PERP_INDEX,
+        constant.BUFFER,
+        constant.isV2,
+        {"from": deployer},
+    )
+    vault_deposited.pause({"from": deployer})
+    tx = test_strategy_deposited.migrate(strategy, {"from": governance})
+    assert "Migrated" in tx.events
+    assert tx.events["Migrated"]["strategy"] == strategy.address
+    assert tx.events["Migrated"]["positionSize"] == token.balanceOf(strategy)
+    assert token.balanceOf(test_strategy_deposited) == 0
+    assert long.balanceOf(test_strategy_deposited) == 0
+    assert test_strategy_deposited.getMarginPositions() == 0
+    assert test_strategy_deposited.getMargin() == 0
+    vault_deposited.setStrategy(strategy, {"from": deployer})
+    tx = strategy.harvest({"from": deployer})
+    assert token.balanceOf(vault_deposited) == 0
+    assert token.balanceOf(test_strategy_deposited) == 0
+    assert "Harvest" in tx.events
+    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
+        strategy
+    )
+    assert (
+        tx.events["Harvest"]["perpContracts"]
+        == strategy.getMarginPositions()
+        == strategy.positions()["perpContracts"]
+    )
+    assert (
+        tx.events["Harvest"]["margin"]
+        == strategy.getMargin()
+        == strategy.positions()["margin"]
+    )
+    vault_deposited.unpause({"from": deployer})
+    bal_bef = token.balanceOf(vault_deposited)
+    token.approve(vault_deposited, constants.DEPOSIT_AMOUNT, {"from": deployer})
+    tx = vault_deposited.deposit(constants.DEPOSIT_AMOUNT, deployer, {"from": deployer})
+    assert "Deposit" in tx.events
+    assert token.balanceOf(vault_deposited) == bal_bef + constants.DEPOSIT_AMOUNT
+    tx = strategy.harvest({"from": deployer})
+    assert "Harvest" in tx.events
+    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
+        strategy
+    )
+    assert (
+        tx.events["Harvest"]["perpContracts"]
+        == strategy.getMarginPositions()
+        == strategy.positions()["perpContracts"]
+    )
+    assert (
+        tx.events["Harvest"]["margin"]
+        == strategy.getMargin()
+        == strategy.positions()["margin"]
+    )    
+    user_bal_bef = token.balanceOf(users[0])
+    vault_deposited.withdraw(vault_deposited.balanceOf(users[0]), users[0], {"from": users[0]})
+    assert token.balanceOf(users[0]) > user_bal_bef
+
+
 def test_harvest(
     oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
 ):
