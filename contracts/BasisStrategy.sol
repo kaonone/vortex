@@ -158,6 +158,7 @@ contract BasisStrategy is
     event Harvest(int256 perpContracts, uint256 longPosition, int256 margin);
     event StrategyUnwind(uint256 positionSize);
     event EmergencyExit(address indexed recipient, uint256 positionSize);
+    event Migrated(address indexed strategy, uint256 positionSize);
     event PerpPositionOpened(
         int256 perpPositions,
         uint256 perpetualIndex,
@@ -672,6 +673,23 @@ contract BasisStrategy is
             governance,
             IERC20(mcb).balanceOf(address(this))
         );
+    }
+
+    /**
+     * @notice  migrate all strategy funds to a new strategy
+     *          unwind the strategy and send the funds to the new strategy
+     * @dev     only callable by governance, make sure the vault contract is paused
+     *          before calling this function
+     */
+    function migrate(address newStrategy) external onlyGovernance {
+        // unwind strategy unless it is already unwound
+        if (!isUnwind) {
+            unwind();
+        }
+        uint256 wantBalance = IERC20(want).balanceOf(address(this));
+        // migrate the funds to the new strategy
+        IERC20(want).safeTransfer(newStrategy, wantBalance);
+        emit Migrated(newStrategy, wantBalance);
     }
 
     /**********************
