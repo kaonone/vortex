@@ -937,6 +937,10 @@ contract BasisStrategy is
                 path[1] = weth;
                 path[2] = _tokenOut;
             }
+            uint256 expectedAmountOut = 0;
+            if (isSlippageControl) {
+                expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[-1];
+            }
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
@@ -1009,11 +1013,15 @@ contract BasisStrategy is
                 path[1] = weth;
                 path[2] = _tokenOut;
             }
+            uint256 expectedAmountOut = 0;
+            if (isSlippageControl) {
+                expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[-1];
+            }
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
                 _amount,
-                0,
+                expectedAmountOut,
                 path,
                 address(this),
                 deadline
