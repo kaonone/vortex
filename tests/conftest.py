@@ -39,29 +39,44 @@ def token(deployer, users, usdc_whale):
 def data():
     if network.show_active() == "hardhat-arbitrum-fork":
         constant = constants
+    elif network.show_active() == "development":
+        constant = constants
     else:
         constant = constants_bsc
     return constant
 
 
 @pytest.fixture(scope="function", autouse=True)
-def long():
+def long(deployer, users):
     constant = data()
-    toke = interface.IERC20(constant.LONG_ASSET)
+    if network.show_active() == "development":
+        toke = BasicERC20.deploy("Test", "TT", {"from": deployer})
+        toke.mint(1_000_000_000_000e18, {"from": deployer})
+        for user in users:
+            toke.mint(1_000_000e18, {"from": user})
+    else:
+        toke = interface.IERC20(constant.LONG_ASSET)
     yield toke
 
 
 @pytest.fixture(scope="function", autouse=True)
-def oracle():
+def oracle(deployer):
     constant = data()
-    oracle = interface.IOracle(constant.MCDEX_ORACLE)
+
+    if network.show_active() == "development":
+        oracle = BasicERC20.deploy("Test", "TT", {"from": deployer})
+    else:
+        oracle = interface.IOracle(constant.MCDEX_ORACLE)
     yield oracle
 
 
 @pytest.fixture(scope="function", autouse=True)
-def mcLiquidityPool():
+def mcLiquidityPool(deployer):
     constant = data()
-    mc = interface.IMCLP(constant.MCLIQUIDITY)
+    if network.show_active() == "development":
+        mc = BasicERC20.deploy("Test", "TT", {"from": deployer})
+    else:
+        mc = interface.IMCLP(constant.MCLIQUIDITY)
     yield mc
 
 
