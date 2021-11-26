@@ -97,6 +97,8 @@ contract BasisVault is
         address newRecipient
     );
     event ProtocolFeesIssued(uint256 wantAmount, uint256 sharesIssued);
+    event WhitelistStatusChanged(bool _isWhitelistActive);
+    event IndividualWhitelistCapChanged(uint256 oldState, uint256 newState);
 
     /***********
      * SETTERS *
@@ -109,6 +111,7 @@ contract BasisVault is
      */
     function setWhitelistActive(bool _isWhitelistActive) external onlyOwner {
         isWhitelistActive = _isWhitelistActive;
+        emit WhitelistStatusChanged(_isWhitelistActive);
     }
 
     /**
@@ -117,6 +120,7 @@ contract BasisVault is
      * @dev     only callable by owner
      */
     function setIndividualWhitelistCap(uint256 _individualWhitelistCap) external onlyOwner {
+        emit IndividualWhitelistCapChanged(individualWhitelistCap, _individualWhitelistCap);
         individualWhitelistCap = _individualWhitelistCap;
     }
 
