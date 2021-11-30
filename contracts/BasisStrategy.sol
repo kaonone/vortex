@@ -79,6 +79,8 @@ contract BasisStrategy is
     uint32 public tradeMode = 0x40000000;
     // bool determine layer version
     bool isV2;
+    // bool for whether to turn on slippage control
+    bool isSlippageControl;
     // modifier to check that the caller is governance
     modifier onlyGovernance() {
         require(msg.sender == governance, "!governance");
@@ -147,6 +149,7 @@ contract BasisStrategy is
         (, , , , uint256[6] memory stores) = mcLiquidityPool
             .getLiquidityPoolInfo();
         DECIMAL_SHIFT = int256(1e18 / 10**(stores[0]));
+        isSlippageControl = true;
     }
 
     /**********
@@ -204,6 +207,7 @@ contract BasisStrategy is
     event McbSet(address indexed oldAddress, address newAddress);
     event WethSet(address indexed oldAddress, address newAddress);
     event LongSet(address indexed oldAddress, address newAddress);
+    event SlippageControlSet(bool oldState, bool newState);
 
     /***********
      * SETTERS *
@@ -218,6 +222,17 @@ contract BasisStrategy is
         emit LiquidityPoolSet(address(mcLiquidityPool), _mcLiquidityPool);
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
     }
+
+    /**
+     * @notice  setter for slippage control
+     * @param   _isSlippageControl turns on slippage control for uniswap swaps
+     * @dev     only callable by owner
+     */
+    function setSlippageControl(bool _isSlippageControl) external onlyOwner {
+        emit SlippageControlSet(isSlippageControl, _isSlippageControl);
+        isSlippageControl = _isSlippageControl;
+    }
+
 
     /**
      * @notice  setter for the uniswap pair pool
@@ -922,6 +937,7 @@ contract BasisStrategy is
             // swap optimistically via the uniswap v3 router
             amountOut = ISwapRouter(router).exactInputSingle(params);
         } else {
+            uint256 expectedAmountOut;
             //get balance of tokenOut
             uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
             // set the swap params
@@ -931,12 +947,19 @@ contract BasisStrategy is
                 path = new address[](2);
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[1];
+                }
             } else {
                 path = new address[](3);
                 path[0] = _tokenIn;
                 path[1] = weth;
                 path[2] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[2];
+                }
             }
+
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
@@ -994,6 +1017,7 @@ contract BasisStrategy is
             // swap optimistically via the uniswap v3 router
             out = ISwapRouter(router).exactOutputSingle(params);
         } else {
+            uint256 expectedAmountOut;
             //get balance of tokenOut
             uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
             // set the swap params
@@ -1003,17 +1027,24 @@ contract BasisStrategy is
                 path = new address[](2);
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[1];
+                }
             } else {
                 path = new address[](3);
                 path[0] = _tokenIn;
                 path[1] = weth;
                 path[2] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[2];
+                }
             }
+
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
                 _amount,
-                0,
+                expectedAmountOut,
                 path,
                 address(this),
                 deadline
