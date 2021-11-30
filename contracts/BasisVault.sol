@@ -47,6 +47,14 @@ contract BasisVault is
     uint256 public performanceFee;
     // fee recipient
     address public protocolFeeRecipient;
+    // whether the whitelist mode is active
+    bool public isWhitelistActive;
+    // is the address whitelisted
+    mapping(address => bool) public isWhitelisted;
+    // what is the addresses current deposit if the whitelist is active
+    mapping(address => uint256) public whitelistedDeposit;
+    // individual cap per depositor
+    uint256 public individualWhitelistCap;
 
     // modifier to check that the caller is the strategy
     modifier onlyStrategy() {
@@ -89,10 +97,43 @@ contract BasisVault is
         address newRecipient
     );
     event ProtocolFeesIssued(uint256 wantAmount, uint256 sharesIssued);
+    event WhitelistStatusChanged(bool _isWhitelistActive);
+    event IndividualWhitelistCapChanged(uint256 oldState, uint256 newState);
 
     /***********
      * SETTERS *
      ***********/
+
+    /**
+     * @notice  set the whitelist status
+     * @param   _isWhitelistActive bool for the whitelist status
+     * @dev     only callable by owner
+     */
+    function setWhitelistActive(bool _isWhitelistActive) external onlyOwner {
+        isWhitelistActive = _isWhitelistActive;
+        emit WhitelistStatusChanged(_isWhitelistActive);
+    }
+
+    /**
+     * @notice  set the size of the individual cap in the whitelist
+     * @param   _individualWhitelistCap uint256 for setting the individual cap during the whitelist period
+     * @dev     only callable by owner
+     */
+    function setIndividualWhitelistCap(uint256 _individualWhitelistCap) external onlyOwner {
+        emit IndividualWhitelistCapChanged(individualWhitelistCap, _individualWhitelistCap);
+        individualWhitelistCap = _individualWhitelistCap;
+    }
+
+    /**
+     * @notice  set the whitelist status of addresses
+     * @param   whitelist address array containing addresses to whitelist
+     * @dev     only callable by owner
+     */
+    function addToWhitelist(address[] calldata whitelist) external onlyOwner {
+        for(uint i=0; i < whitelist.length; i++) {
+            isWhitelisted[whitelist[i]] = true;
+        }
+    }
 
     /**
      * @notice  set the maximum amount that can be deposited in the vault
@@ -186,6 +227,15 @@ contract BasisVault is
         require(_amount > 0, "!_amount");
         require(_recipient != address(0), "!_recipient");
         require(totalAssets() + _amount <= depositLimit, "!depositLimit");
+        // if the whitelist is active then run the whitelist logic
+        if (isWhitelistActive) {
+            // check if theyre whitelisted
+            require(isWhitelisted[msg.sender], "!whitelisted");
+            // check if they will reach their cap with this deposit
+            require(whitelistedDeposit[msg.sender] + _amount <= individualWhitelistCap, "whitelist cap reached");
+            // update their deposit amount
+            whitelistedDeposit[msg.sender] += _amount;
+        }
 
         shares = _issueShares(_amount, _recipient);
         // transfer want to the vault
