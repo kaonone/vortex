@@ -57,6 +57,8 @@ contract BasisStrategy is
     address public referrer;
     // address of governance
     address public governance;
+    // address of keeper
+    address public keeper;
     // address weth
     address public weth;
     // Positions of the strategy
@@ -91,6 +93,15 @@ contract BasisStrategy is
     modifier onlyAuthorised() {
         require(
             msg.sender == governance || msg.sender == owner(),
+            "!authorised"
+        );
+        _;
+    }
+
+    // modifier to check that the caller is governance or owner or keeper
+    modifier onlyKeeper() {
+        require(
+            msg.sender == governance || msg.sender == owner() || msg.sender == keeper,
             "!authorised"
         );
         _;
@@ -202,6 +213,7 @@ contract BasisStrategy is
     event DustSet(int256 oldAmount, int256 newAmount);
     event TradeModeSet(uint32 oldAmount, uint32 newAmount);
     event GovernanceSet(address indexed oldAddress, address newAddress);
+    event KeeperSet(address indexed oldAddress, address newAddress);
     event VersionSet(bool oldState, bool newState);
     event LmClaimerSet(address indexed oldAddress, address newAddress);
     event McbSet(address indexed oldAddress, address newAddress);
@@ -342,6 +354,16 @@ contract BasisStrategy is
     }
 
     /**
+     * @notice  setter for the keeper address
+     * @param   _keeper address of keeper
+     * @dev     only callable by authorised
+     */
+    function setKeeper(address _keeper) external onlyAuthorised {
+        emit KeeperSet(keeper, _keeper);
+        keeper = _keeper;
+    }
+
+    /**
 
      * @notice set router version for network
      * @param _isV2 bool to set the version of rooter
@@ -400,9 +422,9 @@ contract BasisStrategy is
      *          to their appropriate location.
      *          For the shortPosition a perpetual position is opened, for the long position funds are swapped
      *          to the long asset. For the buffer position the funds are deposited to the margin account idle.
-     * @dev     only callable by the owner
+     * @dev     only callable by the owner, governance or keeper
      */
-    function harvest() public onlyOwner {
+    function harvest() public onlyKeeper {
         uint256 shortPosition;
         uint256 longPosition;
         uint256 bufferPosition;
