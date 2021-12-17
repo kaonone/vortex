@@ -9,3 +9,6 @@
 - The recent cream exploit: https://medium.com/cream-finance/post-mortem-exploit-oct-27-507b12bb6f8e demonstrated how price per share could be inflated as a result of a flash loan attack. First of all, we would like to understand how to best prevent against flash loan attacks within our vault. Furthermore, we would like to understand how price per share flash loan manipulations may affect the protocol or may affect products that build on top of the protocol.
 
 - We would like to understand in greater depth the potential attack vectors there are through manipulating MCDEX's oracle systems and even Uniswap v3's oracle system.
+
+
+- non-existence of  want-wbnb & long-wbnb mock pool, obliges us to integrate fixed path [2] on the bsc testnet deployed contract 
