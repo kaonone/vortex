@@ -216,7 +216,7 @@ def test_deposit_all_withdraw_all(vault, users, token, deployer):
         v_t_bal_before = token.balanceOf(vault)
         u_v_bal_before = vault.balanceOf(user)
         u_t_bal_before = token.balanceOf(user)
-        tx = vault.withdraw(u_v_bal_before, user, {"from": user})
+        tx = vault.withdraw(u_v_bal_before, 0, user, {"from": user})
         assert "Withdraw" in tx.events
         assert tx.events["Withdraw"]["user"] == user
         assert tx.events["Withdraw"]["withdrawal"] == constant.DEPOSIT_AMOUNT

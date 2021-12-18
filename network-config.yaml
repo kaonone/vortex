@@ -43,7 +43,7 @@ development:
     id: hardhat-arbitrum-fork
     cmd: npx hardhat node
     host: http://127.0.0.1
-    timeout: 120
+    timeout: 240
     cmd_settings:
       port: 8545
       fork: arbitrum-main
@@ -52,7 +52,7 @@ development:
     id: bsc-main-fork
     cmd: npx hardhat node
     host: http://127.0.0.1
-    timeout: 120
+    timeout: 240
     cmd_settings:
       port: 8545
       fork: bsc-moralis

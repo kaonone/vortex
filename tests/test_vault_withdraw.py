@@ -19,7 +19,7 @@ def test_withdraw(vault_deposited, users, token):
         v_t_bal_before = token.balanceOf(vault_deposited)
         u_v_bal_before = vault_deposited.balanceOf(user)
         u_t_bal_before = token.balanceOf(user)
-        tx = vault_deposited.withdraw(u_v_bal_before, user, {"from": user})
+        tx = vault_deposited.withdraw(u_v_bal_before, 0, user, {"from": user})
         assert "Withdraw" in tx.events
         assert tx.events["Withdraw"]["user"] == user
         assert tx.events["Withdraw"]["withdrawal"] == constant.DEPOSIT_AMOUNT
@@ -41,7 +41,7 @@ def test_withdraw_yield(vault_deposited, users, token, deployer):
         v_t_bal_before = token.balanceOf(vault_deposited)
         u_v_bal_before = vault_deposited.balanceOf(user)
         u_t_bal_before = token.balanceOf(user)
-        tx = vault_deposited.withdraw(u_v_bal_before, user, {"from": user})
+        tx = vault_deposited.withdraw(u_v_bal_before, 0, user, {"from": user})
         assert "Withdraw" in tx.events
         assert tx.events["Withdraw"]["user"] == user
         assert (
@@ -72,7 +72,7 @@ def test_withdraw_diff_recipient(vault_deposited, users, token, deployer):
         v_t_bal_before = token.balanceOf(vault_deposited)
         u_v_bal_before = vault_deposited.balanceOf(user)
         u_t_bal_before = token.balanceOf(user)
-        tx = vault_deposited.withdraw(u_v_bal_before, user, {"from": deployer})
+        tx = vault_deposited.withdraw(u_v_bal_before, 0, user, {"from": deployer})
         assert "Withdraw" in tx.events
         assert tx.events["Withdraw"]["user"] == user
         assert tx.events["Withdraw"]["withdrawal"] == constant.DEPOSIT_AMOUNT
@@ -93,7 +93,7 @@ def test_withdraw_empty(vault_deposited, users, token, deployer):
         v_t_bal_before = token.balanceOf(vault_deposited)
         u_v_bal_before = vault_deposited.balanceOf(user)
         u_t_bal_before = token.balanceOf(user)
-        tx = vault_deposited.withdraw(u_v_bal_before, user, {"from": user})
+        tx = vault_deposited.withdraw(u_v_bal_before, 0, user, {"from": user})
         assert "Withdraw" in tx.events
         assert tx.events["Withdraw"]["user"] == user
         assert tx.events["Withdraw"]["withdrawal"] == 0
@@ -106,6 +106,6 @@ def test_withdraw_failures(vault_deposited, users, token, deployer):
     constant = data()
     user = users[0]
     with brownie.reverts("!_shares"):
-        vault_deposited.withdraw(0, user, {"from": user})
+        vault_deposited.withdraw(0, 0, user, {"from": user})
     with brownie.reverts("insufficient balance"):
-        vault_deposited.withdraw(constant.DEPOSIT_LIMIT - 1, user, {"from": user})
+        vault_deposited.withdraw(constant.DEPOSIT_LIMIT - 1, 0, user, {"from": user})

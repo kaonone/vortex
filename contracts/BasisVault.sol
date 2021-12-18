@@ -82,7 +82,7 @@ contract BasisVault is
 
     event StrategyUpdated(address indexed strategy);
     event DepositLimitUpdated(uint256 depositLimit);
-
+    event MaxLossUpdated(uint256 maxLoss);
     event Deposit(address indexed user, uint256 deposit, uint256 shares);
     event Withdraw(address indexed user, uint256 withdrawal, uint256 shares);
     event StrategyUpdate(uint256 profitOrLoss, bool isLoss, uint256 toDeposit);
@@ -252,7 +252,7 @@ contract BasisVault is
      *                    be the sender
      * @return amount the amount being withdrawn for the shares redeemed
      */
-    function withdraw(uint256 _shares, address _recipient)
+    function withdraw(uint256 _shares, uint256 _maxLoss, address _recipient)
         external
         nonReentrant
         whenNotPaused
@@ -272,6 +272,7 @@ contract BasisVault is
             (loss, withdrawn) = IStrategy(strategy).withdraw(needed);
             vaultBalance = want.balanceOf(address(this));
             if (loss > 0) {
+                require(loss <= _maxLoss, "loss more than expected");
                 amount = vaultBalance;
                 totalLent -= loss;
                 // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
@@ -427,6 +428,20 @@ contract BasisVault is
     /***********
      * GETTERS *
      ***********/
+
+    function expectedLoss(uint256 _shares) public view returns (uint256 loss) {
+        uint256 strategyBalance = want.balanceOf(strategy);
+        uint256 vaultBalance = want.balanceOf(address(this));
+        uint256 amount = _calcShareValue(_shares);
+        if (amount > vaultBalance) {
+            uint256 needed = amount - vaultBalance;
+            if (needed > strategyBalance){
+                loss = needed - strategyBalance;
+            } else {
+                loss = 0;
+            }
+        }
+    }
 
     /**
      * @notice get the total assets held in the vault including funds lent to the strategy
