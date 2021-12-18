@@ -9,9 +9,17 @@ from brownie import network
 history = TxHistory()
 
 
-
-
-def test_migration(BasisStrategy, oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long, governance):
+def test_migration(
+    BasisStrategy,
+    oracle,
+    vault_deposited,
+    users,
+    deployer,
+    test_strategy_deposited,
+    token,
+    long,
+    governance,
+):
     constant = data()
     full_deposit = constant.DEPOSIT_AMOUNT * len(users) * constant.DECIMAL_SHIFT
     test_strategy_deposited.harvest({"from": deployer})
@@ -45,9 +53,7 @@ def test_migration(BasisStrategy, oracle, vault_deposited, users, deployer, test
     assert token.balanceOf(vault_deposited) == 0
     assert token.balanceOf(test_strategy_deposited) == 0
     assert "Harvest" in tx.events
-    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
-        strategy
-    )
+    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(strategy)
     assert (
         tx.events["Harvest"]["perpContracts"]
         == strategy.getMarginPositions()
@@ -66,9 +72,7 @@ def test_migration(BasisStrategy, oracle, vault_deposited, users, deployer, test
     assert token.balanceOf(vault_deposited) == bal_bef + constants.DEPOSIT_AMOUNT
     tx = strategy.harvest({"from": deployer})
     assert "Harvest" in tx.events
-    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(
-        strategy
-    )
+    assert tx.events["Harvest"]["longPosition"] == long.balanceOf(strategy)
     assert (
         tx.events["Harvest"]["perpContracts"]
         == strategy.getMarginPositions()
@@ -78,10 +82,12 @@ def test_migration(BasisStrategy, oracle, vault_deposited, users, deployer, test
         tx.events["Harvest"]["margin"]
         == strategy.getMargin()
         == strategy.positions()["margin"]
-    )    
+    )
     user_bal_bef = token.balanceOf(users[0])
     lossExpected = vault_deposited.expectedLoss(vault_deposited.balanceOf(users[0]))
-    vault_deposited.withdraw(vault_deposited.balanceOf(users[0]), lossExpected, users[0], {"from": users[0]})
+    vault_deposited.withdraw(
+        vault_deposited.balanceOf(users[0]), lossExpected, users[0], {"from": users[0]}
+    )
     assert token.balanceOf(users[0]) > user_bal_bef
 
 
@@ -158,7 +164,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     print(history.gas_profile)
 
     lossExpected = [vault.expectedLoss(amount_1), vault.expectedLoss(amount_2)]
-    
+
     for n, user in enumerate(user_l):
         vault.withdraw(amounts[n], lossExpected[n], user, {"from": user})
 
@@ -174,7 +180,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
         print("Price per share: " + str(vault.pricePerShare()))
     bal_bef = token.balanceOf(user_2)
     print(vault.balanceOf(user_2))
-    lossExpected2 = vault.expectedLoss(vault.balanceOf(user_2)) 
+    lossExpected2 = vault.expectedLoss(vault.balanceOf(user_2))
     vault.withdraw(vault.balanceOf(user_2), lossExpected2, user_2, {"from": user_2})
     test_strategy.harvest({"from": deployer})
     print(token.balanceOf(user_2) - bal_bef)
@@ -185,8 +191,10 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     print("Strategy want balance: " + str(token.balanceOf(test_strategy)))
     print("Vault want balance: " + str(token.balanceOf(vault)))
     print("Price per share: " + str(vault.pricePerShare()))
-    lossExpected3 = vault.expectedLoss(vault.balanceOf(deployer)) 
-    vault.withdraw(vault.balanceOf(deployer), lossExpected3, deployer, {"from": deployer})
+    lossExpected3 = vault.expectedLoss(vault.balanceOf(deployer))
+    vault.withdraw(
+        vault.balanceOf(deployer), lossExpected3, deployer, {"from": deployer}
+    )
     print(test_strategy.getMarginAccount())
     print(vault.totalSupply())
     print("Price per share: " + str(vault.pricePerShare()))
@@ -265,7 +273,7 @@ def test_yield_harvest_withdraw(
     print("Vault want balance: " + str(token.balanceOf(vault_deposited)))
     print("Price per share: " + str(vault_deposited.pricePerShare()))
     dep_bal = vault_deposited.balanceOf(deployer)
-    
+
     bal_before = token.balanceOf(deployer)
     lossExpected4 = vault_deposited.expectedLoss(dep_bal)
     tx = vault_deposited.withdraw(
@@ -428,7 +436,10 @@ def test_yield_setBuffer_withdraw(
     bal_before = token.balanceOf(deployer)
     lossExpectedDeployer = vault_deposited.expectedLoss(dep_bal)
     tx = vault_deposited.withdraw(
-        vault_deposited.balanceOf(deployer), lossExpectedDeployer, deployer, {"from": deployer}
+        vault_deposited.balanceOf(deployer),
+        lossExpectedDeployer,
+        deployer,
+        {"from": deployer},
     )
     print("Margin account: " + str(test_strategy_deposited.getMarginAccount()))
     print("Deployer gain: " + str(token.balanceOf(deployer) - bal_before))
@@ -831,7 +842,7 @@ def test_harvest_withdraw_all(
     bal_before = token.balanceOf(user)
     to_burn = vault.balanceOf(user)
     loss = vault.expectedLoss(to_burn)
-    tx = vault.withdraw(to_burn, loss, user,{"from": user})
+    tx = vault.withdraw(to_burn, loss, user, {"from": user})
     assert token.balanceOf(user) - bal_before <= constant.DEPOSIT_AMOUNT
     assert vault.totalLent() == 0
     assert long.balanceOf(test_strategy) == 0
@@ -855,7 +866,7 @@ def test_harvest_withdraw(
         long_before = long.balanceOf(test_strategy_deposited)
 
         loss = vault_deposited.expectedLoss(to_burn)
-        tx = vault_deposited.withdraw(to_burn, loss, user,{"from": user})
+        tx = vault_deposited.withdraw(to_burn, loss, user, {"from": user})
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
@@ -901,6 +912,8 @@ def test_harvest_emergency_exit(
         token.balanceOf(governance)
         == tx.events["EmergencyExit"]["positionSize"] + gov_bal
     )
+
+
 def whale_buy_long(deployer, token, mcLiquidityPool, price):
     constant = data()
     if mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[0] == 0:
@@ -944,6 +957,7 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
             0x40000000,
             {"from": deployer},
         )
+
 
 def whale_buy_short(deployer, token, mcLiquidityPool, price):
     constant = data()
@@ -989,7 +1003,6 @@ def whale_buy_short(deployer, token, mcLiquidityPool, price):
             0x40000000,
             {"from": deployer},
         )
-
 
 
 def data():

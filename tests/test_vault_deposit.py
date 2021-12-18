@@ -14,6 +14,7 @@ def data():
         constant = constants_bsc
     return constant
 
+
 def test_whitelist_deposit(vault, users, token, deployer):
     constant = data()
     vault.setWhitelistActive(True, {"from": deployer})
@@ -120,7 +121,9 @@ def test_deposit_with_mal_funds(vault, users, token, randy, deployer):
         )
 
     with brownie.reverts("!depositLimit"):
-        token.approve(vault, constant.DEPOSIT_LIMIT + constant.ADD_VALUE, {"from": deployer})
+        token.approve(
+            vault, constant.DEPOSIT_LIMIT + constant.ADD_VALUE, {"from": deployer}
+        )
         vault.deposit(
             constant.DEPOSIT_LIMIT + constant.ADD_VALUE, deployer, {"from": deployer}
         )
