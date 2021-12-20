@@ -85,7 +85,6 @@ def test_withdraw_diff_recipient(vault_deposited, users, token, deployer):
 
 
 def test_withdraw_empty(vault_deposited, users, token, deployer):
-    constant = data()
     token.transfer(
         deployer, token.balanceOf(vault_deposited), {"from": vault_deposited}
     )
@@ -102,7 +101,7 @@ def test_withdraw_empty(vault_deposited, users, token, deployer):
         assert token.balanceOf(user) == u_t_bal_before
 
 
-def test_withdraw_failures(vault_deposited, users, token, deployer):
+def test_withdraw_failures(vault_deposited, users):
     constant = data()
     user = users[0]
     with brownie.reverts("!_shares"):

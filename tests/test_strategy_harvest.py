@@ -950,7 +950,7 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
         mcLiquidityPool.trade(
             constant.PERP_INDEX,
             deployer,
-            (1_200_000e18 * 1e18) / price,
+            (1_300_000e18 * 1e18) / price,
             price,
             brownie.chain.time() + 10000,
             deployer,
