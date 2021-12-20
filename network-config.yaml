@@ -12,13 +12,13 @@ live:
         id: arbitrum-test
         host: https://rinkeby.arbitrum.io/rpc
         explorer: https://rinkeby-explorer.arbitrum.io
-  
+
       - name: BSC (Moralis)
         chainid: 56
         id: bsc-moralis
         host: https://speedy-nodes-nyc.moralis.io/$MORALIS_PROJECT_ID/bsc/mainnet
         explorer: https://bscscan.com
-      
+
       - name: BSC-TESTNET-moralis
         id: bsc-test-moralis
         host: https://speedy-nodes-nyc.moralis.io/d1401eaa2d9e4127260db272/bsc/testnet
@@ -47,7 +47,7 @@ development:
     cmd_settings:
       port: 8545
       fork: arbitrum-main
-  
+
   - name: BSC-FORK-Moralis
     id: bsc-main-fork
     cmd: npx hardhat node
@@ -56,4 +56,3 @@ development:
     cmd_settings:
       port: 8545
       fork: bsc-moralis
-

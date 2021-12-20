@@ -101,7 +101,9 @@ contract BasisStrategy is
     // modifier to check that the caller is governance or owner or keeper
     modifier onlyKeeper() {
         require(
-            msg.sender == governance || msg.sender == owner() || msg.sender == keeper,
+            msg.sender == governance ||
+                msg.sender == owner() ||
+                msg.sender == keeper,
             "!authorised"
         );
         _;
@@ -243,7 +245,6 @@ contract BasisStrategy is
         isSlippageControl = _isSlippageControl;
     }
 
-
     /**
      * @notice  setter for the uniswap pair pool
      * @param   _pool Uniswap v3 pair pool address
@@ -286,7 +287,6 @@ contract BasisStrategy is
         buffer = _buffer;
         remargin();
     }
-
 
     /**
      * @notice  setter for perpetualIndex value
@@ -946,7 +946,10 @@ contract BasisStrategy is
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
                 if (isSlippageControl) {
-                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[1];
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[1];
                 }
             } else {
                 path = new address[](3);
@@ -954,7 +957,10 @@ contract BasisStrategy is
                 path[1] = weth;
                 path[2] = _tokenOut;
                 if (isSlippageControl) {
-                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[2];
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[2];
                 }
             }
 
@@ -1026,7 +1032,10 @@ contract BasisStrategy is
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
                 if (isSlippageControl) {
-                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[1];
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[1];
                 }
             } else {
                 path = new address[](3);
@@ -1034,7 +1043,10 @@ contract BasisStrategy is
                 path[1] = weth;
                 path[2] = _tokenOut;
                 if (isSlippageControl) {
-                    expectedAmountOut = IRouterV2(router).getAmountsOut(_amount, path)[2];
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[2];
                 }
             }
 

@@ -11,12 +11,15 @@ contract KeeperManager is Ownable, Pausable {
     uint256 public cooldown;
     uint256 public lastTimestamp;
 
-
     event CooldownSet(uint256 cooldown);
     event StrategySet(address indexed strategy);
     event RegistryContractSet(address indexed registryContract);
 
-    constructor(address _strategy, uint256 _cooldown, address _registryContract) {
+    constructor(
+        address _strategy,
+        uint256 _cooldown,
+        address _registryContract
+    ) {
         strategy = _strategy;
         cooldown = _cooldown;
         registryContract = _registryContract;
@@ -37,15 +40,27 @@ contract KeeperManager is Ownable, Pausable {
         emit RegistryContractSet(_registryContract);
     }
 
-    function checkUpkeep(bytes calldata /* checkData */) external returns (bool upkeepNeeded, bytes memory /* performData */) {
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
+        external
+        returns (
+            bool upkeepNeeded,
+            bytes memory /* performData */
+        )
+    {
         upkeepNeeded = (block.timestamp - lastTimestamp) > cooldown;
     }
 
-    function performUpkeep(bytes calldata /* performData */) external  {
+    function performUpkeep(
+        bytes calldata /* performData */
+    ) external {
         require(msg.sender == registryContract, "!keeper");
-        require((block.timestamp - lastTimestamp) > cooldown, "harvest not needed");
+        require(
+            (block.timestamp - lastTimestamp) > cooldown,
+            "harvest not needed"
+        );
         lastTimestamp = block.timestamp;
         IStrategy(strategy).harvest();
     }
-
 }
