@@ -217,8 +217,6 @@ contract BasisStrategy is
     event VersionSet(bool oldState, bool newState);
     event LmClaimerSet(address indexed oldAddress, address newAddress);
     event McbSet(address indexed oldAddress, address newAddress);
-    event WethSet(address indexed oldAddress, address newAddress);
-    event LongSet(address indexed oldAddress, address newAddress);
     event SlippageControlSet(bool oldState, bool newState);
 
     /***********
@@ -388,28 +386,6 @@ contract BasisStrategy is
         emit McbSet(mcb, _mcb);
         lmClaimer = ILmClaimer(_lmClaimer);
         mcb = _mcb;
-    }
-
-    /**
-     * @notice  setter for weth depending on the network
-     * @param   _weth for weth
-     * @dev     only callable by owner
-     */
-    function setWeth(address _weth) external onlyOwner {
-        require(_weth != address(0), "!_weth");
-        emit WethSet(weth, _weth);
-        weth = _weth;
-    }
-
-    /**
-     * @notice  setter for long asset
-     * @param   _long for long
-     * @dev     only callable by owner
-     */
-    function setLong(address _long) external onlyOwner {
-        require(_long != address(0), "!_long");
-        emit LongSet(long, _long);
-        long = _long;
     }
 
     /**********************
