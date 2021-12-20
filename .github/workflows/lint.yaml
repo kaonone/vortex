@@ -51,17 +51,17 @@ jobs:
       - name: Run linter on *.sol and *.json
         run: yarn lint:check 
 
-  commits:
-    runs-on: ubuntu-latest
+  # commits:
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Check out github repository
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - name: Check out github repository
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Run commitlint
-        uses: wagoid/commitlint-github-action@v2
+  #     - name: Run commitlint
+  #       uses: wagoid/commitlint-github-action@v2
 
   brownie:
     runs-on: ubuntu-latest
