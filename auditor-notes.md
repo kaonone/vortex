@@ -10,5 +10,4 @@
 
 - We would like to understand in greater depth the potential attack vectors there are through manipulating MCDEX's oracle systems and even Uniswap v3's oracle system.
 
-
-- non-existence of  want-wbnb & long-wbnb mock pool, obliges us to integrate fixed path [2] on the bsc testnet deployed contract 
+- non-existence of want-wbnb & long-wbnb mock pool, obliges us to integrate fixed path [2] on the bsc testnet deployed contract

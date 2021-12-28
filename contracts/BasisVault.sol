@@ -119,8 +119,14 @@ contract BasisVault is
      * @param   _individualWhitelistCap uint256 for setting the individual cap during the whitelist period
      * @dev     only callable by owner
      */
-    function setIndividualWhitelistCap(uint256 _individualWhitelistCap) external onlyOwner {
-        emit IndividualWhitelistCapChanged(individualWhitelistCap, _individualWhitelistCap);
+    function setIndividualWhitelistCap(uint256 _individualWhitelistCap)
+        external
+        onlyOwner
+    {
+        emit IndividualWhitelistCapChanged(
+            individualWhitelistCap,
+            _individualWhitelistCap
+        );
         individualWhitelistCap = _individualWhitelistCap;
     }
 
@@ -130,7 +136,7 @@ contract BasisVault is
      * @dev     only callable by owner
      */
     function addToWhitelist(address[] calldata whitelist) external onlyOwner {
-        for(uint i=0; i < whitelist.length; i++) {
+        for (uint256 i = 0; i < whitelist.length; i++) {
             isWhitelisted[whitelist[i]] = true;
         }
     }
@@ -232,7 +238,11 @@ contract BasisVault is
             // check if theyre whitelisted
             require(isWhitelisted[msg.sender], "!whitelisted");
             // check if they will reach their cap with this deposit
-            require(whitelistedDeposit[msg.sender] + _amount <= individualWhitelistCap, "whitelist cap reached");
+            require(
+                whitelistedDeposit[msg.sender] + _amount <=
+                    individualWhitelistCap,
+                "whitelist cap reached"
+            );
             // update their deposit amount
             whitelistedDeposit[msg.sender] += _amount;
         }
@@ -252,12 +262,11 @@ contract BasisVault is
      *                    be the sender
      * @return amount the amount being withdrawn for the shares redeemed
      */
-    function withdraw(uint256 _shares, uint256 _maxLoss, address _recipient)
-        external
-        nonReentrant
-        whenNotPaused
-        returns (uint256 amount)
-    {
+    function withdraw(
+        uint256 _shares,
+        uint256 _maxLoss,
+        address _recipient
+    ) external nonReentrant whenNotPaused returns (uint256 amount) {
         require(_shares > 0, "!_shares");
         require(_shares <= balanceOf(msg.sender), "insufficient balance");
         amount = _calcShareValue(_shares);
@@ -435,7 +444,7 @@ contract BasisVault is
         uint256 amount = _calcShareValue(_shares);
         if (amount > vaultBalance) {
             uint256 needed = amount - vaultBalance;
-            if (needed > strategyBalance){
+            if (needed > strategyBalance) {
                 loss = needed - strategyBalance;
             } else {
                 loss = 0;
