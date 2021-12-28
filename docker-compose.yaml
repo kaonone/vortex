@@ -1,8 +1,0 @@
-version: "3.3"
-services:
-  brownie:
-    build: .
-    volumes:
-      - ".:/usr/src/app"
-    restart: on-failure
-    command: brownie test

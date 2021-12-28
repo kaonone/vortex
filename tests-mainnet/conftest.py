@@ -2,7 +2,9 @@ import pytest
 import constants
 from brownie import (
     BasisVault,
-    BasicERC20
+    BasicERC20,
+    Contract,
+    accounts
 )
 
 
@@ -14,11 +16,11 @@ def isolate_func(fn_isolation):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def token(deployer, users):
-    token = BasicERC20.deploy("Test", "TT", {"from": deployer})
-    token.mint(1_000_000_000_000e18, {"from": deployer})
+def token(deployer, users, usdc_whale):
+    # usdc
+    token = Contract.from_explorer("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
     for user in users:
-        token.mint(1_000_000e18, {"from": user})
+        token.transfer(user, 100_000e18, {"from": usdc_whale})
     yield token
 
 
@@ -30,6 +32,11 @@ def deployer(accounts):
 @pytest.fixture
 def users(accounts):
     yield accounts[1:10]
+
+
+@pytest.fixture
+def usdc_whale():
+    yield accounts.at("0xAe2D4617c862309A3d75A0fFB358c7a5009c673F", force=True)
 
 
 @pytest.fixture(scope="function")
