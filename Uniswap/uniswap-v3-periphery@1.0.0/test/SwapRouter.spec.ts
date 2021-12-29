@@ -48,7 +48,9 @@ describe('SwapRouter', () => {
   let router: MockTimeSwapRouter
   let nft: MockTimeNonfungiblePositionManager
   let tokens: [TestERC20, TestERC20, TestERC20]
-  let getBalances: (who: string) => Promise<{
+  let getBalances: (
+    who: string
+  ) => Promise<{
     weth9: BigNumber
     token0: BigNumber
     token1: BigNumber

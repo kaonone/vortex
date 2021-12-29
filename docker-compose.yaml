@@ -3,6 +3,7 @@ services:
   brownie:
     build: .
     volumes:
-      - ".:/usr/src/app"
+      - '.:/usr/src/app'
     restart: on-failure
-    command: brownie test
+    command: brownie test 
+
