@@ -47,14 +47,47 @@ npm run clone-packages
 
 ## System Architecture 
 
-Please note: the ALM aspect of this architecture has not been implemented and will fit into a V2 product.
+## System Architecture (Labels and descriptions TBC)
 
 ![UniSwap ALM](images/Basis%202.0.png)
 
-## Docs
+## Smart Contracts
 
+* Basis Contracts //These contract allow users to take earn a funding rate by entering the perpetual trade.
+  * Vault // Isolates user funds and is able to administer them to a strategy.
+    * State changing methods
+      * `deposit(address user uint256 amount0 uint 256 amount1)` // Emits a Deposited Event
+      * `withdraw(address user uint256 amount0 uint 256 amount1)` // Emits a Withdrawal Event
+      * `collectProtocolFees()` // Collects the protocol fee.
+      * `setProtocolFees(uint256 protocolFee)` // Sets the protocol fee
+    * Informational Methods // Placeholder for now
+      * `calculateShares()`
+      * `calculateDebtOutstanding()`
+      * `getTotalAmounts()`
+  * Strategy
+    * State Changing Methods
+      * `calculateSplit(uint256 amount ) returns (uint256 amountPerp0 uint256 amountPerp1 uint256 amountLP0 uint256 amountLP1)`
+      * `harvest()` // Recycles profits back into the position.
+      * `unwind()` // Safely shuts down the strategy 
+      * `openPerpPosition(uint256 perpetualIndex, address trader, int256 amountPerp, int256 limitPrice, uint256 deadline, address referrer, uint32 flags)`
+      * `closePerpPosition(// Not sure what these parameters are for now)`
+      * `openLPPosition(address ALM uint256 amountLP0 uint256 amountLP1)`
+      * `closeLPPosition(address ALM bytes32 positionIndex)`
+      * `emergencyExit()` // Circuit Breaker ; should be callable by the Governance , Owner (Multisig), and an additional person. Liquidates all the strategies positions even though they are loss making.
+      * `pause()` // Circuit Breaker ; should be callable by the Governance , Owner (Multisig), and an additional person. This function might also check the perp state to see if the perp is in emergency mode.
+      * `resume()` // Resume Normal operations after pause. should be callable by the Governance , Owner (Multisig), and an additional person.
+    * Informational Methods
+      * `calculateLimitPrice(uint256 markPrice) returns (uint256 limitPrice)` // calculates the limit price for opening the perp position. 
+      * `getFundingRate() returns( uint256 fundingRate )` // Calls Perp.Getter.getPerpetualInfo and returns the fundingRate. Might not be necessary since we can already return the fundingRate from getPerpState()
+      * `isFundingRateNegative(fundingRate) returns(bool)`  //Does this matter? In the long run its positive no? I don't think taking the opposite side of the trade would be beneficial in the long run.
+      * `getPerpState(uint256 perpetualIndex) returns (PerpetualState state, uint256 fundingRate, address oracle)`
+* ALM Contracts : These contracts are responsible for managing LP positions within a range , while minimizing the effects of Impermanent Loss and trading costs.
+  * Vault: No changes are necessary with the vault contract contract.
+  * Strategy
+    * `claimReward(bytes32 merkleRoot address)` // claims the rewards from the SWISE contract. 
+    * harvest()
 
-## User Stories 
+## User Stories (We will complete this tomorrow)
 
 1) As a user , I want to deposit funds into the Basis Vaults so that I can earn market neutral yield.
    * Deposit
