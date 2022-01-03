@@ -47,6 +47,14 @@ contract BasisVault is
     uint256 public performanceFee;
     // fee recipient
     address public protocolFeeRecipient;
+    // whether the whitelist mode is active
+    bool public isWhitelistActive;
+    // is the address whitelisted
+    mapping(address => bool) public isWhitelisted;
+    // what is the addresses current deposit if the whitelist is active
+    mapping(address => uint256) public whitelistedDeposit;
+    // individual cap per depositor
+    uint256 public individualWhitelistCap;
 
     // modifier to check that the caller is the strategy
     modifier onlyStrategy() {
@@ -74,7 +82,7 @@ contract BasisVault is
 
     event StrategyUpdated(address indexed strategy);
     event DepositLimitUpdated(uint256 depositLimit);
-
+    event MaxLossUpdated(uint256 maxLoss);
     event Deposit(address indexed user, uint256 deposit, uint256 shares);
     event Withdraw(address indexed user, uint256 withdrawal, uint256 shares);
     event StrategyUpdate(uint256 profitOrLoss, bool isLoss, uint256 toDeposit);
@@ -89,10 +97,49 @@ contract BasisVault is
         address newRecipient
     );
     event ProtocolFeesIssued(uint256 wantAmount, uint256 sharesIssued);
+    event WhitelistStatusChanged(bool _isWhitelistActive);
+    event IndividualWhitelistCapChanged(uint256 oldState, uint256 newState);
 
     /***********
      * SETTERS *
      ***********/
+
+    /**
+     * @notice  set the whitelist status
+     * @param   _isWhitelistActive bool for the whitelist status
+     * @dev     only callable by owner
+     */
+    function setWhitelistActive(bool _isWhitelistActive) external onlyOwner {
+        isWhitelistActive = _isWhitelistActive;
+        emit WhitelistStatusChanged(_isWhitelistActive);
+    }
+
+    /**
+     * @notice  set the size of the individual cap in the whitelist
+     * @param   _individualWhitelistCap uint256 for setting the individual cap during the whitelist period
+     * @dev     only callable by owner
+     */
+    function setIndividualWhitelistCap(uint256 _individualWhitelistCap)
+        external
+        onlyOwner
+    {
+        emit IndividualWhitelistCapChanged(
+            individualWhitelistCap,
+            _individualWhitelistCap
+        );
+        individualWhitelistCap = _individualWhitelistCap;
+    }
+
+    /**
+     * @notice  set the whitelist status of addresses
+     * @param   whitelist address array containing addresses to whitelist
+     * @dev     only callable by owner
+     */
+    function addToWhitelist(address[] calldata whitelist) external onlyOwner {
+        for (uint256 i = 0; i < whitelist.length; i++) {
+            isWhitelisted[whitelist[i]] = true;
+        }
+    }
 
     /**
      * @notice  set the maximum amount that can be deposited in the vault
@@ -125,6 +172,8 @@ contract BasisVault is
         external
         onlyOwner
     {
+        require(_performanceFee < MAX_BPS, "!_performanceFee");
+        require(_managementFee < MAX_BPS, "!_managementFee");
         emit ProtocolFeesUpdated(
             managementFee,
             _managementFee,
@@ -184,6 +233,19 @@ contract BasisVault is
         require(_amount > 0, "!_amount");
         require(_recipient != address(0), "!_recipient");
         require(totalAssets() + _amount <= depositLimit, "!depositLimit");
+        // if the whitelist is active then run the whitelist logic
+        if (isWhitelistActive) {
+            // check if theyre whitelisted
+            require(isWhitelisted[msg.sender], "!whitelisted");
+            // check if they will reach their cap with this deposit
+            require(
+                whitelistedDeposit[msg.sender] + _amount <=
+                    individualWhitelistCap,
+                "whitelist cap reached"
+            );
+            // update their deposit amount
+            whitelistedDeposit[msg.sender] += _amount;
+        }
 
         shares = _issueShares(_amount, _recipient);
         // transfer want to the vault
@@ -200,12 +262,11 @@ contract BasisVault is
      *                    be the sender
      * @return amount the amount being withdrawn for the shares redeemed
      */
-    function withdraw(uint256 _shares, address _recipient)
-        external
-        nonReentrant
-        whenNotPaused
-        returns (uint256 amount)
-    {
+    function withdraw(
+        uint256 _shares,
+        uint256 _maxLoss,
+        address _recipient
+    ) external nonReentrant whenNotPaused returns (uint256 amount) {
         require(_shares > 0, "!_shares");
         require(_shares <= balanceOf(msg.sender), "insufficient balance");
         amount = _calcShareValue(_shares);
@@ -220,6 +281,7 @@ contract BasisVault is
             (loss, withdrawn) = IStrategy(strategy).withdraw(needed);
             vaultBalance = want.balanceOf(address(this));
             if (loss > 0) {
+                require(loss <= _maxLoss, "loss more than expected");
                 amount = vaultBalance;
                 totalLent -= loss;
                 // all assets have been withdrawn so now the vault must deal with the loss in the share calculation
@@ -267,7 +329,6 @@ contract BasisVault is
         lastUpdate = block.timestamp;
         emit StrategyUpdate(_amount, _loss, toDeposit);
         if (toDeposit > 0) {
-            want.approve(strategy, toDeposit);
             want.safeTransfer(msg.sender, toDeposit);
         }
     }
@@ -376,6 +437,20 @@ contract BasisVault is
     /***********
      * GETTERS *
      ***********/
+
+    function expectedLoss(uint256 _shares) public view returns (uint256 loss) {
+        uint256 strategyBalance = want.balanceOf(strategy);
+        uint256 vaultBalance = want.balanceOf(address(this));
+        uint256 amount = _calcShareValue(_shares);
+        if (amount > vaultBalance) {
+            uint256 needed = amount - vaultBalance;
+            if (needed > strategyBalance) {
+                loss = needed - strategyBalance;
+            } else {
+                loss = 0;
+            }
+        }
+    }
 
     /**
      * @notice get the total assets held in the vault including funds lent to the strategy

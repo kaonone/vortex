@@ -57,6 +57,8 @@ contract BasisStrategy is
     address public referrer;
     // address of governance
     address public governance;
+    // address of keeper
+    address public keeper;
     // address weth
     address public weth;
     // Positions of the strategy
@@ -79,6 +81,8 @@ contract BasisStrategy is
     uint32 public tradeMode = 0x40000000;
     // bool determine layer version
     bool isV2;
+    // bool for whether to turn on slippage control
+    bool isSlippageControl;
     // modifier to check that the caller is governance
     modifier onlyGovernance() {
         require(msg.sender == governance, "!governance");
@@ -89,6 +93,17 @@ contract BasisStrategy is
     modifier onlyAuthorised() {
         require(
             msg.sender == governance || msg.sender == owner(),
+            "!authorised"
+        );
+        _;
+    }
+
+    // modifier to check that the caller is governance or owner or keeper
+    modifier onlyKeeper() {
+        require(
+            msg.sender == governance ||
+                msg.sender == owner() ||
+                msg.sender == keeper,
             "!authorised"
         );
         _;
@@ -118,7 +133,6 @@ contract BasisStrategy is
         address _governance,
         address _mcLiquidityPool,
         uint256 _perpetualIndex,
-
         uint256 _buffer,
         bool _isV2
     ) public initializer {
@@ -148,6 +162,7 @@ contract BasisStrategy is
         (, , , , uint256[6] memory stores) = mcLiquidityPool
             .getLiquidityPoolInfo();
         DECIMAL_SHIFT = int256(1e18 / 10**(stores[0]));
+        isSlippageControl = true;
     }
 
     /**********
@@ -159,6 +174,7 @@ contract BasisStrategy is
     event Harvest(int256 perpContracts, uint256 longPosition, int256 margin);
     event StrategyUnwind(uint256 positionSize);
     event EmergencyExit(address indexed recipient, uint256 positionSize);
+    event Migrated(address indexed strategy, uint256 positionSize);
     event PerpPositionOpened(
         int256 perpPositions,
         uint256 perpetualIndex,
@@ -189,6 +205,21 @@ contract BasisStrategy is
         uint256 newLong
     );
     event Remargined(int256 unwindAmount);
+    event LiquidityPoolSet(address indexed oldAddress, address newAddress);
+    event UniswapPoolSet(address indexed oldAddress, address newAddress);
+    event VaultSet(address indexed oldAddress, address newAddress);
+    event BufferSet(uint256 oldAmount, uint256 newAmount);
+    event PerpIndexSet(uint256 oldAmount, uint256 newAmount);
+    event ReferrerSet(address indexed oldAddress, address newAddress);
+    event SlippageToleranceSet(int256 oldAmount, int256 newAmount);
+    event DustSet(int256 oldAmount, int256 newAmount);
+    event TradeModeSet(uint32 oldAmount, uint32 newAmount);
+    event GovernanceSet(address indexed oldAddress, address newAddress);
+    event KeeperSet(address indexed oldAddress, address newAddress);
+    event VersionSet(bool oldState, bool newState);
+    event LmClaimerSet(address indexed oldAddress, address newAddress);
+    event McbSet(address indexed oldAddress, address newAddress);
+    event SlippageControlSet(bool oldState, bool newState);
 
     /***********
      * SETTERS *
@@ -200,7 +231,18 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setLiquidityPool(address _mcLiquidityPool) external onlyOwner {
+        emit LiquidityPoolSet(address(mcLiquidityPool), _mcLiquidityPool);
         mcLiquidityPool = IMCLP(_mcLiquidityPool);
+    }
+
+    /**
+     * @notice  setter for slippage control
+     * @param   _isSlippageControl turns on slippage control for uniswap swaps
+     * @dev     only callable by owner
+     */
+    function setSlippageControl(bool _isSlippageControl) external onlyOwner {
+        emit SlippageControlSet(isSlippageControl, _isSlippageControl);
+        isSlippageControl = _isSlippageControl;
     }
 
     /**
@@ -209,6 +251,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setUniswapPool(address _pool) external onlyOwner {
+        emit UniswapPoolSet(pool, _pool);
         pool = _pool;
     }
 
@@ -218,17 +261,31 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setBasisVault(address _vault) external onlyOwner {
+        emit VaultSet(address(vault), _vault);
         vault = IBasisVault(_vault);
     }
 
     /**
-     * @notice  setter for buffer
+     * @notice  setter for buffer, does not remargin immediately
      * @param   _buffer Basis strategy margin buffer
      * @dev     only callable by owner
      */
     function setBuffer(uint256 _buffer) public onlyOwner {
         require(_buffer < 1_000_000, "!_buffer");
+        emit BufferSet(buffer, _buffer);
         buffer = _buffer;
+    }
+
+    /**
+     * @notice  setter for buffer including a remargin for remargin timing safety
+     * @param   _buffer Basis strategy margin buffer
+     * @dev     only callable by owner, this is the safer way to set a buffer
+     */
+    function setBufferAndRemargin(uint256 _buffer) public onlyOwner {
+        require(_buffer < 1_000_000, "!_buffer");
+        emit BufferSet(buffer, _buffer);
+        buffer = _buffer;
+        remargin();
     }
 
     /**
@@ -237,6 +294,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setPerpetualIndex(uint256 _perpetualIndex) external onlyOwner {
+        emit PerpIndexSet(perpetualIndex, _perpetualIndex);
         perpetualIndex = _perpetualIndex;
     }
 
@@ -246,6 +304,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setReferrer(address _referrer) external onlyOwner {
+        emit ReferrerSet(referrer, _referrer);
         referrer = _referrer;
     }
 
@@ -258,6 +317,7 @@ contract BasisStrategy is
         external
         onlyOwner
     {
+        emit SlippageToleranceSet(slippageTolerance, _slippageTolerance);
         slippageTolerance = _slippageTolerance;
     }
 
@@ -267,6 +327,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setDust(int256 _dust) external onlyOwner {
+        emit DustSet(dust, _dust);
         dust = _dust;
     }
 
@@ -276,6 +337,7 @@ contract BasisStrategy is
      * @dev     only callable by owner
      */
     function setTradeMode(uint32 _tradeMode) external onlyOwner {
+        emit TradeModeSet(tradeMode, _tradeMode);
         tradeMode = _tradeMode;
     }
 
@@ -285,7 +347,18 @@ contract BasisStrategy is
      * @dev     only callable by governance
      */
     function setGovernance(address _governance) external onlyGovernance {
+        emit GovernanceSet(governance, _governance);
         governance = _governance;
+    }
+
+    /**
+     * @notice  setter for the keeper address
+     * @param   _keeper address of keeper
+     * @dev     only callable by authorised
+     */
+    function setKeeper(address _keeper) external onlyAuthorised {
+        emit KeeperSet(keeper, _keeper);
+        keeper = _keeper;
     }
 
     /**
@@ -295,6 +368,7 @@ contract BasisStrategy is
      * @dev only callable by owner
      */
     function setVersion(bool _isV2) external onlyOwner {
+        emit VersionSet(isV2, _isV2);
         isV2 = _isV2;
     }
 
@@ -308,28 +382,10 @@ contract BasisStrategy is
         external
         onlyOwner
     {
+        emit LmClaimerSet(address(lmClaimer), _lmClaimer);
+        emit McbSet(mcb, _mcb);
         lmClaimer = ILmClaimer(_lmClaimer);
         mcb = _mcb;
-    }
-
-    /**
-     * @notice  setter for weth depending on the network
-     * @param   _weth for weth
-     * @dev     only callable by owner
-     */
-    function setWeth(address _weth) external onlyOwner {
-        require(_weth != address(0), "!_weth");
-        weth = _weth;
-    }
-
-    /**
-     * @notice  setter for long asset
-     * @param   _long for long
-     * @dev     only callable by owner
-     */
-    function setLong(address _long) external onlyOwner {
-        require(_long != address(0), "!_long");
-        long = _long;
     }
 
     /**********************
@@ -342,9 +398,9 @@ contract BasisStrategy is
      *          to their appropriate location.
      *          For the shortPosition a perpetual position is opened, for the long position funds are swapped
      *          to the long asset. For the buffer position the funds are deposited to the margin account idle.
-     * @dev     only callable by the owner
+     * @dev     only callable by the owner, governance or keeper
      */
-    function harvest() public onlyOwner {
+    function harvest() public onlyKeeper {
         uint256 shortPosition;
         uint256 longPosition;
         uint256 bufferPosition;
@@ -434,7 +490,7 @@ contract BasisStrategy is
      * @notice  remargin the strategy such that margin call risk is reduced
      * @dev     only callable by owner
      */
-    function remargin() external onlyOwner {
+    function remargin() public onlyOwner {
         // harvest the funds so the positions are up to date
         harvest();
         // ratio of the short in the short and buffer
@@ -632,6 +688,23 @@ contract BasisStrategy is
         );
     }
 
+    /**
+     * @notice  migrate all strategy funds to a new strategy
+     *          unwind the strategy and send the funds to the new strategy
+     * @dev     only callable by governance, make sure the vault contract is paused
+     *          before calling this function
+     */
+    function migrate(address newStrategy) external onlyGovernance {
+        // unwind strategy unless it is already unwound
+        if (!isUnwind) {
+            unwind();
+        }
+        uint256 wantBalance = IERC20(want).balanceOf(address(this));
+        // migrate the funds to the new strategy
+        IERC20(want).safeTransfer(newStrategy, wantBalance);
+        emit Migrated(newStrategy, wantBalance);
+    }
+
     /**********************
      * INTERNAL FUNCTIONS *
      **********************/
@@ -694,7 +767,6 @@ contract BasisStrategy is
         internal
         returns (int256 tradeAmount)
     {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -735,7 +807,6 @@ contract BasisStrategy is
      * @return  tradeAmount the amount of perpetual contracts closed
      */
     function _closeAllPerpPositions() internal returns (int256 tradeAmount) {
-
         (, address oracleAddress, ) = mcLiquidityPool.getPerpetualInfo(
             perpetualIndex
         );
@@ -760,7 +831,7 @@ contract BasisStrategy is
      * @param   _amount the amount to deposit into the margin account
      */
     function _depositToMarginAccount(uint256 _amount) internal {
-        IERC20(want).approve(address(mcLiquidityPool), _amount);
+        IERC20(want).safeApprove(address(mcLiquidityPool), _amount);
         mcLiquidityPool.deposit(
             perpetualIndex,
             address(this),
@@ -776,7 +847,6 @@ contract BasisStrategy is
      */
     function _determineFee() internal returns (uint256 fee, bool loss) {
         int256 feeInt;
-
         // get the cash held in the margin cash, funding rates are saved as cash in the margin account
         int256 newAccFunding = getUnitAccumulativeFunding();
         int256 prevAccFunding = positions.unitAccumulativeFunding;
@@ -865,6 +935,7 @@ contract BasisStrategy is
             // swap optimistically via the uniswap v3 router
             amountOut = ISwapRouter(router).exactInputSingle(params);
         } else {
+            uint256 expectedAmountOut;
             //get balance of tokenOut
             uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
             // set the swap params
@@ -874,12 +945,25 @@ contract BasisStrategy is
                 path = new address[](2);
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[1];
+                }
             } else {
                 path = new address[](3);
                 path[0] = _tokenIn;
                 path[1] = weth;
                 path[2] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[2];
+                }
             }
+
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
@@ -930,13 +1014,14 @@ contract BasisStrategy is
                     sqrtPriceLimitX96
                 );
             // approve the router to spend the tokens
-            IERC20(_tokenIn).approve(
+            IERC20(_tokenIn).safeApprove(
                 router,
                 IERC20(_tokenIn).balanceOf(address(this))
             );
             // swap optimistically via the uniswap v3 router
             out = ISwapRouter(router).exactOutputSingle(params);
         } else {
+            uint256 expectedAmountOut;
             //get balance of tokenOut
             uint256 amountTokenOut = IERC20(_tokenOut).balanceOf(address(this));
             // set the swap params
@@ -946,17 +1031,30 @@ contract BasisStrategy is
                 path = new address[](2);
                 path[0] = _tokenIn;
                 path[1] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[1];
+                }
             } else {
                 path = new address[](3);
                 path[0] = _tokenIn;
                 path[1] = weth;
                 path[2] = _tokenOut;
+                if (isSlippageControl) {
+                    expectedAmountOut = IRouterV2(router).getAmountsOut(
+                        _amount,
+                        path
+                    )[2];
+                }
             }
+
             // approve the router to spend the token
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
                 _amount,
-                0,
+                expectedAmountOut,
                 path,
                 address(this),
                 deadline
