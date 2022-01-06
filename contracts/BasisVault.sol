@@ -26,7 +26,6 @@ contract BasisVault is
 {
     using SafeERC20 for IERC20;
     using Math for uint256;
-    using SafeMath for uint256;
 
     // token used as the vault's underlying currency
     IERC20 public want;
