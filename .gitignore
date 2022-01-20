@@ -10,7 +10,7 @@ cache/
 artifacts/
 hardhat/
 Uniswap/
-flattened/
+# flattened/
 
 # Node/npm
 node_modules/
