@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL V3.0
-pragma solidity 0.8.4;
+pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../interfaces/IStrategy.sol";
+import "./interfaces/IStrategy.sol";
 
 contract KeeperManager is Ownable, Pausable {
     address public strategy;

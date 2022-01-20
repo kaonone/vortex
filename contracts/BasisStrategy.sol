@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL V3.0
-pragma solidity 0.8.4;
+pragma solidity >=0.8.0 <0.9.0;
 
 import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -10,12 +10,11 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import "../interfaces/IMCLP.sol";
-import "../interfaces/IOracle.sol";
-import "../interfaces/IBasisVault.sol";
-import "../interfaces/ILmClaimer.sol";
-
-import "../interfaces/IRouterV2.sol";
+import "./interfaces/IMCLP.sol";
+import "./interfaces/IOracle.sol";
+import "./interfaces/IBasisVault.sol";
+import "./interfaces/ILmClaimer.sol";
+import "./interfaces/IRouterV2.sol";
 
 /**
  * @title  BasisStrategy

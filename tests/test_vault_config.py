@@ -45,7 +45,7 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
     assert tx.events["DepositLimitUpdated"]["depositLimit"] == 0
 
     with brownie.reverts():
-        vault.setProtocolFees(1, 1, {"from": accounts[9]})
+        vault.setProt50ocolFees(1, 1, {"from": accounts[9]})
     with brownie.reverts("!_performanceFee"):
         vault.setProtocolFees(10_001, 0, {"from": deployer})
     with brownie.reverts("!_managementFee"):
