@@ -1,17 +1,2 @@
-# Brownie
-__pycache__
-.history
-.hypothesis/
-build/
-reports/
-.env
-venv/
 cache/
-artifacts/
-hardhat/
-Uniswap/
-flattened/
-
-# Node/npm
-node_modules/
-node_modules/.yarn-integrity
+out/
