@@ -198,4 +198,28 @@ contract BasisTestBsc is DSTest {
         emit log_named_int("totalAssets", int256(vault.totalAssets()));
         assertEq(uint256(vault.totalAssets()), 0);        
     }
+
+    function testHarvestBsc() public {
+        for (uint256 i = 0; i < _users.length; i++) {
+            vm.startPrank(_usdcWhale);
+            IERC20(_want).transfer(_users[i], _depositAmount * 3);
+            vm.stopPrank();
+            vm.startPrank(_users[i]);
+            IERC20(_want).approve(address(vault), _depositAmount * 3);
+            vault.deposit(_depositAmount * 3, _users[i]);
+        }
+        vm.startPrank(deployer);
+        vault.setStrategy(address(strategy));
+        strategy.setSlippageTolerance(int256(_tradeSlippage));
+        vault.setProtocolFees(2000, 200);
+        strategy.harvest();
+        assertEq(IERC20(_want).balanceOf(address(vault)), 0);
+        assertEq(IERC20(_want).balanceOf(address(strategy)), 0);
+        // assertEq(int256(vault.totalLent()), (int256(_depositAmount * 9) / 1e12));
+        (int256 cash, , , , , , , ) = strategy.getMarginAccount();
+        (int256 price, ) = IOracle(_mcDEXOracle).priceTWAPLong();
+        // int256 value = ((cash / price) + (int256(IERC20(_longAsset).balanceOf(address(strategy))) / price));
+        // emit log_named_int("value", value);
+        assert((cash / price) + (int256(IERC20(_longAsset).balanceOf(address(strategy))) / price) <= 1e4); 
+    }
 }
