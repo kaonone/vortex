@@ -29,6 +29,10 @@ jobs:
 
       - name: Run forge tests
         run:
-          forge test -vvvvv -f $url
+          if [[ $url == ${{secrets.ARBITRUM_RPC }}]];then
+            forge test -m Arb -f $url
+            else
+            forge test -m Bsc -f $url
+          fi
         env:
           url : ${{ secrets[matrix.url_link]}}

@@ -21,7 +21,7 @@ interface Vm {
     function expectRevert(bytes calldata) external;
 }
 
-contract BasisTest is DSTest {
+contract BasisTestBsc is DSTest {
     Vm vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     address constant deployer = 0xBF2B82E026B182Bb4f5f10CCfB6136b1df08e29F;
     address constant _want = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
@@ -77,7 +77,7 @@ contract BasisTest is DSTest {
         vm.stopPrank();
     }
 
-    function testVaultDeployment() public {
+    function testVaultDeploymentBsc() public {
         string memory _name = "akBVUSDC-ETH";
         string memory _symbol = "akBasisVault-USDC-ETH";
         uint256 _totalAssets = 0;
@@ -99,7 +99,7 @@ contract BasisTest is DSTest {
         vm.expectEmit(true, true, true, true);
     }
 
-    function testSetParam() public {
+    function testSetParamBsc() public {
         // @dev : Testing Deposit Limits
         vm.expectRevert("Ownable: caller is not the owner");
         vault.setDepositLimit(0);
@@ -120,7 +120,7 @@ contract BasisTest is DSTest {
         assertEq(5_000, uint256(vault.managementFee()));
     }
 
-    function testSetStrategy() public {
+    function testSetStrategyBsc() public {
         vm.expectRevert("Ownable: caller is not the owner");
         vault.setStrategy(address(strategy));
         // vm.prank(address(0));
@@ -130,7 +130,7 @@ contract BasisTest is DSTest {
         vault.setStrategy(address(strategy));
     }
 
-    function testPauseUnpause() public {
+    function testPauseUnpauseBsc() public {
         vm.expectRevert("Ownable: caller is not the owner");
         vault.pause();
         vm.prank(deployer);
@@ -155,7 +155,7 @@ contract BasisTest is DSTest {
         assertEq(uint256(vault.totalAssets()), _depositAmount);
     }
 
-    function testDeposit() public {
+    function testDepositBsc() public {
         for (uint256 i = 0; i < _users.length; i++) {
             vm.startPrank(_users[i]);
             IERC20(_want).approve(address(vault), _depositAmount);
@@ -171,7 +171,7 @@ contract BasisTest is DSTest {
         assertEq(uint256(vault.totalAssets()), _depositAmount * 3);
     }
 
-    function testIndividualDepositLimit() public {
+    function testIndividualDepositLimitBsc() public {
         vm.startPrank(_usdcWhale);
         IERC20(_want).approve(address(vault), 2**256 - 1);
         vault.deposit(_depositAmount, _usdcWhale);
