@@ -9,6 +9,13 @@ on:
 jobs:
   run-ci:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - environment: Arbitrum
+            url_link: ARBITRUM_RPC 
+          - environment: BSC
+            url_link: BSC_RPC
     steps:
       - uses: actions/checkout@v2
 
@@ -22,6 +29,6 @@ jobs:
 
       - name: Run forge tests
         run:
-          forge test -vvvvv -f $INFURA_ARBITRUM_RINKEBY
+          forge test -vvvvv -f $url
         env:
-          INFURA_ARBITRUM_RINKEBY: ${{ secrets.INFURA_ARBITRUM_RINKEBY }}
+          url : ${{ secrets[matrix.url_link]}}
