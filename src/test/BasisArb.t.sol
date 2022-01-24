@@ -198,19 +198,16 @@ contract BasisTestArb is DSTest {
         assertEq(uint256(vault.totalAssets()), 0);        
     }
 
-   function testHarvestArb() public {
-        for (uint256 i = 0; i < _users.length; i++) {
-            vm.startPrank(_usdcWhale);
-            IERC20(_want).transfer(_users[i], _depositAmount * 3);
-            vm.stopPrank();
-            vm.startPrank(_users[i]);
-            IERC20(_want).approve(address(vault), _depositAmount * 3);
-            vault.deposit(_depositAmount * 3, _users[i]);
-        }
+    function testHarvestArb() public {
+        vm.startPrank(_usdcWhale);
+        IERC20(_want).transfer(deployer, _depositLimit);
+        vm.stopPrank();
         vm.startPrank(deployer);
         vault.setStrategy(address(strategy));
         strategy.setSlippageTolerance(int256(_tradeSlippage));
         vault.setProtocolFees(2000, 200);
+        IERC20(_want).approve(address(vault), 2**256 - 1);
+        vault.deposit(_depositAmount * 9, deployer);
         strategy.harvest();
         assertEq(IERC20(_want).balanceOf(address(vault)), 0);
         assertEq(IERC20(_want).balanceOf(address(strategy)), 0);
@@ -220,5 +217,12 @@ contract BasisTestArb is DSTest {
         // int256 value = ((cash / price) + (int256(IERC20(_longAsset).balanceOf(address(strategy))) / price));
         // emit log_named_int("value", value);
         assert((cash / price) + (int256(IERC20(_longAsset).balanceOf(address(strategy))) / price) <= 1e4); 
+        uint256 maxLoss = vault.expectedLoss(IERC20(address(vault)).balanceOf(deployer));
+        emit log_named_int("balance vault", int256(maxLoss));
+        vault.withdraw(IERC20(address(vault)).balanceOf(deployer), maxLoss, deployer);
+        assertEq(IERC20(_want).balanceOf(address(vault)), 0);
+        assertEq(vault.totalLent(), 0);
+        assertEq(IERC20(_want).balanceOf(address(strategy)), 0);
+        assertEq(vault.pricePerShare(), _add_value);
     }
 }
