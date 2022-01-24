@@ -179,4 +179,17 @@ contract BasisArb is DSTest {
         vm.expectRevert("user cap reached");
         vault.deposit(_individualDepositLimit + 10, _usdcWhale);
     }
+
+    function testWithdrawArb() public {
+        testDepositArb();
+        for (uint256 i=0; i<_users.length; i++) {
+            vm.startPrank(_users[i]);
+            vault.withdraw(_depositAmount, 0, _users[i]);
+            assertEq(uint256(IERC20(_want).balanceOf(_users[i])), _depositAmount);
+            vm.expectRevert("!_shares");
+            vault.withdraw(0, 0, _users[i]);
+
+        }
+        assertEq(uint256(vault.totalAssets()), 0);        
+    }
 }

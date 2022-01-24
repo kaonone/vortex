@@ -179,4 +179,21 @@ contract BasisTestBsc is DSTest {
         vm.expectRevert("user cap reached");
         vault.deposit(_individualDepositLimit + 10, _usdcWhale);
     }
+
+    function testWithdrawBsc() public {
+
+        for (uint256 i=0; i<_users.length; i++) {
+            vm.startPrank(_users[i]);
+            IERC20(_want).approve(address(vault), _depositAmount);
+            vault.deposit(_depositAmount, _users[i]);
+            // start withdraw
+            vault.withdraw(_depositAmount, 0, _users[i]);
+            // assertEq(uint256(IERC20(_want).balanceOf(_users[i])), _depositAmount);
+            vm.expectRevert("!_shares");
+            vault.withdraw(0, 0, _users[i]);
+
+        }
+        emit log_named_int("totalAssets", int256(vault.totalAssets()));
+        assertEq(uint256(vault.totalAssets()), 0);        
+    }
 }
