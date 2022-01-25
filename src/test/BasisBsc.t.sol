@@ -38,7 +38,7 @@ contract BasisTestBsc is DSTest {
     uint256 constant _depositLimit = 10_000_000e18;
     uint256 constant _buffer = 100_000;
     uint256 constant _perpIndex = 0;
-    uint256 constant _depositAmount = 100_000e18;
+    uint256 constant _depositAmount = 50_000e18;
     uint256 constant _yieldAmount = 2_000e18;
     uint256 constant _accuracy_usdc = 1e16;
     uint256 constant _accuracy = 1e21;
@@ -225,5 +225,76 @@ contract BasisTestBsc is DSTest {
         assertEq(vault.totalLent(), 0);
         assertEq(IERC20(_want).balanceOf(address(strategy)), 0);
         assertEq(vault.pricePerShare(), _add_value);
+    }
+
+    function whaleTransfer() public {
+        vm.startPrank(_usdcWhale);
+        for(uint256 i =0; i < _users.length; i++) {
+            IERC20(_want).transfer(_users[i], _depositAmount * 8);
+        }
+        vm.stopPrank();
+    }
+
+    function testDepositHarvestBsc() public {
+        whaleBuyLong();
+        whaleTransfer();
+        addressDeposit();
+        vm.startPrank(deployer);
+        vault.setStrategy(address(strategy));
+        for(uint256 i = 0; i < 10; i++) {
+            strategy.harvest();
+        }
+        vm.stopPrank();
+        vm.startPrank(_users[2]);
+        vault.deposit(_depositAmount * 2, _users[2]);
+        vm.stopPrank();
+        vm.startPrank(deployer);
+        strategy.harvest();
+        for (uint256 i = 0; i < 10; i++) {
+            strategy.remargin();
+        }
+        vm.stopPrank();
+        addressWithdraw();
+        assertEq(vault.totalSupply(), 0);
+        assertEq(vault.totalLent(), 0);
+        assertEq(IERC20(_longAsset).balanceOf(address(strategy)), 0);
+
+    }
+
+    function whaleBuyLong() public {
+        vm.startPrank(_usdcWhale);
+        IERC20(_want).transfer(deployer, 2_000_000e18);
+        vm.stopPrank();
+        vm.startPrank(deployer);
+        (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(1, deployer);
+        IMCLP(_mcLiquidity).setTargetLeverage(1, deployer, 1e18);
+        // whale deposit to the pool
+        IERC20(_want).approve(address(_mcLiquidity), 2**256 -1);
+        IMCLP(_mcLiquidity).deposit(1, deployer, int256(1_500_000e18));
+        // start trading
+        (, , int256 amount, , , , , , )  =  IMCLP(_mcLiquidity).getMarginAccount(1, deployer);
+        (int256 price, ) = IOracle(_mcDEXOracle).priceTWAPLong();
+        int256 tradeAmount = int256((1_200_000e18 * 1e18) / price);
+        emit log_named_int("trade amount", tradeAmount);
+        emit log_named_int("price", price); 
+        IMCLP(_mcLiquidity).trade(1, deployer, tradeAmount, price, (block.timestamp + 10000), deployer, 0x40000000);
+    }
+
+    function addressDeposit() public {
+        for(uint256 i = 0; i<_users.length; i++){
+            vm.startPrank(_users[i]);
+            IERC20(_want).approve(address(vault), 2 ** 256 -1);
+            vault.deposit(_depositAmount * 2, _users[i]);
+            vm.stopPrank();
+        } 
+    }
+
+    function addressWithdraw() public {
+        for(uint256 i = 0; i<_users.length; i++){
+            vm.startPrank(_users[i]);
+            uint256 loss = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[i]));
+            vault.withdraw(IERC20(address(vault)).balanceOf(_users[i]), loss, _users[i]);
+            vm.stopPrank();
+        } 
     }
 }
