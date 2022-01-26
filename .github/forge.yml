@@ -1,0 +1,38 @@
+name: Forge Tests
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+# TODO : set up matrx for Arbitrum / BSC
+jobs:
+  run-ci:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - environment: Arbitrum
+            url_link: ARBITRUM_RPC 
+          - environment: BSC
+            url_link: BSC_RPC
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Pull library deps
+        run: forge update
+
+      - name: Run forge tests
+        run:
+          if [[ $url == ${{secrets.ARBITRUM_RPC }}]];then
+            forge test -m Arb -f $url
+            else
+            forge test -m Bsc -f $url
+          fi
+        env:
+          url : ${{ secrets[matrix.url_link]}}

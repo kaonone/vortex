@@ -14,15 +14,18 @@ interface Vm {
 
     function prank(address) external;
 
+    function startPrank(address) external;
+
+    function stopPrank() external;
+
     function expectRevert(bytes calldata) external;
 }
 
-contract BasisTest is DSTest, BasisVault {
+contract BasisArb is DSTest {
     Vm vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     address constant deployer = 0xBF2B82E026B182Bb4f5f10CCfB6136b1df08e29F;
     address constant _want = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
     address constant _weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-    uint256 constant _depositLimit = 10_000_000e6;
     address constant _longAsset = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address constant _uniPool = 0x17c14D2c404D167802b16C450d3c99F88F2c4F4d;
     address constant _router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
@@ -31,26 +34,29 @@ contract BasisTest is DSTest, BasisVault {
     address constant _usdcProxy = 0x1eFB3f88Bc88f03FD1804A5C53b7141bbEf5dED8;
     address constant _mcDEXOracle = 0x1Cf22B7f84F86c36Cb191BB24993EdA2b191399E;
     address constant _random = 0x6B69fB91E91C6C43FaD962B9BD9636c2C95de748;
+    address[3] _users = [address(10), address(11), address(12)];
+    uint256 constant _depositLimit = 10_000_000e6;
     uint256 constant _buffer = 100_000;
     uint256 constant _perpIndex = 0;
-    uint256 constant _depositAmount = 100_000e6;
+    uint256 constant _depositAmount = 100_000e2;
     uint256 constant _yieldAmount = 2_000e6;
     uint256 constant _accuracy_usdc = 1e4;
     uint256 constant _accuracy = 1e9;
     uint256 constant _accuracyMC = 1e17;
+    uint256 constant _individualDepositLimit = 10_000_000e2;
     bool constant _isV2 = false;
     uint256 constant _add_value = 1e6;
+    uint256 constant _tradeSlippage = 1000e18;
 
     BasisVault vault;
-    BasisStrategy strategyTest;
+    BasisStrategy strategy;
 
     function setUp() public {
         vault = new BasisVault();
-        vm.prank(deployer);
-        vault.initialize(_want, _depositLimit);
-        strategyTest = new BasisStrategy();
-        vm.prank(deployer);
-        strategyTest.initialize(
+        vm.startPrank(deployer);
+        vault.initialize(_want, _depositLimit, _individualDepositLimit);
+        strategy = new BasisStrategy();
+        strategy.initialize(
             _longAsset,
             _uniPool,
             address(vault),
@@ -62,9 +68,16 @@ contract BasisTest is DSTest, BasisVault {
             _buffer,
             _isV2
         );
+        vm.stopPrank();
+        // Deploy testnet tokens
+        vm.startPrank(_usdcWhale);
+        for (uint256 i = 0; i < _users.length; i++) {
+            IERC20(_want).transfer(_users[i], _depositAmount);
+        }
+        vm.stopPrank();
     }
 
-    function testVaultDeployment() public {
+    function testVaultDeploymentArb() public {
         string memory _name = "akBVUSDC-ETH";
         string memory _symbol = "akBasisVault-USDC-ETH";
         uint256 _totalAssets = 0;
@@ -73,14 +86,11 @@ contract BasisTest is DSTest, BasisVault {
         address _strategy = address(0);
         uint256 _performanceFee = 0;
         uint256 _managementFee = 0;
-
         assertEq(_want, address(vault.want()));
         assertEq(_depositLimit, uint256(vault.depositLimit()));
         assertEq(_name, vault.name());
         assertEq(_symbol, vault.symbol());
-        // emit log_uint(uint256(vault.totalAssets()));
-        // TODO: Why is this call failing?
-        // assertEq(_totalAssets, uint256(vault.totalAssets()));
+        assertEq(_totalAssets, uint256(vault.totalAssets()));
         assertEq(_totalLent, uint256(vault.totalLent()));
         assertEq(_totalSupply, uint256(vault.totalSupply()));
         assertEq(_strategy, vault.strategy());
@@ -89,7 +99,7 @@ contract BasisTest is DSTest, BasisVault {
         vm.expectEmit(true, true, true, true);
     }
 
-    function testSetParam() public {
+    function testSetParamArb() public {
         // @dev : Testing Deposit Limits
         vm.expectRevert("Ownable: caller is not the owner");
         vault.setDepositLimit(0);
@@ -110,32 +120,63 @@ contract BasisTest is DSTest, BasisVault {
         assertEq(5_000, uint256(vault.managementFee()));
     }
 
-    function testSetStrategy() public {
+    function testSetStrategyArb() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        vault.setStrategy(address(strategyTest));
+        vault.setStrategy(address(strategy));
         // vm.prank(address(0));
         vm.expectRevert("Ownable: caller is not the owner");
-        vault.setStrategy(address(strategyTest));
+        vault.setStrategy(address(strategy));
         vm.prank(deployer);
-        vault.setStrategy(address(strategyTest));
+        vault.setStrategy(address(strategy));
     }
 
-    function testPauseUnpause() public {
+    function testPauseUnpauseArb() public {
         vm.expectRevert("Ownable: caller is not the owner");
         vault.pause();
         vm.prank(deployer);
         vault.pause();
-        assertTrue(bool(vault.paused()));
         vm.prank(deployer);
+        assertTrue(vault.paused());
+        vm.prank(_usdcWhale);
+        IERC20(_want).approve(address(vault), _depositAmount);
+        vm.prank(_usdcWhale);
         vm.expectRevert("Pausable: paused");
-        vault.setStrategy(address(strategyTest));
+        vault.deposit(_depositAmount, _usdcWhale);
+        assertTrue(bool(vault.paused()));
         vm.expectRevert("Ownable: caller is not the owner");
         vault.unpause();
         vm.prank(deployer);
         vault.unpause();
         assertTrue(!bool(vault.paused()));
-        vm.prank(deployer);
-        vault.setStrategy(address(strategyTest));
-        assertEq(address(strategyTest), address(vault.strategy()));
+        vm.prank(_usdcWhale);
+        IERC20(_want).approve(address(vault), _depositAmount);
+        vm.prank(_usdcWhale);
+        vault.deposit(_depositAmount, _usdcWhale);
+        assertEq(uint256(vault.totalAssets()), _depositAmount);
+    }
+
+    function testDepositArb() public {
+        for (uint256 i = 0; i < _users.length; i++) {
+            vm.startPrank(_users[i]);
+            IERC20(_want).approve(address(vault), _depositAmount);
+            vault.deposit(_depositAmount, _users[i]);
+            vm.expectRevert("!_amount");
+            vault.deposit(0, _users[i]);
+        }
+        emit log_named_int("The depost amount is ", int256(_depositAmount * 3));
+        emit log_named_int(
+            "The total assets amount is ",
+            int256(vault.totalAssets())
+        );
+        assertEq(uint256(vault.totalAssets()), _depositAmount * 3);
+    }
+
+    function testIndividualDepositLimitArb() public {
+        vm.startPrank(_usdcWhale);
+        IERC20(_want).approve(address(vault), 2**256 - 1);
+        vault.deposit(_depositAmount, _usdcWhale);
+        assertEq(uint256(vault.totalAssets()), _depositAmount);
+        vm.expectRevert("user cap reached");
+        vault.deposit(_individualDepositLimit + 10, _usdcWhale);
     }
 }
