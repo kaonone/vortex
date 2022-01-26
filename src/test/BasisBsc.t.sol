@@ -19,6 +19,8 @@ interface Vm {
     function stopPrank() external;
 
     function expectRevert(bytes calldata) external;
+    
+    function wrap(uint256) external;
 }
 
 contract BasisTestBsc is DSTest {
@@ -38,7 +40,7 @@ contract BasisTestBsc is DSTest {
     uint256 constant _depositLimit = 10_000_000e18;
     uint256 constant _buffer = 100_000;
     uint256 constant _perpIndex = 0;
-    uint256 constant _depositAmount = 50_000e18;
+    uint256 constant _depositAmount = 100_000e18;
     uint256 constant _yieldAmount = 2_000e18;
     uint256 constant _accuracy_usdc = 1e16;
     uint256 constant _accuracy = 1e21;
@@ -119,9 +121,6 @@ contract BasisTestBsc is DSTest {
         vault.setProtocolFees(5_000, 5_000);
         assertEq(5_000, uint256(vault.performanceFee()));
         assertEq(5_000, uint256(vault.managementFee()));
-        vm.startPrank(deployer);
-        vault.setLimitState();
-        assert(vault.limitActivate() == false);
     }
 
     function testSetStrategyBsc() public {
@@ -265,6 +264,29 @@ contract BasisTestBsc is DSTest {
 
     }
 
+
+    function testWithdrawHarvest() public {
+        whaleTransfer();
+        addressDepositAll();
+        vm.startPrank(deployer);
+        vault.setStrategy(address(strategy));
+        strategy.harvest();
+        vm.stopPrank();
+        whaleBuyShort();
+        uint256 balanceBefore = IERC20(_want).balanceOf(_users[0]);
+        for(uint256 i = 0; i < _users.length; i++) {
+            assertEq(IERC20(_want).balanceOf(_users[i]), 0);
+        }
+        vm.prank(deployer);
+        for (uint256 i=0; i<20; i++){
+            strategy.harvest();
+        }
+        uint256 loss = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[0]));
+        vm.prank(_users[0]);
+        vault.withdraw(IERC20(address(vault)).balanceOf(_users[0]), loss, _users[0]);
+        assert (balanceBefore < IERC20(_want).balanceOf(_users[0]));
+    }
+ 
     function whaleBuyLong() public {
         vm.startPrank(_usdcWhale);
         IERC20(_want).transfer(deployer, 2_000_000e18);
@@ -297,7 +319,7 @@ contract BasisTestBsc is DSTest {
         // start trading
         (, , int256 amount, , , , , , )  =  IMCLP(_mcLiquidity).getMarginAccount(1, deployer);
         (int256 price, ) = IOracle(_mcDEXOracle).priceTWAPLong();
-        int256 tradeAmount = int256((1_200_000e18 * 1e18) / price);
+        int256 tradeAmount = int256((1_000_000e18 * 1e18) / price);
         emit log_named_int("trade amount", tradeAmount);
         emit log_named_int("price", price); 
         IMCLP(_mcLiquidity).trade(1, deployer, -tradeAmount, price, (block.timestamp + 10000), deployer, 0x40000000);
@@ -308,6 +330,15 @@ contract BasisTestBsc is DSTest {
             vm.startPrank(_users[i]);
             IERC20(_want).approve(address(vault), 2 ** 256 -1);
             vault.deposit(_depositAmount * 2, _users[i]);
+            vm.stopPrank();
+        } 
+    }
+
+    function addressDepositAll() public {
+        for(uint256 i = 0; i<_users.length; i++){
+            vm.startPrank(_users[i]);
+            IERC20(_want).approve(address(vault), 2 ** 256 -1);
+            vault.deposit(IERC20(_want).balanceOf(_users[i]), _users[i]);
             vm.stopPrank();
         } 
     }
