@@ -20,7 +20,7 @@ interface Vm {
 
     function expectRevert(bytes calldata) external;
     
-    function wrap(uint256) external;
+    function warp(uint256) external;
 }
 
 contract BasisTestBsc is DSTest {
@@ -254,18 +254,25 @@ contract BasisTestBsc is DSTest {
         whaleBuyLong();
         whaleTransfer();
         addressDeposit();
+        uniqueDeposit(1);
         vm.startPrank(deployer);
         vault.setStrategy(address(strategy));
         for(uint256 i = 0; i < 10; i++) {
+            vm.warp(28_801);
             strategy.harvest();
         }
+        uniqueDeposit(2);
         vm.stopPrank();
         vm.startPrank(_users[2]);
         vault.deposit(_depositAmount * 2, _users[2]);
         vm.stopPrank();
+        uniqueDeposit(0);
+        uniqueWithdraw(1);
+        vm.prank(deployer);
         vm.startPrank(deployer);
         strategy.harvest();
         for (uint256 i = 0; i < 10; i++) {
+            vm.warp(28_801);
             strategy.remargin();
         }
         vm.stopPrank();
@@ -277,28 +284,60 @@ contract BasisTestBsc is DSTest {
 
     }
 
+    
 
-    function testWithdrawHarvest() public {
+
+    // function testWithdrawHarvest() public {
+        // whaleTransfer();
+        // addressDeposit();
+        // vm.startPrank(deployer);
+        // vault.setStrategy(address(strategy));
+        // strategy.harvest();
+        // whaleBuyShort();
+        // vm.warp(28_801);
+        // vm.stopPrank();
+        // uint256 balanceBefore = IERC20(_want).balanceOf(_users[0]);
+        // for(uint256 i = 0; i < _users.length; i++) {
+        //     assertEq(IERC20(_want).balanceOf(_users[i]), 0);
+        // }
+        // vm.startPrank(deployer);
+        // for (uint256 i=0; i<20; i++){
+        //     vm.warp(28_801);
+        //     strategy.harvest();
+        // }
+        // vm.stopPrank();
+        // uint256 loss = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[0]));
+        // vm.prank(_users[0]);
+        // vault.withdraw(IERC20(address(vault)).balanceOf(_users[0]), loss, _users[0]);
+        // assert (balanceBefore < IERC20(_want).balanceOf(_users[0]));
+    // }
+    function testYieldHarvest() public {
         whaleTransfer();
-        addressDepositAll();
+        uint256 balanceBefore = IERC20(_want).balanceOf(_users[1]);
+        addressDeposit();
         vm.startPrank(deployer);
         vault.setStrategy(address(strategy));
-        vm.wrap(28801);
         strategy.harvest();
         vm.stopPrank();
-        whaleBuyShort();
-        uint256 balanceBefore = IERC20(_want).balanceOf(_users[0]);
-        for(uint256 i = 0; i < _users.length; i++) {
-            assertEq(IERC20(_want).balanceOf(_users[i]), 0);
-        }
-        vm.prank(deployer);
-        for (uint256 i=0; i<20; i++){
+        whaleBuyLong();
+        vm.startPrank(deployer);
+        for (uint256 i = 0; i< 10; i++) {
+            vm.warp(28_801);
             strategy.harvest();
         }
-        uint256 loss = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[0]));
-        vm.prank(_users[0]);
-        vault.withdraw(IERC20(address(vault)).balanceOf(_users[0]), loss, _users[0]);
-        assert (balanceBefore < IERC20(_want).balanceOf(_users[0]));
+        vm.stopPrank();
+        uniqueWithdrawAll(0);
+        vm.warp(28_801);
+        uniqueWithdrawAll(1);
+        vm.prank(deployer);
+        strategy.harvest();
+        uniqueWithdrawAll(2);
+        vm.prank(deployer);
+        strategy.harvest(); 
+        uint256 balanceAfter = IERC20(_want).balanceOf(_users[1]);
+        emit log_named_uint("balanceAfter", balanceAfter);
+        emit log_named_uint("balanceBefore", balanceBefore);
+        // assert(balanceBefore < balanceAfter);
     }
  
     function whaleBuyLong() public {
@@ -353,9 +392,33 @@ contract BasisTestBsc is DSTest {
             vm.startPrank(_users[i]);
             IERC20(_want).approve(address(vault), 2 ** 256 -1);
             vault.deposit(IERC20(_want).balanceOf(_users[i]), _users[i]);
+            vault.deposit(_depositAmount * 3, _users[i]);
             vm.stopPrank();
         } 
     }
+
+    function uniqueDeposit(uint8 x) public {
+        vm.startPrank(_users[x]);
+        IERC20(_want).approve(address(vault), 2 ** 256 -1);
+        vault.deposit(_depositAmount, _users[x]);
+        vm.stopPrank();
+    }
+
+    function uniqueWithdraw(uint8 x) public {
+        vm.startPrank(_users[x]);
+        uint256 loss = vault.expectedLoss(_depositAmount);
+        vault.withdraw(_depositAmount, loss, _users[x]);
+        vm.stopPrank();
+    }
+
+    function uniqueWithdrawAll(uint8 x) public {
+        vm.startPrank(_users[x]);
+        uint256 loss = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[x]));
+        vault.withdraw(IERC20(address(vault)).balanceOf(_users[x]), loss, _users[x]);
+        vm.stopPrank();
+    }
+
+
 
     function addressWithdraw() public {
         for(uint256 i = 0; i<_users.length; i++){
