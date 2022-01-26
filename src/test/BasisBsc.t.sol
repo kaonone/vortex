@@ -283,6 +283,7 @@ contract BasisTestBsc is DSTest {
         addressDepositAll();
         vm.startPrank(deployer);
         vault.setStrategy(address(strategy));
+        vm.wrap(28801);
         strategy.harvest();
         vm.stopPrank();
         whaleBuyShort();
