@@ -181,8 +181,10 @@ contract BasisTestBsc is DSTest {
         vm.startPrank(_usdcWhale);
         IERC20(_want).approve(address(vault), 2**256 -1);
         vault.deposit(_depositAmount, _usdcWhale);
+        emit log_named_int("vault value", int256(IERC20(_want).balanceOf(address(vault))));
         vault.withdraw(IERC20(address(vault)).balanceOf(_usdcWhale), 0, _usdcWhale);
         assertEq(IERC20(_want).balanceOf(address(vault)), 0);
+        
         
     }
 
