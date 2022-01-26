@@ -21,7 +21,7 @@ interface Vm {
     function expectRevert(bytes calldata) external;
 }
 
-contract BasisArb is DSTest {
+contract BasisTestArb is DSTest {
     Vm vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     address constant deployer = 0xBF2B82E026B182Bb4f5f10CCfB6136b1df08e29F;
     address constant _want = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
@@ -178,5 +178,23 @@ contract BasisArb is DSTest {
         assertEq(uint256(vault.totalAssets()), _depositAmount);
         vm.expectRevert("user cap reached");
         vault.deposit(_individualDepositLimit + 10, _usdcWhale);
+    }
+
+    function testWithdrawArb() public {
+
+        for (uint256 i=0; i<_users.length; i++) {
+            vm.startPrank(_users[i]);
+            IERC20(_want).approve(address(vault), _depositAmount);
+            vault.deposit(_depositAmount, _users[i]);
+            assertEq(IERC20(_want).balanceOf(_users[i]), 0);
+            // start withdraw
+            vault.withdraw(_depositAmount, 0, _users[i]);
+            vm.expectRevert("!_shares");
+            vault.withdraw(0, 0, _users[i]);
+            assertEq(IERC20(_want).balanceOf(_users[i]), _depositAmount);
+
+        }
+        emit log_named_int("totalAssets", int256(vault.totalAssets()));
+        assertEq(uint256(vault.totalAssets()), 0);        
     }
 }

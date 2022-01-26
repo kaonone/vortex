@@ -1,9 +1,7 @@
 name: Forge Tests
 on:
-  push:
-    branches:
-      - master
-  pull_request:
+  push: {}
+  pull_request: {}
 
 # TODO : set up matrx for Arbitrum / BSC
 jobs:
@@ -30,9 +28,9 @@ jobs:
       - name: Run forge tests
         run:
           if [[ $url == ${{secrets.ARBITRUM_RPC }}]];then
-            forge test -m Arb -f $url
+            forge test --match-contract BasisTestArb -f $url
             else
-            forge test -m Bsc -f $url
+            forge test --match-contract BasisTestBsc -f $url
           fi
         env:
           url : ${{ secrets[matrix.url_link]}}

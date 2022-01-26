@@ -34,7 +34,7 @@ contract BasisTestBsc is DSTest {
     address constant _usdcProxy = 0x1eFB3f88Bc88f03FD1804A5C53b7141bbEf5dED8;
     address constant _mcDEXOracle = 0xa04197E5F7971E7AEf78Cf5Ad2bC65aaC1a967Aa;
     address constant _random = 0x6B69fB91E91C6C43FaD962B9BD9636c2C95de748;
-    address[3] _users = [address(10), address(11), address(12)];
+    address[3] _users = [address(14), address(15), address(16)];
     uint256 constant _depositLimit = 10_000_000e18;
     uint256 constant _buffer = 100_000;
     uint256 constant _perpIndex = 0;
@@ -71,7 +71,8 @@ contract BasisTestBsc is DSTest {
         vm.stopPrank();
         // Deploy testnet tokens
         vm.startPrank(_usdcWhale);
-        for (uint256 i = 0; i < _users.length; i++) {
+        for (uint256 i=0; i < _users.length; i++){
+            assertEq(IERC20(_want).balanceOf(_users[i]), 0);
             IERC20(_want).transfer(_users[i], _depositAmount);
         }
         vm.stopPrank();
@@ -178,5 +179,23 @@ contract BasisTestBsc is DSTest {
         assertEq(uint256(vault.totalAssets()), _depositAmount);
         vm.expectRevert("user cap reached");
         vault.deposit(_individualDepositLimit + 10, _usdcWhale);
+    }
+
+    function testWithdrawBsc() public {
+
+        for (uint256 i=0; i<_users.length; i++) {
+            vm.startPrank(_users[i]);
+            IERC20(_want).approve(address(vault), _depositAmount);
+            vault.deposit(_depositAmount, _users[i]);
+            assertEq(IERC20(_want).balanceOf(_users[i]), 0);
+            // start withdraw
+            vault.withdraw(_depositAmount, 0, _users[i]);
+            vm.expectRevert("!_shares");
+            vault.withdraw(0, 0, _users[i]);
+            assertEq(IERC20(_want).balanceOf(_users[i]), _depositAmount);
+
+        }
+        emit log_named_int("totalAssets", int256(vault.totalAssets()));
+        assertEq(uint256(vault.totalAssets()), 0);        
     }
 }
