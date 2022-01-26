@@ -52,6 +52,8 @@ contract BasisVault is
     // individual cap per depositor
     uint256 public individualDepositLimit;
 
+    bool public limitActivate = true;
+
     // modifier to check that the caller is the strategy
     modifier onlyStrategy() {
         require(msg.sender == strategy, "!strategy");
@@ -84,6 +86,7 @@ contract BasisVault is
     event Deposit(address indexed user, uint256 deposit, uint256 shares);
     event Withdraw(address indexed user, uint256 withdrawal, uint256 shares);
     event StrategyUpdate(uint256 profitOrLoss, bool isLoss, uint256 toDeposit);
+    event VaultLimited(bool _state);
     event ProtocolFeesUpdated(
         uint256 oldManagementFee,
         uint256 newManagementFee,
@@ -186,6 +189,10 @@ contract BasisVault is
         _unpause();
     }
 
+    function setLimitState() external onlyOwner {
+        limitActivate = !limitActivate;
+    }
+
     /**********************
      * EXTERNAL FUNCTIONS *
      **********************/
@@ -208,11 +215,14 @@ contract BasisVault is
     {
         require(_amount > 0, "!_amount");
         require(_recipient != address(0), "!_recipient");
-        require(totalAssets() + _amount <= depositLimit, "!depositLimit");
-        require(
-            userDeposit[msg.sender] + _amount <= individualDepositLimit,
-            "user cap reached"
-        );
+        if(limitActivate == true) {
+            require(totalAssets() + _amount <= depositLimit, "!depositLimit");
+            require(
+                userDeposit[msg.sender] + _amount <= individualDepositLimit,
+                "user cap reached"
+            );
+        }
+
         // update their deposit amount
         userDeposit[msg.sender] += _amount;
 
