@@ -16,7 +16,12 @@ def data():
 def test_vault_deployment(BasisVault, deployer, token):
     constant = data()
     vault = BasisVault.deploy({"from": deployer})
-    vault.initialize(constant.USDC, constant.DEPOSIT_LIMIT, constant.INDIVIDUAL_DEPOSIT_LIMIT, {"from": deployer})
+    vault.initialize(
+        constant.USDC,
+        constant.DEPOSIT_LIMIT,
+        constant.INDIVIDUAL_DEPOSIT_LIMIT,
+        {"from": deployer},
+    )
     assert vault.owner() == deployer
     assert vault.want() == constant.USDC
     assert vault.depositLimit() == constant.DEPOSIT_LIMIT
@@ -36,7 +41,12 @@ def test_vault_deployment(BasisVault, deployer, token):
 def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
     constant = data()
     vault = BasisVault.deploy({"from": deployer})
-    vault.initialize(constant.USDC, constant.DEPOSIT_LIMIT, constant.INDIVIDUAL_DEPOSIT_LIMIT, {"from": deployer})
+    vault.initialize(
+        constant.USDC,
+        constant.DEPOSIT_LIMIT,
+        constant.INDIVIDUAL_DEPOSIT_LIMIT,
+        {"from": deployer},
+    )
     with brownie.reverts():
         vault.setDepositLimit(0, {"from": accounts[9]})
     tx = vault.setDepositLimit(0, {"from": deployer})
@@ -68,7 +78,12 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
 def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
     constant = data()
     vault = BasisVault.deploy({"from": deployer})
-    vault.initialize(constant.USDC, constant.DEPOSIT_LIMIT, constant.INDIVIDUAL_DEPOSIT_LIMIT, {"from": deployer})
+    vault.initialize(
+        constant.USDC,
+        constant.DEPOSIT_LIMIT,
+        constant.INDIVIDUAL_DEPOSIT_LIMIT,
+        {"from": deployer},
+    )
     strategy = BasisStrategy.deploy({"from": deployer})
     strategy.initialize(
         constant.LONG_ASSET,
