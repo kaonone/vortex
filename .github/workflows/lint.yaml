@@ -124,7 +124,7 @@ jobs:
         shell: bash
         run: |
           brownie networks import network-config.yaml true
-          brownie run ./scripts/flatten_contracts.py --network bsc-main-fork
+          npm run sec:flatten
         env: 
           MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
       - name: Slither Static Analysis
