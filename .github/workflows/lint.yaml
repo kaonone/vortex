@@ -47,7 +47,6 @@ jobs:
           yarn pack
           cd ../../..
           yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
-
       - name: Run linter on *.sol and *.json
         run: yarn lint:check 
 
@@ -125,8 +124,6 @@ jobs:
         run: |
           brownie networks import network-config.yaml true
           npm run sec:flatten
-        env: 
-          MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
       - name: Slither Static Analysis
         uses: luisfontes19/slither-static-analysis-action@v0.3.2
         with:

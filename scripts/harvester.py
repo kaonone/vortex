@@ -7,6 +7,7 @@ from brownie import (
     interface,
 )
 
+
 def main():
     constant = scripts.constants
     load_dotenv(find_dotenv())
