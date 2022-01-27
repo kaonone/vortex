@@ -16,3 +16,6 @@
 [submodule "/Users/joshuaguessennd/Desktop/DeFi/basis/lib/openzeppelin-contracts"]
 	path = /Users/joshuaguessennd/Desktop/DeFi/basis/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "/Users/joshuaguessennd/Desktop/DeFi/basis/lib/v3-core"]
+	path = /Users/joshuaguessennd/Desktop/DeFi/basis/lib/v3-core
+	url = https://github.com/uniswap/v3-core
