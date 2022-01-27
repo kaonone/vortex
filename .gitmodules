@@ -22,3 +22,6 @@
 [submodule "/Users/joshuaguessennd/Desktop/DeFi/basis/lib/v3-periphery"]
 	path = /Users/joshuaguessennd/Desktop/DeFi/basis/lib/v3-periphery
 	url = https://github.com/uniswap/v3-periphery
+[submodule "/Users/joshuaguessennd/Desktop/DeFi/basis/lib/openzeppelin-contracts-upgradeable"]
+	path = /Users/joshuaguessennd/Desktop/DeFi/basis/lib/openzeppelin-contracts-upgradeable
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
