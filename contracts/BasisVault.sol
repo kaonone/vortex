@@ -215,7 +215,7 @@ contract BasisVault is
     {
         require(_amount > 0, "!_amount");
         require(_recipient != address(0), "!_recipient");
-        if(limitActivate == true) {
+        if (limitActivate == true) {
             require(totalAssets() + _amount <= depositLimit, "!depositLimit");
             require(
                 userDeposit[msg.sender] + _amount <= individualDepositLimit,

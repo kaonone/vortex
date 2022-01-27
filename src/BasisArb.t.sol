@@ -51,7 +51,8 @@ contract BasisTestArb is DSTest {
 
     BasisVault vault;
     BasisStrategy strategy;
-   function setUp() public {
+
+    function setUp() public {
         vault = new BasisVault();
         vm.startPrank(deployer);
         vault.initialize(_want, _depositLimit, _individualDepositLimit);
@@ -71,7 +72,7 @@ contract BasisTestArb is DSTest {
         vm.stopPrank();
         // Deploy testnet tokens
         vm.startPrank(_usdcWhale);
-        for (uint256 i=0; i < _users.length; i++){
+        for (uint256 i = 0; i < _users.length; i++) {
             assertEq(IERC20(_want).balanceOf(_users[i]), 0);
             IERC20(_want).transfer(_users[i], _depositAmount);
         }
@@ -176,13 +177,18 @@ contract BasisTestArb is DSTest {
         vm.prank(deployer);
         vault.setLimitState();
         vm.startPrank(_usdcWhale);
-        IERC20(_want).approve(address(vault), 2**256 -1);
+        IERC20(_want).approve(address(vault), 2**256 - 1);
         vault.deposit(_depositAmount, _usdcWhale);
-        emit log_named_int("vault value", int256(IERC20(_want).balanceOf(address(vault))));
-        vault.withdraw(IERC20(address(vault)).balanceOf(_usdcWhale), 0, _usdcWhale);
+        emit log_named_int(
+            "vault value",
+            int256(IERC20(_want).balanceOf(address(vault)))
+        );
+        vault.withdraw(
+            IERC20(address(vault)).balanceOf(_usdcWhale),
+            0,
+            _usdcWhale
+        );
         assertEq(IERC20(_want).balanceOf(address(vault)), 0);
-        
-        
     }
 
     function testIndividualDepositLimitArb() public {
@@ -195,8 +201,7 @@ contract BasisTestArb is DSTest {
     }
 
     function testWithdrawArb() public {
-
-        for (uint256 i=0; i<_users.length; i++) {
+        for (uint256 i = 0; i < _users.length; i++) {
             vm.startPrank(_users[i]);
             IERC20(_want).approve(address(vault), _depositAmount);
             vault.deposit(_depositAmount, _users[i]);
@@ -206,9 +211,8 @@ contract BasisTestArb is DSTest {
             vm.expectRevert("!_shares");
             vault.withdraw(0, 0, _users[i]);
             assertEq(IERC20(_want).balanceOf(_users[i]), _depositAmount);
-
         }
         emit log_named_int("totalAssets", int256(vault.totalAssets()));
-        assertEq(uint256(vault.totalAssets()), 0);        
+        assertEq(uint256(vault.totalAssets()), 0);
     }
 }

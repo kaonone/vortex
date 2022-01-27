@@ -2220,7 +2220,7 @@ hard-rejection@^2.1.0:
 
 hardhat@./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz:
   version "2.6.2"
-  resolved "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz#e3008f507401e747f7c1e88d5249851744285646"
+  resolved "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz#83691c2c9ce76deb0a3b8f1fac9fce6796258bcd"
   dependencies:
     "@ethereumjs/block" "^3.4.0"
     "@ethereumjs/blockchain" "^5.4.0"

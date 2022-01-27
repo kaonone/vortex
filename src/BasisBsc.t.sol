@@ -72,7 +72,7 @@ contract BasisTestBsc is DSTest {
         vm.stopPrank();
         // Deploy testnet tokens
         vm.startPrank(_usdcWhale);
-        for (uint256 i=0; i < _users.length; i++){
+        for (uint256 i = 0; i < _users.length; i++) {
             assertEq(IERC20(_want).balanceOf(_users[i]), 0);
             IERC20(_want).transfer(_users[i], _depositAmount);
         }
@@ -177,13 +177,18 @@ contract BasisTestBsc is DSTest {
         vm.prank(deployer);
         vault.setLimitState();
         vm.startPrank(_usdcWhale);
-        IERC20(_want).approve(address(vault), 2**256 -1);
+        IERC20(_want).approve(address(vault), 2**256 - 1);
         vault.deposit(_depositAmount, _usdcWhale);
-        emit log_named_int("vault value", int256(IERC20(_want).balanceOf(address(vault))));
-        vault.withdraw(IERC20(address(vault)).balanceOf(_usdcWhale), 0, _usdcWhale);
+        emit log_named_int(
+            "vault value",
+            int256(IERC20(_want).balanceOf(address(vault)))
+        );
+        vault.withdraw(
+            IERC20(address(vault)).balanceOf(_usdcWhale),
+            0,
+            _usdcWhale
+        );
         assertEq(IERC20(_want).balanceOf(address(vault)), 0);
-        
-        
     }
 
     function testIndividualDepositLimitBsc() public {
@@ -196,8 +201,7 @@ contract BasisTestBsc is DSTest {
     }
 
     function testWithdrawBsc() public {
-
-        for (uint256 i=0; i<_users.length; i++) {
+        for (uint256 i = 0; i < _users.length; i++) {
             vm.startPrank(_users[i]);
             IERC20(_want).approve(address(vault), _depositAmount);
             vault.deposit(_depositAmount, _users[i]);
@@ -207,9 +211,8 @@ contract BasisTestBsc is DSTest {
             vm.expectRevert("!_shares");
             vault.withdraw(0, 0, _users[i]);
             assertEq(IERC20(_want).balanceOf(_users[i]), _depositAmount);
-
         }
         emit log_named_int("totalAssets", int256(vault.totalAssets()));
-        assertEq(uint256(vault.totalAssets()), 0);        
+        assertEq(uint256(vault.totalAssets()), 0);
     }
 }
