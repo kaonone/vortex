@@ -11,6 +11,7 @@ artifacts/
 hardhat/
 Uniswap/
 flattened/
+out/
 
 # Node/npm
 node_modules/

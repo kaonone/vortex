@@ -1,0 +1,5 @@
+@openzeppelin/=lib/openzeppelin-contracts/
+@ozUpgradesV4/=lib/openzeppelin-contracts-upgradeable/
+@uniswap/v3-periphery/=lib/v3-periphery/
+ds-test/=lib/ds-test/src/
+@uniswap/v3-core/=lib/v3-core/
