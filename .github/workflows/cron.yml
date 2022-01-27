@@ -2,7 +2,7 @@ name: Keeper Script
 
 on:
   schedule:
-    - cron: "* 06 * * *"
+    - cron: "0 0 */6 * * *"
 
 jobs:
   test:
