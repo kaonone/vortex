@@ -114,7 +114,7 @@ def randy():
 def vault(deployer, token):
     constant = data()
     vaulty = BasisVault.deploy({"from": deployer})
-    vaulty.initialize(token, constant.DEPOSIT_LIMIT, {"from": deployer})
+    vaulty.initialize(token, constant.DEPOSIT_LIMIT, constant.INDIVIDUAL_DEPOSIT_LIMIT, {"from": deployer})
     yield vaulty
 
 
