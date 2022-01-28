@@ -13,6 +13,8 @@ interface Vm {
         bool
     ) external;
 
+    function warp(uint256) external;
+    
     function prank(address) external;
 
     function startPrank(address) external;
@@ -215,4 +217,133 @@ contract BasisTestBsc is DSTest {
         emit log_named_int("totalAssets", int256(vault.totalAssets()));
         assertEq(uint256(vault.totalAssets()), 0);
     }
+
+    function testHarvestDeposit_HarvestWithdraw() public {
+        for(uint256 i = 0; i<_users.length; i++) {
+            vm.startPrank(_users[i]);
+            // users deposit to vault
+            IERC20(_want).approve(address(vault), 2**256 -1);
+            vault.deposit(_depositAmount, _users[i]);
+            vm.stopPrank();
+        }
+        whaleBuylongBsc();
+        //first harvesting
+        vm.startPrank(deployer);
+        vault.setStrategy(address(strategy));
+        strategy.harvest();
+        // time pass + harvest
+        whaleTransferUser(_users[0], 2 *_depositAmount);
+        vault.deposit(2 * _depositAmount, _users[0]);
+        for(uint256 i=0; i<5; i++) {
+            vm.warp(28_801);
+            strategy.harvest();
+        }
+        // deposit random user to vault
+        whaleTransferUser(_users[1], _depositAmount);
+        vault.deposit(_depositAmount, _users[1]);
+        // remargin
+        for(uint256 i=0; i<5; i++) {
+            vm.warp(28_801);
+            strategy.remargin();
+        }
+        // withdraw all funds for 2 users
+        for(uint256 i =0; i<1; i++) {
+            vm.startPrank(_users[i]);
+            uint256 loss = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[i]));
+            vault.withdraw(IERC20(address(vault)).balanceOf(_users[i]), loss, _users[i]);
+            vm.stopPrank();
+        }
+
+        // second harvest
+        vm.prank(deployer);
+        strategy.harvest();
+        vm.stopPrank();
+        uint256 lossExpected = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[2]));
+        vm.prank(_users[2]);
+        vault.withdraw(IERC20(address(vault)).balanceOf(_users[2]), lossExpected, _users[2]);
+        // last harvest
+        vm.startPrank(deployer);
+        for(uint256 i=0; i<5; i++) {
+            vm.warp(28_801);
+            strategy.harvest();
+        }
+        vm.stopPrank();
+        assertEq(vault.totalSupply(), 0);
+
+    }
+
+    function whaleBuylongBsc() public {
+        (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(1, deployer);
+        (int256 price, ) = IOracle(_mcDEXOracle).priceTWAPLong();
+        whaleTransferUser(deployer, 2_000_000e18);
+        vm.startPrank(deployer);
+        if (cash == 0) {
+            // deposit
+            IERC20(_want).approve(address(_mcLiquidity),
+            IERC20(_want).balanceOf(deployer));
+            IMCLP(_mcLiquidity).setTargetLeverage(
+                1, 
+                deployer, 
+                1e18
+            );
+            IMCLP(_mcLiquidity).deposit(
+                1, 
+                deployer, 
+                int256(IERC20(_want).balanceOf(deployer) -1)
+            );
+        }
+        // start trading
+        IMCLP(_mcLiquidity).trade(
+            1,
+            deployer,
+            (1_200_000e18 * 1e18) / price,
+            price,
+            block.timestamp + 10_000,
+            deployer,
+            0x40000000
+        );
+        vm.stopPrank();
+        
+    }
+
+    function whaleBuyShortBsc() public {
+        (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(1, deployer);
+        (int256 price, ) = IOracle(_mcDEXOracle).priceTWAPShort();
+        whaleTransferUser(deployer, 2_000_000e18);
+        vm.startPrank(deployer);
+        if (cash == 0) {
+            
+            // deposit
+            IERC20(_want).approve(address(_mcLiquidity),
+            IERC20(_want).balanceOf(deployer));
+            IMCLP(_mcLiquidity).setTargetLeverage(
+                1, 
+                deployer, 
+                1e18
+            );
+            IMCLP(_mcLiquidity).deposit(
+                1, 
+                deployer, 
+                int256(IERC20(_want).balanceOf(deployer) -1)
+            );
+        }
+        // start trading
+        IMCLP(_mcLiquidity).trade(
+            1,
+            deployer,
+            -(1_200_000e18 * 1e18) / price,
+            price,
+            block.timestamp + 10_000,
+            deployer,
+            0x40000000
+        );
+        vm.stopPrank();
+    }
+
+    function whaleTransferUser(address _user, uint256 _amount) public {
+        vm.startPrank(_usdcWhale);
+        IERC20(_want).transfer(_user, _amount);
+        vm.stopPrank();
+    }
+
 }

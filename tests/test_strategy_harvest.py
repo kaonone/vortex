@@ -1,4 +1,6 @@
 from typing import NewType
+
+from black import token
 from brownie.network.state import TxHistory
 import brownie
 import constants
@@ -191,10 +193,6 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     print("Strategy want balance: " + str(token.balanceOf(test_strategy)))
     print("Vault want balance: " + str(token.balanceOf(vault)))
     print("Price per share: " + str(vault.pricePerShare()))
-    lossExpected3 = vault.expectedLoss(vault.balanceOf(deployer))
-    vault.withdraw(
-        vault.balanceOf(deployer), lossExpected3, deployer, {"from": deployer}
-    )
     print(test_strategy.getMarginAccount())
     print(vault.totalSupply())
     print("Price per share: " + str(vault.pricePerShare()))
@@ -996,7 +994,7 @@ def whale_buy_short(deployer, token, mcLiquidityPool, price):
         mcLiquidityPool.trade(
             constant.PERP_INDEX,
             deployer,
-            -(1_500_000e18 * 1e18) / price,
+            -(1_200_000e18 * 1e18) / price,
             price,
             brownie.chain.time() + 10000,
             deployer,
