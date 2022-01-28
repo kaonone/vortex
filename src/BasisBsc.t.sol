@@ -41,12 +41,12 @@ contract BasisTestBsc is DSTest {
     uint256 constant _depositLimit = 10_000_000e18;
     uint256 constant _buffer = 100_000;
     uint256 constant _perpIndex = 0;
-    uint256 constant _depositAmount = 100_000e18;
+    uint256 constant _depositAmount = 30_000e18;
     uint256 constant _yieldAmount = 2_000e18;
     uint256 constant _accuracy_usdc = 1e16;
     uint256 constant _accuracy = 1e21;
     uint256 constant _accuracyMC = 1e17;
-    uint256 constant _individualDepositLimit = 7_000_000e18;
+    uint256 constant _individualDepositLimit = 1_000_000e18;
     bool constant _isV2 = true;
     uint256 constant _add_value = 1e18;
     uint256 constant _tradeSlippage = 1000e18;
