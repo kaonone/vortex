@@ -3,7 +3,7 @@ import constants
 import constants_bsc
 import random
 from brownie import network
-from test_strategy_harvest import whale_buy_long
+from tests.test_strategy_harvest import whale_buy_long
 
 
 def data():
