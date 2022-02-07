@@ -3,7 +3,6 @@ import constants
 import constants_bsc
 import random
 from brownie import network
-from tests.test_strategy_harvest import whale_buy_long
 
 
 def data():
@@ -93,3 +92,48 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     assert token.balanceOf(vault) == 0
     assert token.balanceOf(test_strategy) == 0
     assert vault.pricePerShare() == constant.DECIMAL
+
+
+def whale_buy_long(deployer, token, mcLiquidityPool, price):
+    constant = data()
+    if mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[0] == 0:
+        token.approve(mcLiquidityPool, token.balanceOf(deployer), {"from": deployer})
+        mcLiquidityPool.setTargetLeverage(
+            constant.PERP_INDEX, deployer, 1e18, {"from": deployer}
+        )
+        mcLiquidityPool.deposit(
+            constant.PERP_INDEX,
+            deployer,
+            (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
+            {"from": deployer},
+        )
+    if network.show_active() == "hardhat-arbitrum-fork":
+
+        mcLiquidityPool.trade(
+            constant.PERP_INDEX,
+            deployer,
+            (
+                (
+                    mcLiquidityPool.getMarginAccount(constant.PERP_INDEX, deployer)[3]
+                    / 100
+                )
+                * 1e18
+            )
+            / price,
+            price,
+            brownie.chain.time() + 10000,
+            deployer,
+            0x40000000,
+            {"from": deployer},
+        )
+    else:
+        mcLiquidityPool.trade(
+            constant.PERP_INDEX,
+            deployer,
+            (1_200_000e18 * 1e18) / price,
+            price,
+            brownie.chain.time() + 10000,
+            deployer,
+            0x40000000,
+            {"from": deployer},
+        )
