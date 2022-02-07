@@ -5,4 +5,6 @@ interface IStrategy {
     function withdraw(uint256) external returns (uint256, uint256);
 
     function harvest() external;
+
+    function setKeeper(address) external;
 }
