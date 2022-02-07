@@ -98,7 +98,7 @@ contract BasisTestArb is DSTest {
         assertEq(_strategy, vault.strategy());
         assertEq(_performanceFee, uint256(vault.performanceFee()));
         assertEq(_managementFee, uint256(vault.managementFee()));
-        vm.expectEmit(true, true, true, true);
+        // vm.expectEmit(true, true, true, true);
     }
 
     function testSetParamArb() public {
