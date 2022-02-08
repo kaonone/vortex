@@ -1,16 +1,7 @@
 import os
-import scripts.constants
-import scripts.constants_bsc
+import scripts.constants_testnet
 import time
 from dotenv import load_dotenv, find_dotenv
-
-from utils.deploy_helpers import (
-    deploy_proxy,
-    deploy_admin,
-    get_proxy_admin,
-    upgrade_proxy,
-)
-
 from brownie import (
     BasisVault,
     BasicERC20,
@@ -22,16 +13,8 @@ from brownie import (
 )
 
 
-def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
-        constant = scripts.constants
-    else:
-        constant = scripts.constants_bsc
-    return constant
-
-
 def main():
-    constant = data()
+    constant = scripts.constants_testnet
     load_dotenv(find_dotenv())
     print(f"You are using the '{network.show_active()}' network")
     if network.show_active() == "development":
@@ -39,43 +22,15 @@ def main():
         proxy_admin = accounts[1]
     else:
         deployer = accounts.add(os.getenv("DEPLOYER_PRIVATE_KEY"))
-        admin_key = os.getenv("ADMIN_PRIVATE_KEY")
-        proxy_admin_address = os.getenv("PROXY_ADMIN_ADDRESS")
-        admin_key = os.getenv("ADMIN_PRIVATE_KEY")
-        proxy_admin_address = os.getenv("PROXY_ADMIN_ADDRESS")
-        if admin_key:
-            proxy_admin = accounts.add(admin_key)
-        elif proxy_admin_address:
-            proxy_admin = get_proxy_admin(proxy_admin_address)
-        else:
-            proxy_admin = deploy_admin(deployer)
-        print(f"You are using: 'deployer' [{deployer.address}]")
-        print(f"Proxy Admin at {proxy_admin.address}")
 
-    token = interface.IERC20(constant.USDC)
-    (
-        vault_implementation_proxy,
-        vault_proxy_contract,
-        vault_contract_impl,
-    ) = deploy_proxy(deployer, proxy_admin, BasisVault, token, constant.DEPOSIT_LIMIT)
-
-    print(f"vault implementation proxy at {vault_implementation_proxy}")
-    print(f"vault proxy contract at {vault_proxy_contract}")
-    print(f"vault implementation contract at {vault_contract_impl}")
-
-    time.sleep(3)
-
-    (
-        strategy_implementation_proxy,
-        strategy_proxy_contract,
-        strategy_contract_impl,
-    ) = deploy_proxy(
-        deployer,
-        proxy_admin,
-        BasisStrategy,
+    # deploy the strat
+    strategy = BasisStrategy.deploy({"from": deployer})
+    print(f"strategy address {strategy.address}")
+    # initialize the strategy
+    strategy.initialize(
         constant.LONG_ASSET,
         constant.UNI_POOL,
-        vault_contract_impl,  # constant vault
+        constant.VAULT_DEPLOYED,
         constant.ROUTER,
         constant.WETH,
         constant.GOVERNANCE,
@@ -83,10 +38,8 @@ def main():
         constant.PERP_INDEX,
         constant.BUFFER,
         constant.isV2,
+        {"from": deployer},
     )
-
-    print(f"strategy implementation proxy at {strategy_implementation_proxy}")
-    print(f"strategy proxy contract at {strategy_proxy_contract}")
-    print(f"strategy implementation contract at {strategy_contract_impl}")
-
-    time.sleep(2)
+    # strategy = interface.IStrategy(constant.ADDRESS_STRATEGY)
+    strategy.setKeeper(deployer, {"from": deployer})
+    print(f"keeper set to {deployer}")
