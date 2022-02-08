@@ -122,7 +122,7 @@ jobs:
           MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
         shell: bash
         run: |
-          brownie networks import network-config.yaml true
+          # brownie networks import network-config.yaml true
           # npm run sec:flatten
           sh ./security/flattener-run.sh
       - name: Slither Static Analysis
