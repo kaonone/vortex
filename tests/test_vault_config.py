@@ -6,7 +6,6 @@ from brownie import network
 from conftest import data
 
 
-
 def test_vault_deployment(BasisVault, deployer, token):
     constant = data()
     vault = BasisVault.deploy({"from": deployer})

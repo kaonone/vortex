@@ -6,7 +6,6 @@ from brownie import network
 from conftest import data
 
 
-
 def test_strategy_deployment(BasisStrategy, deployer, vault, governance):
     constant = data()
     strategy = BasisStrategy.deploy(

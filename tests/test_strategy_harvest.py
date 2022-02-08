@@ -9,8 +9,6 @@ from brownie import network
 from conftest import data
 
 
-
-
 def test_migration(
     BasisStrategy,
     oracle,
@@ -93,14 +91,13 @@ def test_migration(
     assert token.balanceOf(users[0]) > user_bal_bef
 
 
-
 def test_harvest(
     oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
 ):
     constant = data()
     full_deposit = constant.DEPOSIT_AMOUNT * len(users) * constant.DECIMAL_SHIFT
     tx = test_strategy_deposited.harvest({"from": deployer})
-   
+
     margin_account = test_strategy_deposited.getMarginAccount()
     price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
     assert token.balanceOf(vault_deposited) == 0
@@ -124,7 +121,6 @@ def test_harvest(
         == test_strategy_deposited.getMargin()
         == test_strategy_deposited.positions()["margin"]
     )
-
 
 
 def test_yield_harvest_withdraw(
@@ -219,8 +215,6 @@ def test_yield_harvest_withdraw(
     assert vault_deposited.totalSupply() == 0
 
 
-
-
 def test_loss_harvest_withdraw(
     oracle,
     vault_deposited,
@@ -275,8 +269,6 @@ def test_loss_harvest_withdraw(
         assert long.balanceOf(test_strategy_deposited) < long_before
     assert vault_deposited.balanceOf(deployer) == 0
     test_strategy_deposited.harvest({"from": deployer})
-
-
 
 
 def test_yield_setBuffer_withdraw(
@@ -385,7 +377,6 @@ def test_yield_setBuffer_withdraw(
     assert vault_deposited.totalSupply() == 0
 
 
-
 def test_loss_remargin_withdraw(
     oracle,
     vault_deposited,
@@ -438,8 +429,6 @@ def test_loss_remargin_withdraw(
         assert long.balanceOf(test_strategy_deposited) < long_before
     assert vault_deposited.balanceOf(deployer) == 0
 
-
- 
 
 def test_loss_harvest_remargin(
     oracle,
@@ -537,7 +526,6 @@ def test_loss_harvest_remargin(
     test_strategy_deposited.harvest({"from": deployer})
 
 
-
 def test_harvest_unwind(
     oracle,
     vault_deposited,
@@ -561,8 +549,6 @@ def test_harvest_unwind(
     brownie.chain.sleep(1000000)
     mcLiquidityPool.forceToSyncState({"from": deployer})
     tx = test_strategy_deposited.harvest({"from": deployer})
-
-
 
 
 def test_harvest_unwind_withdraw(
@@ -624,8 +610,6 @@ def test_harvest_unwind_withdraw(
         print("Price per share: " + str(vault_deposited.pricePerShare()))
 
 
-
-
 def test_harvest_deposit_withdraw(
     oracle, vault_deposited, users, deployer, test_strategy_deposited, token, long
 ):
@@ -655,8 +639,6 @@ def test_harvest_deposit_withdraw(
             test_strategy_deposited.getMargin()
             == test_strategy_deposited.positions()["margin"]
         )
-
-
 
 
 def test_yield_harvest(
@@ -713,8 +695,6 @@ def test_yield_harvest(
         assert vault_deposited.pricePerShare() > pps_before
 
 
-
-
 def test_loss_harvest(
     oracle,
     vault_deposited,
@@ -768,7 +748,6 @@ def test_loss_harvest(
         assert vault_deposited.totalLent() <= before_lent
 
 
-
 def test_harvest_withdraw_all(
     oracle, vault, users, deployer, test_strategy, token, long
 ):
@@ -790,8 +769,6 @@ def test_harvest_withdraw_all(
     assert tx.events["Withdraw"]["shares"] == to_burn
     assert test_strategy.positions()["perpContracts"] == 0
     assert test_strategy.positions()["margin"] == 0
-
-
 
 
 def test_harvest_withdraw(
@@ -831,7 +808,6 @@ def test_harvest_withdraw(
     assert long.balanceOf(test_strategy_deposited) == 0
     assert test_strategy_deposited.positions()["perpContracts"] == 0
     assert test_strategy_deposited.positions()["margin"] == 0
-
 
 
 def test_harvest_emergency_exit(
@@ -944,4 +920,3 @@ def whale_buy_short(deployer, token, mcLiquidityPool, price):
             0x40000000,
             {"from": deployer},
         )
-

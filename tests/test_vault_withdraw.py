@@ -6,8 +6,6 @@ from brownie import network
 from conftest import data
 
 
-
-
 def test_withdraw(vault_deposited, users, token):
     constant = data()
     for user in users:
