@@ -1,0 +1,47 @@
+name: Forge Tests
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+# TODO : set up matrx for Arbitrum / BSC
+jobs:
+  arb-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Pull library deps
+        run: forge update
+
+      - name: Run forge tests
+        run:
+          forge test -vvvvv --match-contract BasisTestArb -f $INFURA_ARBITRUM_RINKEBY
+        env:
+          INFURA_ARBITRUM_RINKEBY: ${{ secrets.ARBITRUM_RPC }}
+
+  
+  bsc-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Pull library deps
+        run: forge update
+
+      - name: Run forge tests
+        run:
+          forge test  --match-contract BasisTestBsc -vvvvv -f $BSC_RPC_URL
+        env:
+          BSC_RPC_URL: ${{ secrets.BSC_RPC }}

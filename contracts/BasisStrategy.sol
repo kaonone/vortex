@@ -362,7 +362,6 @@ contract BasisStrategy is
     }
 
     /**
-
      * @notice set router version for network
      * @param _isV2 bool to set the version of rooter
      * @dev only callable by owner
@@ -415,7 +414,9 @@ contract BasisStrategy is
             (amount, loss) = _determineFee();
         }
         // update the vault with profits/losses accrued and receive deposits
-        uint256 newFunds = vault.update(amount, loss);
+        // vault.update(amount, loss) returns the total fund that will be deposit
+        // strategy use the funds inside the vault, if loss no fees are taken
+        vault.update(amount, loss);
         // combine the funds and check that they are larger than 0
         uint256 toActivate = IERC20(want).balanceOf(address(this));
 

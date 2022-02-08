@@ -3,14 +3,7 @@ import constants
 import constants_bsc
 import random
 from brownie import network
-
-
-def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
-        constant = constants
-    else:
-        constant = constants_bsc
-    return constant
+from conftest import data
 
 
 def test_strategy_deployment(BasisStrategy, deployer, vault, governance):

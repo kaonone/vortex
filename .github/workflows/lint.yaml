@@ -47,7 +47,6 @@ jobs:
           yarn pack
           cd ../../..
           yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
-
       - name: Run linter on *.sol and *.json
         run: yarn lint:check 
 

@@ -3,75 +3,7 @@ import constants
 import constants_bsc
 import random
 from brownie import network
-
-
-def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
-        constant = constants
-    elif network.show_active() == "development":
-        constant = constants
-    else:
-        constant = constants_bsc
-    return constant
-
-
-def test_whitelist_deposit(vault, users, token, deployer):
-    constant = data()
-    vault.setWhitelistActive(True, {"from": deployer})
-    vault.setIndividualWhitelistCap(constants.DEPOSIT_AMOUNT, {"from": deployer})
-
-    with brownie.reverts():
-        token.approve(vault, constant.DEPOSIT_AMOUNT, {"from": users[0]})
-        tx = vault.deposit(constant.DEPOSIT_AMOUNT, users[0], {"from": users[0]})
-    vault.addToWhitelist(users[1:], {"from": deployer})
-    with brownie.reverts():
-        token.approve(vault, constant.DEPOSIT_AMOUNT, {"from": users[0]})
-        tx = vault.deposit(constant.DEPOSIT_AMOUNT, users[0], {"from": users[0]})
-    for user in users[1:]:
-        with brownie.reverts():
-            token.approve(vault, constant.DEPOSIT_AMOUNT + 1, {"from": user})
-            tx = vault.deposit(constant.DEPOSIT_AMOUNT + 1, user, {"from": user})
-        v_t_bal_before = token.balanceOf(vault)
-        u_t_bal_before = token.balanceOf(user)
-        u_v_bal_before = vault.balanceOf(user)
-        token.approve(vault, constant.DEPOSIT_AMOUNT, {"from": user})
-        vt = vault.calcSharesIssuable(constant.DEPOSIT_AMOUNT)
-        tx = vault.deposit(constant.DEPOSIT_AMOUNT, user, {"from": user})
-        assert "Deposit" in tx.events
-        assert tx.events["Deposit"]["user"] == user
-        assert tx.events["Deposit"]["deposit"] == constant.DEPOSIT_AMOUNT
-        assert (
-            tx.events["Deposit"]["shares"]
-            == (vault.balanceOf(user)) - u_v_bal_before
-            == vt
-        )
-        assert vault.balanceOf(user) > u_v_bal_before
-        assert v_t_bal_before + constant.DEPOSIT_AMOUNT == token.balanceOf(vault)
-        assert u_t_bal_before - constant.DEPOSIT_AMOUNT == token.balanceOf(user)
-    for user in users[1:]:
-        with brownie.reverts():
-            token.approve(vault, constant.DEPOSIT_AMOUNT + 1, {"from": user})
-            tx = vault.deposit(constant.DEPOSIT_AMOUNT + 1, user, {"from": user})
-    assert vault.totalAssets() == constant.DEPOSIT_AMOUNT * len(users[1:])
-    vault.setWhitelistActive(False, {"from": deployer})
-    for user in users:
-        v_t_bal_before = token.balanceOf(vault)
-        u_t_bal_before = token.balanceOf(user)
-        u_v_bal_before = vault.balanceOf(user)
-        token.approve(vault, constant.DEPOSIT_AMOUNT, {"from": user})
-        vt = vault.calcSharesIssuable(constant.DEPOSIT_AMOUNT)
-        tx = vault.deposit(constant.DEPOSIT_AMOUNT, user, {"from": user})
-        assert "Deposit" in tx.events
-        assert tx.events["Deposit"]["user"] == user
-        assert tx.events["Deposit"]["deposit"] == constant.DEPOSIT_AMOUNT
-        assert (
-            tx.events["Deposit"]["shares"]
-            == (vault.balanceOf(user)) - u_v_bal_before
-            == vt
-        )
-        assert vault.balanceOf(user) > u_v_bal_before
-        assert v_t_bal_before + constant.DEPOSIT_AMOUNT == token.balanceOf(vault)
-        assert u_t_bal_before - constant.DEPOSIT_AMOUNT == token.balanceOf(user)
+from conftest import data
 
 
 def test_deposit(vault, users, token):
@@ -214,7 +146,7 @@ def test_deposit_all_withdraw_all(vault, users, token, deployer):
         assert v_t_bal_before + constant.DEPOSIT_AMOUNT == token.balanceOf(vault)
         assert u_t_bal_before - constant.DEPOSIT_AMOUNT == token.balanceOf(user)
     assert vault.totalAssets() == constant.DEPOSIT_AMOUNT * len(users)
-    assert vault.pricePerShare() == 1000000
+    assert vault.pricePerShare() == constant.DECIMAL
     for user in users:
         v_t_bal_before = token.balanceOf(vault)
         u_v_bal_before = vault.balanceOf(user)
@@ -228,7 +160,7 @@ def test_deposit_all_withdraw_all(vault, users, token, deployer):
         assert vault.balanceOf(user) == 0
         assert token.balanceOf(user) == int(constant.DEPOSIT_AMOUNT) + u_t_bal_before
     assert vault.totalAssets() == 0
-    assert vault.pricePerShare() == 1000000
+    assert vault.pricePerShare() == constant.DECIMAL
 
 
 def test_not_issue_zero_shares(vault, deployer, users, token):
@@ -236,6 +168,6 @@ def test_not_issue_zero_shares(vault, deployer, users, token):
     token.approve(vault, constant.DEPOSIT_AMOUNT, {"from": deployer})
     vault.deposit(constant.DEPOSIT_AMOUNT, deployer, {"from": deployer})
     token.transfer(vault, constant.DEPOSIT_AMOUNT, {"from": deployer})
-    assert vault.pricePerShare() == 2000000
+    assert vault.pricePerShare() == 2 * constant.DECIMAL
     with brownie.reverts():
         vault.deposit(1, deployer, {"from": deployer})

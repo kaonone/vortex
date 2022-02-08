@@ -47,14 +47,12 @@ contract BasisVault is
     uint256 public performanceFee;
     // fee recipient
     address public protocolFeeRecipient;
-    // whether the whitelist mode is active
-    bool public isWhitelistActive;
-    // is the address whitelisted
-    mapping(address => bool) public isWhitelisted;
-    // what is the addresses current deposit if the whitelist is active
-    mapping(address => uint256) public whitelistedDeposit;
+    // what is the addresses current deposit
+    mapping(address => uint256) public userDeposit;
     // individual cap per depositor
-    uint256 public individualWhitelistCap;
+    uint256 public individualDepositLimit;
+
+    bool public limitActivate = true;
 
     // modifier to check that the caller is the strategy
     modifier onlyStrategy() {
@@ -62,10 +60,11 @@ contract BasisVault is
         _;
     }
 
-    function initialize(address _want, uint256 _depositLimit)
-        public
-        initializer
-    {
+    function initialize(
+        address _want,
+        uint256 _depositLimit,
+        uint256 _individualDepositLimit
+    ) public initializer {
         __ERC20_init("akBVUSDC-ETH", "akBasisVault-USDC-ETH");
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -73,6 +72,7 @@ contract BasisVault is
         require(_want != address(0), "!_want");
         want = IERC20(_want);
         depositLimit = _depositLimit;
+        individualDepositLimit = _individualDepositLimit;
         protocolFeeRecipient = msg.sender;
     }
 
@@ -86,6 +86,7 @@ contract BasisVault is
     event Deposit(address indexed user, uint256 deposit, uint256 shares);
     event Withdraw(address indexed user, uint256 withdrawal, uint256 shares);
     event StrategyUpdate(uint256 profitOrLoss, bool isLoss, uint256 toDeposit);
+    event VaultLimited(bool _state);
     event ProtocolFeesUpdated(
         uint256 oldManagementFee,
         uint256 newManagementFee,
@@ -97,48 +98,26 @@ contract BasisVault is
         address newRecipient
     );
     event ProtocolFeesIssued(uint256 wantAmount, uint256 sharesIssued);
-    event WhitelistStatusChanged(bool _isWhitelistActive);
-    event IndividualWhitelistCapChanged(uint256 oldState, uint256 newState);
+    event IndividualCapChanged(uint256 oldState, uint256 newState);
 
     /***********
      * SETTERS *
      ***********/
 
     /**
-     * @notice  set the whitelist status
-     * @param   _isWhitelistActive bool for the whitelist status
+     * @notice  set the size of the individual cap
+     * @param   _individualDepositLimit uint256 for setting the individual cap
      * @dev     only callable by owner
      */
-    function setWhitelistActive(bool _isWhitelistActive) external onlyOwner {
-        isWhitelistActive = _isWhitelistActive;
-        emit WhitelistStatusChanged(_isWhitelistActive);
-    }
-
-    /**
-     * @notice  set the size of the individual cap in the whitelist
-     * @param   _individualWhitelistCap uint256 for setting the individual cap during the whitelist period
-     * @dev     only callable by owner
-     */
-    function setIndividualWhitelistCap(uint256 _individualWhitelistCap)
+    function setIndividualCap(uint256 _individualDepositLimit)
         external
         onlyOwner
     {
-        emit IndividualWhitelistCapChanged(
-            individualWhitelistCap,
-            _individualWhitelistCap
+        emit IndividualCapChanged(
+            individualDepositLimit,
+            _individualDepositLimit
         );
-        individualWhitelistCap = _individualWhitelistCap;
-    }
-
-    /**
-     * @notice  set the whitelist status of addresses
-     * @param   whitelist address array containing addresses to whitelist
-     * @dev     only callable by owner
-     */
-    function addToWhitelist(address[] calldata whitelist) external onlyOwner {
-        for (uint256 i = 0; i < whitelist.length; i++) {
-            isWhitelisted[whitelist[i]] = true;
-        }
+        individualDepositLimit = _individualDepositLimit;
     }
 
     /**
@@ -210,6 +189,10 @@ contract BasisVault is
         _unpause();
     }
 
+    function setLimitState() external onlyOwner {
+        limitActivate = !limitActivate;
+    }
+
     /**********************
      * EXTERNAL FUNCTIONS *
      **********************/
@@ -232,20 +215,16 @@ contract BasisVault is
     {
         require(_amount > 0, "!_amount");
         require(_recipient != address(0), "!_recipient");
-        require(totalAssets() + _amount <= depositLimit, "!depositLimit");
-        // if the whitelist is active then run the whitelist logic
-        if (isWhitelistActive) {
-            // check if theyre whitelisted
-            require(isWhitelisted[msg.sender], "!whitelisted");
-            // check if they will reach their cap with this deposit
+        if (limitActivate == true) {
+            require(totalAssets() + _amount <= depositLimit, "!depositLimit");
             require(
-                whitelistedDeposit[msg.sender] + _amount <=
-                    individualWhitelistCap,
-                "whitelist cap reached"
+                userDeposit[msg.sender] + _amount <= individualDepositLimit,
+                "user cap reached"
             );
-            // update their deposit amount
-            whitelistedDeposit[msg.sender] += _amount;
         }
+
+        // update their deposit amount
+        userDeposit[msg.sender] += _amount;
 
         shares = _issueShares(_amount, _recipient);
         // transfer want to the vault
