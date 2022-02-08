@@ -969,7 +969,7 @@ contract BasisStrategy is
             IERC20(_tokenIn).safeApprove(router, _amount);
             IRouterV2(router).swapExactTokensForTokens(
                 _amount,
-                0,
+                expectedAmountOut,
                 path,
                 address(this),
                 deadline
