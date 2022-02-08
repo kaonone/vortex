@@ -3,14 +3,8 @@ import constants
 import constants_bsc
 import random
 from brownie import network
+from conftest import data
 
-
-def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
-        constant = constants
-    else:
-        constant = constants_bsc
-    return constant
 
 
 def test_vault_deployment(BasisVault, deployer, token):

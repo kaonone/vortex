@@ -217,61 +217,6 @@ contract BasisTestBsc is DSTest {
         assertEq(uint256(vault.totalAssets()), 0);
     }
 
-    // function testHarvestDeposit_HarvestWithdraw() public {
-    //     for(uint256 i = 0; i<_users.length; i++) {
-    //         vm.startPrank(_users[i]);
-    //         // users deposit to vault
-    //         IERC20(_want).approve(address(vault), 2**256 -1);
-    //         vault.deposit(_depositAmount, _users[i]);
-    //         vm.stopPrank();
-    //     }
-    //     whaleBuylongBsc();
-    //     //first harvesting
-    //     vm.startPrank(deployer);
-    //     vault.setStrategy(address(strategy));
-    //     strategy.harvest();
-    //     // time pass + harvest
-    //     whaleTransferUser(_users[0], _depositAmount);
-    //     vault.deposit(_depositAmount, _users[0]);
-    //     emit log_named_uint("effect", 2);
-    //     for(uint256 i=0; i<5; i++) {
-    //         vm.warp(28_801);
-    //         strategy.harvest();
-    //     }
-    //     // deposit random user to vault
-    //     whaleTransferUser(_users[1], _depositAmount);
-    //     vault.deposit(_depositAmount, _users[1]);
-    //     // remargin
-    //     for(uint256 i=0; i<5; i++) {
-    //         vm.warp(28_801);
-    //         strategy.remargin();
-    //     }
-    //     // withdraw all funds for 2 users
-    //     for(uint256 i =0; i<1; i++) {
-    //         vm.startPrank(_users[i]);
-    //         uint256 loss = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[i]));
-    //         vault.withdraw(IERC20(address(vault)).balanceOf(_users[i]), loss, _users[i]);
-    //         vm.stopPrank();
-    //     }
-
-    //     // second harvest
-    //     vm.prank(deployer);
-    //     strategy.harvest();
-    //     vm.stopPrank();
-    //     uint256 lossExpected = vault.expectedLoss(IERC20(address(vault)).balanceOf(_users[2]));
-    //     vm.prank(_users[2]);
-    //     vault.withdraw(IERC20(address(vault)).balanceOf(_users[2]), lossExpected, _users[2]);
-    //     // last harvest
-    //     vm.startPrank(deployer);
-    //     for(uint256 i=0; i<5; i++) {
-    //         vm.warp(28_801);
-    //         strategy.harvest();
-    //     }
-    //     vm.stopPrank();
-    //     assertEq(vault.totalSupply(), 0);
-
-    // }
-
     function whaleBuylongBsc() public {
         (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(
             1,
