@@ -14,7 +14,7 @@ interface Vm {
     ) external;
 
     function warp(uint256) external;
-    
+
     function prank(address) external;
 
     function startPrank(address) external;
@@ -100,7 +100,6 @@ contract BasisTestBsc is DSTest {
         assertEq(_strategy, vault.strategy());
         assertEq(_performanceFee, uint256(vault.performanceFee()));
         assertEq(_managementFee, uint256(vault.managementFee()));
-        vm.expectEmit(true, true, true, true);
     }
 
     function testSetParamBsc() public {
@@ -274,23 +273,24 @@ contract BasisTestBsc is DSTest {
     // }
 
     function whaleBuylongBsc() public {
-        (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(1, deployer);
+        (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(
+            1,
+            deployer
+        );
         (int256 price, ) = IOracle(_mcDEXOracle).priceTWAPLong();
         whaleTransferUser(deployer, 2_000_000e18);
         vm.startPrank(deployer);
         if (cash == 0) {
             // deposit
-            IERC20(_want).approve(address(_mcLiquidity),
-            IERC20(_want).balanceOf(deployer));
-            IMCLP(_mcLiquidity).setTargetLeverage(
-                1, 
-                deployer, 
-                1e18
+            IERC20(_want).approve(
+                address(_mcLiquidity),
+                IERC20(_want).balanceOf(deployer)
             );
+            IMCLP(_mcLiquidity).setTargetLeverage(1, deployer, 1e18);
             IMCLP(_mcLiquidity).deposit(
-                1, 
-                deployer, 
-                int256(IERC20(_want).balanceOf(deployer) -1)
+                1,
+                deployer,
+                int256(IERC20(_want).balanceOf(deployer) - 1)
             );
         }
         // start trading
@@ -304,28 +304,27 @@ contract BasisTestBsc is DSTest {
             0x40000000
         );
         vm.stopPrank();
-        
     }
 
     function whaleBuyShortBsc() public {
-        (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(1, deployer);
+        (int256 cash, , , , , , , , ) = IMCLP(_mcLiquidity).getMarginAccount(
+            1,
+            deployer
+        );
         (int256 price, ) = IOracle(_mcDEXOracle).priceTWAPShort();
         whaleTransferUser(deployer, 2_000_000e18);
         vm.startPrank(deployer);
         if (cash == 0) {
-            
             // deposit
-            IERC20(_want).approve(address(_mcLiquidity),
-            IERC20(_want).balanceOf(deployer));
-            IMCLP(_mcLiquidity).setTargetLeverage(
-                1, 
-                deployer, 
-                1e18
+            IERC20(_want).approve(
+                address(_mcLiquidity),
+                IERC20(_want).balanceOf(deployer)
             );
+            IMCLP(_mcLiquidity).setTargetLeverage(1, deployer, 1e18);
             IMCLP(_mcLiquidity).deposit(
-                1, 
-                deployer, 
-                int256(IERC20(_want).balanceOf(deployer) -1)
+                1,
+                deployer,
+                int256(IERC20(_want).balanceOf(deployer) - 1)
             );
         }
         // start trading
@@ -346,5 +345,4 @@ contract BasisTestBsc is DSTest {
         IERC20(_want).transfer(_user, _amount);
         vm.stopPrank();
     }
-
 }

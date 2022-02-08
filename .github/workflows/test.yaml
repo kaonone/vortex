@@ -70,14 +70,16 @@ jobs:
       - name: Run Tests Arbitrum
         env:
           WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
-          MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
         run: |
           brownie networks import network-config.yaml true
-          brownie test  -s
+          brownie test  tests/ 
+          brownie test tests_heavy/
       - name: Run Tests BSC
         env:
           MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
         run: |
           brownie test -s --network bsc-main-fork
+          brownie test  tests/ 
+          brownie test tests_heavy/
       - name: Run Faucet Test
         run: brownie test test_faucet/faucet --network development

@@ -2,9 +2,9 @@ name: Lint
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    # branches:
+      # - main
+      # - develop
   pull_request:
 
 jobs:
@@ -122,8 +122,9 @@ jobs:
           MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
         shell: bash
         run: |
-          brownie networks import network-config.yaml true
-          npm run sec:flatten
+          # brownie networks import network-config.yaml true
+          # npm run sec:flatten
+          sh ./security/flattener-run.sh
       - name: Slither Static Analysis
         uses: luisfontes19/slither-static-analysis-action@v0.3.2
         with:
