@@ -21,7 +21,7 @@ live:
 
       - name: BSC-TESTNET-moralis
         id: bsc-test-moralis
-        host: https://speedy-nodes-nyc.moralis.io/d1401eaa2d9e4127260db272/bsc/testnet
+        host: https://speedy-nodes-nyc.moralis.io/$MORALIS_PROJECT_ID/bsc/testnet
         chainid: 97
         explorer: https://testnet.bscscan.com
 
