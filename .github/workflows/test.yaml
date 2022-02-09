@@ -78,8 +78,8 @@ jobs:
         env:
           MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
         run: |
-          brownie test -s --network bsc-main-fork
-          brownie test  tests/ 
-          brownie test tests_heavy/
+          brownie test tests_bsc/ --network bsc-main-fork
+          brownie test  tests/test_strategy_harvest.py --network bsc-main-fork
+          brownie test tests_heavy/ --network bsc-main-fork
       - name: Run Faucet Test
         run: brownie test test_faucet/faucet --network development
