@@ -137,6 +137,7 @@ jobs:
         env:
           MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
         run: |
+          brownie networks import network-config.yaml true
           brownie test tests_bsc/ --network bsc-main-fork
           brownie test  tests/test_strategy_harvest.py --network bsc-main-fork
           brownie test tests_heavy/ --network bsc-main-fork
