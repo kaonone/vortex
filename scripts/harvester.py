@@ -1,5 +1,5 @@
 import os
-import scripts.constants_testnet
+import scripts.constants
 import time
 from dotenv import load_dotenv, find_dotenv
 from brownie import (
@@ -9,10 +9,10 @@ from brownie import (
 
 
 def main():
-    constant = scripts.constants_testnet
+    constant = scripts.constants
     load_dotenv(find_dotenv())
     admin_key = os.getenv("DEPLOYER_PRIVATE_KEY")
-    strategy = interface.IStrategy(constant.ADDRESS_STRATEGY)
+    strategy = interface.IStrategy(constant.STRATEGY_ADDRESS)
     harvester = accounts.add(admin_key)
     # initialize strategy
     strategy.harvest({"from": harvester})
