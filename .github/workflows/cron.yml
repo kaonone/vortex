@@ -65,6 +65,6 @@ jobs:
       - name: harvest
         env:
           WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
-        run:
+        run: |
           brownie networks import network-config.yaml True
           brownie run scripts/harvester.py
