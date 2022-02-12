@@ -68,4 +68,4 @@ jobs:
           DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
         run: |
           brownie networks import network-config.yaml True
-          brownie run scripts/harvester.py
+          brownie run scripts/harvester.py --network arbitrum-main
