@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
 
 /**
  * @title VaultRegistry
  * @author akropolis.io
  * @notice Registry contract for storing basis vaults
  */
-contract VaultRegistry is Ownable {
+contract VaultRegistry is OwnableUpgradeable {
+
     mapping(address => bool) public isVault;
 
     event VaultRegistered(address indexed vault);
     event VaultDeactivated(address indexed vault);
+
+    function initialize() public initializer {
+        __Ownable_init();
+    }
 
     function registerVault(address _vault) external onlyOwner {
         require(_vault != address(0), "!_zeroAddress");
