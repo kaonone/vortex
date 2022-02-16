@@ -9,14 +9,14 @@ import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
  * @notice Registry contract for storing basis vaults
  */
 contract VaultRegistry is OwnableUpgradeable {
-
     mapping(address => bool) public isVault;
 
     event VaultRegistered(address indexed vault);
     event VaultDeactivated(address indexed vault);
 
-    function initialize() public initializer {
+    function initialize(address _vault) public initializer {
         __Ownable_init();
+        isVault[_vault] = true;
     }
 
     function registerVault(address _vault) external onlyOwner {
