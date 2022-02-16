@@ -93,7 +93,7 @@ contract BasisTestArb is DSTest {
         uint256 _totalSupply = 0;
         address _strategy = address(0);
         uint256 _performanceFee = 0;
-        uint256 _managementFee = 0;
+        uint256 _managementFee = 2500;
         assertEq(_want, address(vault.want()));
         assertEq(_depositLimit, uint256(vault.depositLimit()));
         assertEq(_name, vault.name());
