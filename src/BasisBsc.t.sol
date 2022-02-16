@@ -57,7 +57,7 @@ contract BasisTestBsc is DSTest {
     function setUp() public {
         vault = new BasisVault();
         vm.startPrank(deployer);
-        vault.initialize(_want, _depositLimit, _individualDepositLimit);
+        vault.initialize(_want, _depositLimit, _individualDepositLimit, 0, 2500);
         strategy = new BasisStrategy();
         strategy.initialize(
             _longAsset,
