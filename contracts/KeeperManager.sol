@@ -2,10 +2,12 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
+
+import "@ozUpgradesV4/contracts/security/PausableUpgradeable.sol";
 import "../interfaces/IStrategy.sol";
 
-contract KeeperManager is Ownable, Pausable {
+contract KeeperManager is OwnableUpgradeable, PausableUpgradeable {
     address public strategy;
     address public registryContract;
     uint256 public cooldown;
@@ -15,11 +17,12 @@ contract KeeperManager is Ownable, Pausable {
     event StrategySet(address indexed strategy);
     event RegistryContractSet(address indexed registryContract);
 
-    constructor(
+    function initialize(
         address _strategy,
         uint256 _cooldown,
         address _registryContract
-    ) {
+    ) public initializer {
+        __Ownable_init();
         strategy = _strategy;
         cooldown = _cooldown;
         registryContract = _registryContract;
