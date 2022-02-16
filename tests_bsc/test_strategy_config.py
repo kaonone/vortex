@@ -121,8 +121,6 @@ def test_registry(vault, deployer, VaultRegistry, accounts):
     reg.initialize(vault, {"from": deployer})
     with brownie.reverts():
         reg.registerVault(accounts[1], {"from": accounts[1]})
-    assert "VaultRegistered" in tx.events
-    assert tx.events["VaultRegistered"]["vault"] == vault.address
     assert reg.isVault(vault.address) == True
     with brownie.reverts():
         reg.deactivateVault(vault, {"from": accounts[1]})
