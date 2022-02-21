@@ -1,8 +1,8 @@
 name: Keeper Script
 
 on:
-  # schedule:
-  #   - cron: "0 */6 * * *"
+  schedule:
+    - cron: "0 */6 * * *"
 
 jobs:
   test:
