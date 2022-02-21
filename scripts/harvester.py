@@ -19,7 +19,11 @@ def main():
         strategy.harvest({"from": harvester})
         time.sleep(2)
         print("strategy harvested")
-    else:
+    elif strategy.isUnwind() == False:
         strategy.unwind({"from": harvester})
-        print("strategy unwind")
-        print("funding rate negative , will try next 6 hours")
+        print("strategy unwound")
+    else:
+        print("trying next 6 hours")
+
+    
+
