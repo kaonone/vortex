@@ -66,6 +66,6 @@ jobs:
         env:
           WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
           DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
-        # run: |
-        #   brownie networks import network-config.yaml True
-        #   brownie run scripts/harvester.py --network arbitrum-main
+        run: |
+          brownie networks import network-config.yaml True
+          brownie run scripts/harvester.py --network arbitrum-main

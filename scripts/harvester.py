@@ -15,6 +15,9 @@ def main():
     strategy = interface.IStrategy(constant.STRATEGY_ADDRESS)
     harvester = accounts.add(admin_key)
     # initialize strategy
-    strategy.harvest({"from": harvester})
-    time.sleep(2)
-    print("strategy harvested")
+    if strategy.getFundingRate() > 0:
+        strategy.harvest({"from": harvester})
+        time.sleep(2)
+        print("strategy harvested")
+    else:
+        print("funding rate negative , will try next 6 hours")
