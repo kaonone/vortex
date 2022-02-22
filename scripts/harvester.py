@@ -12,7 +12,6 @@ def main():
     constant = scripts.constants
     load_dotenv(find_dotenv())
     admin_key = os.getenv("DEPLOYER_PRIVATE_KEY")
-    # strategy = interface.IStrategy(constant.STRATEGY_ADDRESS)
     strategy = BasisStrategy.at(constant.STRATEGY_ADDRESS)
     harvester = accounts.add(admin_key)
     if strategy.getFundingRate() > 0:
