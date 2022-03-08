@@ -11,7 +11,7 @@
     "pretty-quick": "^3.0.2"
   },
   "scripts": {
-    "lint": "yarn prettier --write contracts/**.sol src/**.sol",
+    "lint": "yarn prettier --write interfaces/**.sol contracts/**.sol src/**.sol",
     "lint:check": "prettier --check **/*.sol **/*.json",
     "sec:flatten": "sh ./security/flattener-run.sh",
     "format:test:lint": "black --check tests",

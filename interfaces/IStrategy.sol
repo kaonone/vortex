@@ -6,7 +6,7 @@ interface IStrategy {
 
     function harvest() external;
 
-    function getFundingRate() external view returns(int256);
+    function getFundingRate() external view returns (int256);
 
     function setKeeper(address) external;
 }
