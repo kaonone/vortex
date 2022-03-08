@@ -24,22 +24,13 @@ jobs:
         with:
           node-version: "14.x"
 
-      - name: Install hardhat
-        run: |
-          git clone https://github.com/shuklaayush/hardhat.git
-          cd hardhat
-          git checkout fix/arbitrum
-          yarn --frozen-lockfile
-          yarn build
-          cd packages/hardhat-core
-          yarn pack
-          cd ../../..
-          yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
+      - name: Install hardhat with Arbitrum fix
+        run: sh ./arb-deploy.sh
 
-      - name: Set up python 3.9
+      - name: Set up python 3.8
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Set pip cache directory path
         id: pip-cache-dir-path

@@ -15,50 +15,68 @@ For more on this please see [Vortex Documentation](https://akropolis.gitbook.io/
 
 ## Development
 
-* You will need Python 3.8 and >=Node.js 10.x
-* Install the necessary dependencies (brownie 1.16.3, ganache-cli - latest)
+### Clone repository
 
-```
-cd vortex
-pip install -r requirements-dev.txt
-npm install
-```
+- clone using HTTPS
+  ```bash
+  git clone https://github.com/akropolisio/vortex.git
+  ```
+- or SSH
+  ```bash
+  git clone git@github.com:akropolisio/vortex.git
+  ```
+- change directory to vortex
+  ```bash
+  cd vortex
+  ```
 
-* To run the arbitrum tests get an infura id that is compatible with arbitrum:
+### Setup environment
 
-```
-export WEB3_INFURA_PROJECT_ID=<YOUR ID>
-```
+#### VSCode + Docker (recommended)
 
-* To run the bsc tests get a moralis id:
+- install [Docker](https://docs.docker.com/get-docker/)
+- install [VSCode](https://code.visualstudio.com/)
+- install [Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VSCode extension
+- open cloned Vortex repository in VSCode
+- click F1 and run `>Remote-Containers: Reopen in Container`
+- wait until all dependencies are installed (you will see the message "Done. Press any key to close the terminal." in the terminal `Configuring`)
 
-```
-export MORALIS_PROJECT_ID=<YOUR ID>
-```
+#### Manual
 
-* import the necessary networks in your brownie configuration
+* you will need Python 3.8 and Node.js >=14.x
+* install ganache-cli
+  ```bash
+  npm install -g ganache-cli
+  ```
+* install python requirements
+  ```bash
+  pip install -r requirements.txt
+  ```
+* install hardhat (brownie compatible version of hardhat in order to use arbitrum properly)
+  ```bash
+  sh ./arb-deploy.sh
+  ```
+* install contracts dependencies
+  ```bash
+  sh ./security/clone-packages.sh
+  ```
+* update brownie networks
+  ```bash
+  brownie networks import network-config.yaml true
+  ```
 
-```
-brownie import network-config.yaml
-```
+### Setup .env
 
-* Next you will need to install a brownie compatible version of hardhat in order to use arbitrum properly, to do this you will need to run the arb-deploy.sh bash script in this directory.
+- run `cp .example.env .env`
+- insert keys into `.env`
 
-* To run the arbitrum tests, "-s" will provide print outputs which this test suite uses to visualise yield:
+### Run tests
 
-```
-brownie test -s
-```
-
-To run the bsc tests
-
-```
-brownie test -s --network=bsc-main-fork
-```
-
-* Optional: if you run into bugs surrounding openzepellin imports you may have to run:
-
-```
-npm run clone-packages
-```
-
+* to run the arbitrum tests, "-s" will provide print outputs which this test suite uses to visualise yield:
+  ```bash
+  brownie test -s
+  ```
+* to run the bsc tests
+  ```bash
+  brownie test -s --network=bsc-main-fork
+  ```
