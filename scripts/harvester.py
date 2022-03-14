@@ -2,10 +2,7 @@ import os
 import scripts.constants
 import time
 from dotenv import load_dotenv, find_dotenv
-from brownie import (
-    accounts,
-    BasisStrategy
-)
+from brownie import accounts, BasisStrategy
 
 
 def main():
@@ -23,6 +20,3 @@ def main():
         print("strategy unwound")
     else:
         print("trying next 6 hours")
-
-    
-

@@ -23,7 +23,7 @@ from brownie import (
 
 
 def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
+    if network.show_active() == "arbitrum-main-fork":
         constant = scripts.constants
     else:
         constant = scripts.constants_bsc

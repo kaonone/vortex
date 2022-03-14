@@ -1,3 +1,3 @@
--c constraints.txt
+-c ape_safe_constraints.txt
 eth-brownie==1.17.0
 ape-safe==0.5.1

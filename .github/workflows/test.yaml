@@ -28,9 +28,6 @@ jobs:
         with:
           node-version: "14.x"
 
-      - name: Install hardhat with Arbitrum fix
-        run: sh ./arb-deploy.sh
-
       - name: Set up python 3.8
         uses: actions/setup-python@v2
         with:
@@ -47,23 +44,27 @@ jobs:
         with:
           path: |
             ${{ steps.pip-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+            ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
             ${{ runner.os }}-pip-
 
       - name: Install python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements/default.txt
+
+      - name: Install Ganache
+        run: npm install -g ganache@7.0.3
 
       - name: Compile Code
         run: brownie compile --size
 
       - name: Run Tests Arbitrum
         env:
+          ARBISCAN_TOKEN: ${{ secrets.ARBISCAN_TOKEN }}
           WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
         run: |
           brownie networks import network-config.yaml true
-          brownie test  tests/ 
+          brownie test tests/
           brownie test tests_heavy/
   
   test-bsc:
@@ -85,9 +86,6 @@ jobs:
         with:
           node-version: "14.x"
 
-      - name: Install hardhat with Arbitrum fix
-        run: sh ./arb-deploy.sh
-
       - name: Set up python 3.8
         uses: actions/setup-python@v2
         with:
@@ -104,22 +102,26 @@ jobs:
         with:
           path: |
             ${{ steps.pip-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+            ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
             ${{ runner.os }}-pip-
 
       - name: Install python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements/default.txt
+
+      - name: Install Ganache
+        run: npm install -g ganache@7.0.3
 
       - name: Compile Code
         run: brownie compile --size
-      
+
       - name: Run Tests BSC
         env:
+          BSCSCAN_TOKEN: ${{ secrets.BSCSCAN_TOKEN }}
           MORALIS_PROJECT_ID: ${{ secrets.moralis_project_id }}
         run: |
           brownie networks import network-config.yaml true
           brownie test tests_bsc/ --network bsc-main-fork
-          brownie test  tests/test_strategy_harvest.py --network bsc-main-fork
+          brownie test tests/test_strategy_harvest.py --network bsc-main-fork
           brownie test tests_heavy/ --network bsc-main-fork

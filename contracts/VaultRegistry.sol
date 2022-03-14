@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
+import "@oz-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 /**
  * @title VaultRegistry
@@ -14,9 +14,8 @@ contract VaultRegistry is OwnableUpgradeable {
     event VaultRegistered(address indexed vault);
     event VaultDeactivated(address indexed vault);
 
-    function initialize(address _vault) public initializer {
+    function initialize() public initializer {
         __Ownable_init();
-        isVault[_vault] = true;
     }
 
     function registerVault(address _vault) external onlyOwner {

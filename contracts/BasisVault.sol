@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-import "@ozUpgradesV4/contracts/token/ERC20/ERC20Upgradeable.sol";
+import "@oz-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "@ozUpgradesV4/contracts/security/PausableUpgradeable.sol";
-import "@ozUpgradesV4/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@oz-upgradeable/contracts/security/PausableUpgradeable.sol";
+import "@oz-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
+import "@oz-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "../interfaces/IStrategy.sol";

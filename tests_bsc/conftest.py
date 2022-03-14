@@ -37,7 +37,7 @@ def token(deployer, users, usdc_whale):
 
 
 def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
+    if network.show_active() == "arbitrum-main-fork":
         constant = constants
     elif network.show_active() == "development":
         constant = constants

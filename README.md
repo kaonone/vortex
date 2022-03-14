@@ -44,25 +44,28 @@ For more on this please see [Vortex Documentation](https://akropolis.gitbook.io/
 #### Manual
 
 * you will need Python 3.8 and Node.js >=14.x
-* install ganache-cli
+* install ganache
   ```bash
-  npm install -g ganache-cli
+  npm install -g ganache
   ```
-* install python requirements
+* install python virtual environments and other dependencies
   ```bash
-  pip install -r requirements.txt
+  make install-all
   ```
-* install hardhat (brownie compatible version of hardhat in order to use arbitrum properly)
+* activate default virtual environment
   ```bash
-  sh ./arb-deploy.sh
+  source venvs/default/bin/activate
   ```
-* install contracts dependencies
+
+### Python virtual environments
+
+- activate `default` environment
   ```bash
-  sh ./security/clone-packages.sh
+  source venvs/default/bin/activate
   ```
-* update brownie networks
+- activate `ape_safe` environment (used for deploy scripts via multisig)
   ```bash
-  brownie networks import network-config.yaml true
+  source venvs/ape_safe/bin/activate
   ```
 
 ### Setup .env

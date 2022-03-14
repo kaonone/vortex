@@ -36,22 +36,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
             ${{ runner.os }}-yarn-
-      - name: Install hardhat with Arbitrum fix
-        run: sh ./arb-deploy.sh
+
+      - name: Install Node.js dependencies
+        run: yarn
+
       - name: Run linter on *.sol and *.json
         run: yarn lint:check 
-
-  # commits:
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Check out github repository
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Run commitlint
-  #       uses: wagoid/commitlint-github-action@v2
 
   brownie:
     runs-on: ubuntu-latest
@@ -77,12 +67,12 @@ jobs:
         with:
           path: |
             ${{ steps.pip-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+            ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
             ${{ runner.os }}-pip-
       - name: Install python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements/default.txt
 
       - name: Run black
         run: black --check --include "(tests)" .

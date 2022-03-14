@@ -100,7 +100,7 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
             (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    if network.show_active() == "hardhat-arbitrum-fork":
+    if network.show_active() == "arbitrum-main-fork":
 
         mcLiquidityPool.trade(
             constant.PERP_INDEX,
