@@ -25,7 +25,7 @@ def test_deposit_harvest_deposit_harvest_withdraw(
     amount_1 = token.balanceOf(user_1)
     amount_2 = constant.DEPOSIT_AMOUNT
     amounts = [amount_1, amount_2]
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
     for n, user in enumerate(user_l):
         token.approve(vault, token.balanceOf(user), {"from": user})

@@ -96,7 +96,7 @@ def test_harvest(
     tx = test_strategy_deposited.harvest({"from": deployer})
 
     margin_account = test_strategy_deposited.getMarginAccount()
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     assert token.balanceOf(vault_deposited) == 0
     assert token.balanceOf(test_strategy_deposited) == 0
     assert "Harvest" in tx.events
@@ -131,7 +131,7 @@ def test_yield_harvest_withdraw(
     mcLiquidityPool,
 ):
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
     for n in range(100):
 
@@ -224,7 +224,7 @@ def test_loss_harvest_withdraw(
 ):
 
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(20):
@@ -279,7 +279,7 @@ def test_yield_setBuffer_withdraw(
     mcLiquidityPool,
 ):
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
     for n in range(100):
 
@@ -386,7 +386,7 @@ def test_loss_remargin_withdraw(
 ):
 
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(20):
@@ -439,7 +439,7 @@ def test_loss_harvest_remargin(
 ):
     constant = data()
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(100):
@@ -479,7 +479,7 @@ def test_loss_harvest_remargin(
         assert vault_deposited.totalLent() <= before_lent
         assert vault_deposited.balanceOf(deployer) == dep_bal_before
         assert vault_deposited.pricePerShare() <= pps_before
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     bal_before = long.balanceOf(test_strategy_deposited)
     margin_before = test_strategy_deposited.getMargin()
     K = (((constant.MAX_BPS - constant.BUFFER) / 2) * 1e18) / (
@@ -650,7 +650,7 @@ def test_yield_harvest(
 ):
     constant = data()
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
 
     for n in range(100):
@@ -704,7 +704,7 @@ def test_loss_harvest(
 ):
     constant = data()
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(100):
