@@ -153,11 +153,12 @@ def test_yield_harvest_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -248,11 +249,12 @@ def test_loss_harvest_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -313,11 +315,12 @@ def test_yield_setBuffer_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -408,11 +411,12 @@ def test_loss_remargin_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -580,11 +584,12 @@ def test_harvest_unwind_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -623,11 +628,12 @@ def test_harvest_deposit_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -761,9 +767,12 @@ def test_harvest_withdraw_all(
     assert vault.totalLent() == 0
     assert long.balanceOf(test_strategy) == 0
     assert "Withdraw" in tx.events
-    assert tx.events["Withdraw"]["user"] == user
-    assert tx.events["Withdraw"]["withdrawal"] == (token.balanceOf(user) - bal_before)
-    assert tx.events["Withdraw"]["shares"] == to_burn
+    withdraw_event = list(filter(lambda event: "user" in event, tx.events["Withdraw"]))[
+        0
+    ]
+    assert withdraw_event["user"] == user
+    assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+    assert withdraw_event["shares"] == to_burn
     assert test_strategy.positions()["perpContracts"] == 0
     assert test_strategy.positions()["margin"] == 0
 
@@ -784,11 +793,12 @@ def test_harvest_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.positions()["perpContracts"]
             == test_strategy_deposited.getMarginPositions()
