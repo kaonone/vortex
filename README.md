@@ -52,10 +52,6 @@ For more on this please see [Vortex Documentation](https://akropolis.gitbook.io/
   ```bash
   make install-all
   ```
-* activate default virtual environment
-  ```bash
-  source venvs/default/bin/activate
-  ```
 
 ### Python virtual environments
 
