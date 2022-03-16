@@ -28,6 +28,7 @@ def get_vaults_addresses():
     with open(get_vaults_path(), "r", encoding="utf-8") as file:
         return json.load(file)
 
+
 def get_latest_vault_addresses():
     addresses = get_vaults_addresses()
     vaults_len = len(addresses)
@@ -59,8 +60,8 @@ def add_vault_contract(vault_address, strategy_address):
         data = json.load(file)
 
         new_vault_data = {
-            'vault': vault_address,
-            'strategy': strategy_address,
+            "vault": vault_address,
+            "strategy": strategy_address,
         }
 
         data.append(new_vault_data)

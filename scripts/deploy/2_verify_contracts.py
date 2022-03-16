@@ -13,8 +13,7 @@ DEPLOY_TX_HASH = ""
 def main():
     tx = chain.get_transaction(DEPLOY_TX_HASH)
 
-    deploy_events = list(
-        filter(lambda event: "newContract" in event, tx.events))
+    deploy_events = list(filter(lambda event: "newContract" in event, tx.events))
     contracts_len = len(deploy_events)
     shift = 0
 
