@@ -10,6 +10,7 @@ contract KeeperManager is Ownable, Pausable {
     address public registryContract;
     uint256 public cooldown;
     uint256 public lastTimestamp;
+    bool public harvested;
 
     event CooldownSet(uint256 cooldown);
     event StrategySet(address indexed strategy);
@@ -61,6 +62,14 @@ contract KeeperManager is Ownable, Pausable {
             "harvest not needed"
         );
         lastTimestamp = block.timestamp;
-        IStrategy(strategy).harvest();
+
+        if (IStrategy(strategy).getFundingRate() > 0) {
+            IStrategy(strategy).harvest();
+            harvested = true;
+        } else if (IStrategy(strategy).isUnwind() == false) {
+            IStrategy(strategy).unwind();
+        } else {
+            harvested = false;
+        }
     }
 }
