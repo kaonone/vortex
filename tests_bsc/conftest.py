@@ -118,6 +118,8 @@ def vault(deployer, token):
         token,
         constant.DEPOSIT_LIMIT,
         constant.INDIVIDUAL_DEPOSIT_LIMIT,
+        0,
+        2500,
         {"from": deployer},
     )
     yield vaulty

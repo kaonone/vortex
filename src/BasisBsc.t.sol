@@ -57,7 +57,13 @@ contract BasisTestBsc is DSTest {
     function setUp() public {
         vault = new BasisVault();
         vm.startPrank(deployer);
-        vault.initialize(_want, _depositLimit, _individualDepositLimit);
+        vault.initialize(
+            _want,
+            _depositLimit,
+            _individualDepositLimit,
+            0,
+            2500
+        );
         strategy = new BasisStrategy();
         strategy.initialize(
             _longAsset,
@@ -89,7 +95,7 @@ contract BasisTestBsc is DSTest {
         uint256 _totalSupply = 0;
         address _strategy = address(0);
         uint256 _performanceFee = 0;
-        uint256 _managementFee = 0;
+        uint256 _managementFee = 2500;
         assertEq(_want, address(vault.want()));
         assertEq(_depositLimit, uint256(vault.depositLimit()));
         assertEq(_name, vault.name());
