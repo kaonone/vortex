@@ -13,6 +13,8 @@ def test_vault_deployment(BasisVault, deployer, token):
         constant.USDC,
         constant.DEPOSIT_LIMIT,
         constant.INDIVIDUAL_DEPOSIT_LIMIT,
+        constant.PERFORMANCE_FEE,
+        constant.MANAGEMENT_FEE,
         {"from": deployer},
     )
     assert vault.owner() == deployer
