@@ -15,6 +15,7 @@ OpenZeppelin/
 flattened/
 out/
 lib/
+verification_sources/
 
 # Node/npm
 node_modules/

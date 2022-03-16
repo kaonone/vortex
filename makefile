@@ -22,6 +22,7 @@ install-ape-safe-venv:
 	brownie networks import network-config.yaml true
 
 install-contracts-deps:
+	. venvs/default/bin/activate
 	brownie pm install "Uniswap/uniswap-v3-core@1.0.0"
 	brownie pm install "Uniswap/uniswap-v3-periphery@1.0.0"
 	brownie pm install "OpenZeppelin/openzeppelin-contracts@4.0.0"
@@ -30,6 +31,14 @@ install-contracts-deps:
 	brownie pm clone "Uniswap/uniswap-v3-periphery@1.0.0"
 	brownie pm clone "OpenZeppelin/openzeppelin-contracts@4.0.0"
 	brownie pm clone "OpenZeppelin/openzeppelin-contracts-upgradeable@4.0.0"
+
+switch-to-ganache-cli:
+	npm remove -g ganache
+	npm install -g ganache-cli@6.12.2
+
+switch-to-ganache:
+	npm remove -g ganache-cli
+	npm install -g ganache@7.0.3
 
 clean:
 	rm -rf build hardhat OpenZeppelin Uniswap node_modules venv venvs flattened

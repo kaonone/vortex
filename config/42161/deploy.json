@@ -1,0 +1,15 @@
+{
+  "want_token": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+  "long_asset": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  "WETH": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  "mc_liquidity_pool": "0xaB324146C49B23658E5b3930E641BDBDf089CbAc",
+  "uniswap_pool": "0x17c14D2c404D167802b16C450d3c99F88F2c4F4d",
+  "uniswap_router": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+  "is_v2_router": false,
+  "perpetual_index": 0,
+  "buffer": 100000,
+  "deposit_limit": 250000,
+  "individual_deposit_limit": 2500,
+  "management_fee": 0,
+  "performance_fee": 2500
+}
