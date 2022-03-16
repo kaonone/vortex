@@ -33,12 +33,12 @@ def test_deposit_with_mal_funds(vault, users, token, randy, deployer):
     constant = data()
     user = users[0]
     assert token.balanceOf(randy) == 0
-    token.approve(vault, 2 ** 256 - 1, {"from": randy})
+    token.approve(vault, 2**256 - 1, {"from": randy})
     with brownie.reverts():
         vault.deposit(constant.DEPOSIT_AMOUNT, randy, {"from": randy})
 
     balance = token.balanceOf(user) + 1
-    token.approve(vault, 2 ** 256 - 1, {"from": user})
+    token.approve(vault, 2**256 - 1, {"from": user})
     with brownie.reverts():
         vault.deposit(balance, user, {"from": user})
 

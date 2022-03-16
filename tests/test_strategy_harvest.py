@@ -1,6 +1,3 @@
-from typing import NewType
-
-from black import token
 import brownie
 import constants
 import constants_bsc
@@ -99,7 +96,7 @@ def test_harvest(
     tx = test_strategy_deposited.harvest({"from": deployer})
 
     margin_account = test_strategy_deposited.getMarginAccount()
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     assert token.balanceOf(vault_deposited) == 0
     assert token.balanceOf(test_strategy_deposited) == 0
     assert "Harvest" in tx.events
@@ -134,7 +131,7 @@ def test_yield_harvest_withdraw(
     mcLiquidityPool,
 ):
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
     for n in range(100):
 
@@ -156,11 +153,12 @@ def test_yield_harvest_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -227,7 +225,7 @@ def test_loss_harvest_withdraw(
 ):
 
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(20):
@@ -251,11 +249,12 @@ def test_loss_harvest_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -282,7 +281,7 @@ def test_yield_setBuffer_withdraw(
     mcLiquidityPool,
 ):
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
     for n in range(100):
 
@@ -316,11 +315,12 @@ def test_yield_setBuffer_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -389,7 +389,7 @@ def test_loss_remargin_withdraw(
 ):
 
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(20):
@@ -411,11 +411,12 @@ def test_loss_remargin_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -442,7 +443,7 @@ def test_loss_harvest_remargin(
 ):
     constant = data()
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(100):
@@ -482,7 +483,7 @@ def test_loss_harvest_remargin(
         assert vault_deposited.totalLent() <= before_lent
         assert vault_deposited.balanceOf(deployer) == dep_bal_before
         assert vault_deposited.pricePerShare() <= pps_before
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     bal_before = long.balanceOf(test_strategy_deposited)
     margin_before = test_strategy_deposited.getMargin()
     K = (((constant.MAX_BPS - constant.BUFFER) / 2) * 1e18) / (
@@ -583,11 +584,12 @@ def test_harvest_unwind_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -626,11 +628,12 @@ def test_harvest_deposit_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.getMarginPositions()
             == test_strategy_deposited.positions()["perpContracts"]
@@ -653,7 +656,7 @@ def test_yield_harvest(
 ):
     constant = data()
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_long(deployer, token, mcLiquidityPool, price)
 
     for n in range(100):
@@ -707,7 +710,7 @@ def test_loss_harvest(
 ):
     constant = data()
     test_strategy_deposited.harvest({"from": deployer})
-    price = oracle.priceTWAPLong({"from": deployer}).return_value[0]
+    price = oracle.priceTWAPLong.call()[0]
     whale_buy_short(deployer, token, mcLiquidityPool, price)
 
     for n in range(100):
@@ -764,9 +767,12 @@ def test_harvest_withdraw_all(
     assert vault.totalLent() == 0
     assert long.balanceOf(test_strategy) == 0
     assert "Withdraw" in tx.events
-    assert tx.events["Withdraw"]["user"] == user
-    assert tx.events["Withdraw"]["withdrawal"] == (token.balanceOf(user) - bal_before)
-    assert tx.events["Withdraw"]["shares"] == to_burn
+    withdraw_event = list(filter(lambda event: "user" in event, tx.events["Withdraw"]))[
+        0
+    ]
+    assert withdraw_event["user"] == user
+    assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+    assert withdraw_event["shares"] == to_burn
     assert test_strategy.positions()["perpContracts"] == 0
     assert test_strategy.positions()["margin"] == 0
 
@@ -787,11 +793,12 @@ def test_harvest_withdraw(
         assert vault_deposited.balanceOf(user) == 0
         assert token.balanceOf(user) > bal_before
         assert "Withdraw" in tx.events
-        assert tx.events["Withdraw"]["user"] == user
-        assert tx.events["Withdraw"]["withdrawal"] == (
-            token.balanceOf(user) - bal_before
-        )
-        assert tx.events["Withdraw"]["shares"] == to_burn
+        withdraw_event = list(
+            filter(lambda event: "user" in event, tx.events["Withdraw"])
+        )[0]
+        assert withdraw_event["user"] == user
+        assert withdraw_event["withdrawal"] == (token.balanceOf(user) - bal_before)
+        assert withdraw_event["shares"] == to_burn
         assert (
             test_strategy_deposited.positions()["perpContracts"]
             == test_strategy_deposited.getMarginPositions()
@@ -844,7 +851,7 @@ def whale_buy_long(deployer, token, mcLiquidityPool, price):
             (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    if network.show_active() == "hardhat-arbitrum-fork":
+    if network.show_active() == "arbitrum-main-fork":
 
         mcLiquidityPool.trade(
             constant.PERP_INDEX,
@@ -890,7 +897,7 @@ def whale_buy_short(deployer, token, mcLiquidityPool, price):
             (token.balanceOf(deployer) * constant.DECIMAL_SHIFT - 1),
             {"from": deployer},
         )
-    if network.show_active() == "hardhat-arbitrum-fork":
+    if network.show_active() == "arbitrum-main-fork":
 
         mcLiquidityPool.trade(
             constant.PERP_INDEX,

@@ -11,14 +11,10 @@
     "pretty-quick": "^3.0.2"
   },
   "scripts": {
-    "lint": "yarn prettier --write contracts/**.sol src/**.sol",
+    "lint": "prettier --write interfaces/**.sol contracts/**.sol src/**.sol **/*.json",
     "lint:check": "prettier --check **/*.sol **/*.json",
     "sec:flatten": "sh ./security/flattener-run.sh",
     "format:test:lint": "black --check tests",
-    "format:test:fix": "black . tests",
-    "clone-packages": "sh ./security/clone-packages.sh"
-  },
-  "dependencies": {
-    "hardhat": "./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz"
+    "format:test:fix": "black . tests"
   }
 }

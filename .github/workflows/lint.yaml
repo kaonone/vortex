@@ -2,10 +2,6 @@ name: Lint
 
 on:
   push:
-    # branches:
-      # - main
-      # - develop
-  pull_request:
 
 jobs:
   solidity:
@@ -36,31 +32,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
             ${{ runner.os }}-yarn-
-      - name: Install node.js dependencies
-        run: |
-          git clone https://github.com/shuklaayush/hardhat.git
-          cd hardhat
-          git checkout fix/arbitrum
-          yarn --frozen-lockfile
-          yarn build
-          cd packages/hardhat-core
-          yarn pack
-          cd ../../..
-          yarn add ./hardhat/packages/hardhat-core/hardhat-v2.6.2.tgz
+
+      - name: Install Node.js dependencies
+        run: yarn
+
       - name: Run linter on *.sol and *.json
         run: yarn lint:check 
-
-  # commits:
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Check out github repository
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Run commitlint
-  #       uses: wagoid/commitlint-github-action@v2
 
   brownie:
     runs-on: ubuntu-latest
@@ -71,10 +48,10 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up python 3.9
+      - name: Set up python 3.8
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Set pip cache directory path
         id: pip-cache-dir-path
@@ -86,12 +63,12 @@ jobs:
         with:
           path: |
             ${{ steps.pip-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+            ${{ runner.os }}-pip-${{ hashFiles('**/requirements/default.txt') }}
             ${{ runner.os }}-pip-
       - name: Install python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements/default.txt
 
       - name: Run black
         run: black --check --include "(tests)" .
@@ -107,7 +84,7 @@ jobs:
           node-version: "12"
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
       - name: Prepare environment
         run: |
           npm install -g ganache-cli@6.12.1
@@ -115,7 +92,7 @@ jobs:
           solc-select install 0.8.4
           solc-select use 0.8.4
           pip3 install slither-analyzer
-          pip3 install -r requirements-dev.txt
+          pip3 install eth-brownie==1.16.2
       - name: Prepare contracts
         env:
           WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}

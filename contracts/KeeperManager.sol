@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL V3.0
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@ozUpgradesV4/contracts/access/OwnableUpgradeable.sol";
+import "@oz-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@oz-upgradeable/contracts/security/PausableUpgradeable.sol";
 
-import "@ozUpgradesV4/contracts/security/PausableUpgradeable.sol";
 import "../interfaces/IStrategy.sol";
 
 contract KeeperManager is OwnableUpgradeable, PausableUpgradeable {
@@ -24,6 +23,7 @@ contract KeeperManager is OwnableUpgradeable, PausableUpgradeable {
         address _registryContract
     ) public initializer {
         __Ownable_init();
+        __Pausable_init();
         strategy = _strategy;
         cooldown = _cooldown;
         registryContract = _registryContract;

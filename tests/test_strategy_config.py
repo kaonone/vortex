@@ -119,7 +119,8 @@ def test_setters(BasisStrategy, deployer, accounts, governance, vault):
 
 def test_registry(vault, deployer, VaultRegistry, accounts):
     reg = VaultRegistry.deploy({"from": deployer})
-    reg.initialize(vault, {"from": deployer})
+    reg.initialize({"from": deployer})
+    reg.registerVault(vault, {"from": deployer})
     with brownie.reverts():
         reg.registerVault(accounts[1], {"from": accounts[1]})
     assert reg.isVault(vault.address) == True

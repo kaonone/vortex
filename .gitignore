@@ -6,10 +6,12 @@ build/
 reports/
 .env
 venv/
+venvs/
 cache/
 artifacts/
 hardhat/
 Uniswap/
+OpenZeppelin/
 flattened/
 out/
 lib/
@@ -17,3 +19,6 @@ lib/
 # Node/npm
 node_modules/
 node_modules/.yarn-integrity
+
+# Poetry
+poetry.lock

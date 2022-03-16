@@ -37,7 +37,7 @@ def token(deployer, users, usdc_whale):
 
 
 def data():
-    if network.show_active() == "hardhat-arbitrum-fork":
+    if network.show_active() == "arbitrum-main-fork":
         constant = constants
     elif network.show_active() == "development":
         constant = constants
@@ -182,34 +182,4 @@ def test_strategy_deposited(vault_deposited, deployer, governance):
     vault_deposited.setStrategy(strategy, {"from": deployer})
     strategy.setSlippageTolerance(constant.TRADE_SLIPPAGE, {"from": deployer})
     vault_deposited.setProtocolFees(2000, 200, {"from": deployer})
-    yield strategy
-
-
-@pytest.fixture(scope="function")
-def test_other_strategy(token, deployer, governance, users):
-    constant = data()
-    vault_deploy = BasisVault.deploy({"from": deployer})
-    vaulty = vault_deploy.initialize(token, constant.DEPOSIT_LIMIT, {"from": deployer})
-    for user in users:
-        token.approve(vaulty, constant.DEPOSIT_AMOUNT, {"from": user})
-        vaulty.deposit(constant.DEPOSIT_AMOUNT, user, {"from": user})
-    strategy = TestStrategy.deploy(
-        {"from": deployer},
-    )
-    strategy.init(
-        constant.LONG_ASSET,
-        constant.UNI_POOL,
-        vaulty.address,
-        constant.ROUTER,
-        constant.WETH,
-        governance,
-        constant.MCLIQUIDITY,
-        constant.PERP_INDEX,
-        constant.BUFFER,
-        constant.isV2,
-        {"from": deployer},
-    )
-    strategy.setBuffer(constant.BUFFER, {"from": deployer})
-    vaulty.setStrategy(strategy, {"from": deployer})
-    strategy.setSlippageTolerance(constant.TRADE_SLIPPAGE, {"from": deployer})
     yield strategy
