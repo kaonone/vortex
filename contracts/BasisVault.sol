@@ -63,16 +63,21 @@ contract BasisVault is
     function initialize(
         address _want,
         uint256 _depositLimit,
-        uint256 _individualDepositLimit
+        uint256 _individualDepositLimit,
+        uint256 _performanceFee,
+        uint256 _managementFee
     ) public initializer {
         __ERC20_init("akBVUSDC-ETH", "akBasisVault-USDC-ETH");
         __Ownable_init();
         __ReentrancyGuard_init();
         __Pausable_init();
         require(_want != address(0), "!_want");
+
         want = IERC20(_want);
         depositLimit = _depositLimit;
         individualDepositLimit = _individualDepositLimit;
+        performanceFee = _performanceFee;
+        managementFee = _managementFee;
         protocolFeeRecipient = msg.sender;
     }
 

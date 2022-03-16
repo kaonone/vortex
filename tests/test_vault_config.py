@@ -38,6 +38,8 @@ def test_vault_set_non_strat_params(BasisVault, deployer, accounts):
         constant.USDC,
         constant.DEPOSIT_LIMIT,
         constant.INDIVIDUAL_DEPOSIT_LIMIT,
+        0,
+        2500,
         {"from": deployer},
     )
     with brownie.reverts():
@@ -75,6 +77,8 @@ def test_vault_add_strategy(BasisVault, BasisStrategy, deployer, accounts):
         constant.USDC,
         constant.DEPOSIT_LIMIT,
         constant.INDIVIDUAL_DEPOSIT_LIMIT,
+        0,
+        2500,
         {"from": deployer},
     )
     strategy = BasisStrategy.deploy({"from": deployer})

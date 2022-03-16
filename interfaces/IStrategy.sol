@@ -9,4 +9,8 @@ interface IStrategy {
     function getFundingRate() external view returns (int256);
 
     function setKeeper(address) external;
+
+    function isUnwind() external view returns (bool);
+
+    function unwind() external;
 }
