@@ -86,7 +86,7 @@ contract BasisTestArb is DSTest {
     }
 
     function testVaultDeploymentArb() public {
-        string memory _name = "akBVUSDC-ETH";
+        string memory _name = "akBV-USDC-ETH";
         string memory _symbol = "akBasisVault-USDC-ETH";
         uint256 _totalAssets = 0;
         uint256 _totalLent = 0;
