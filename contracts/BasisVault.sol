@@ -67,7 +67,7 @@ contract BasisVault is
         uint256 _performanceFee,
         uint256 _managementFee
     ) public initializer {
-        __ERC20_init("akBVUSDC-ETH", "akBasisVault-USDC-ETH");
+        __ERC20_init("akBV-USDC-ETH", "akBasisVault-USDC-ETH");
         __Ownable_init();
         __ReentrancyGuard_init();
         __Pausable_init();

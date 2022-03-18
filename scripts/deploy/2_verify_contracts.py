@@ -1,9 +1,16 @@
-from scripts.utils.constants import set_vaults_registry_contract, add_vault_contract
+from scripts.utils.constants import (
+    get_deploy_config,
+    get_utils_addresses,
+    set_vaults_registry_contract,
+    set_keeper_address,
+    add_vault_contract,
+)
 from scripts.utils.prepare_verification_sources import prepare_verification_sources
 from brownie import (
     VaultRegistry,
     BasisVault,
     BasisStrategy,
+    KeeperManager,
     chain,
 )
 
@@ -12,44 +19,48 @@ DEPLOY_TX_HASH = ""
 
 def main():
     tx = chain.get_transaction(DEPLOY_TX_HASH)
+    utils_addresses = get_utils_addresses()
+    deploy_config = get_deploy_config()
 
     deploy_events = list(filter(lambda event: "newContract" in event, tx.events))
-    contracts_len = len(deploy_events)
     shift = 0
 
-    if contracts_len == 3:
-        registry_address = deploy_events[0]["newContract"]
+    if not utils_addresses["vaults_registry"]:
+        registry_address = deploy_events[shift]["newContract"]
         set_vaults_registry_contract(registry_address)
-        shift = 1
+        shift += 1
+
+    if deploy_config["use_alchemy_keeper"] and not utils_addresses["keeper_address"]:
+        keeper_address = deploy_events[shift]["newContract"]
+        set_keeper_address(keeper_address)
+        shift += 1
 
     vault_address = deploy_events[shift]["newContract"]
     strategy_address = deploy_events[shift + 1]["newContract"]
     add_vault_contract(vault_address, strategy_address)
 
+    if registry_address:
+        publish_sources(VaultRegistry, registry_address)
+
+    if keeper_address:
+        publish_sources(KeeperManager, keeper_address)
+
+    publish_sources(BasisVault, vault_address)
+    publish_sources(BasisStrategy, strategy_address)
+
+
+def publish_sources(contract, address):
+    info = contract.get_verification_info()
+
     try:
-        if registry_address:
-            registry = VaultRegistry.at(registry_address)
-            VaultRegistry.publish_source(registry)
-
-        vault = BasisVault.at(vault_address)
-        BasisVault.publish_source(vault)
-
-        strategy = BasisStrategy.at(strategy_address)
-        BasisStrategy.publish_source(strategy)
+        contract.publish_source(contract.at(address))
     except:
         print(
-            "Unable to verify contracts automatically, try to verify manually using sources from the verification_sources folder"
+            f"\nUnable to verify {info['contract_name']}! Use the 'verification_sources/{info['contract_name']}' folder to verify manually"
         )
 
-        if registry_address:
-            prepare_verification_sources(VaultRegistry)
-            print_verification_info(VaultRegistry, registry_address)
-
-        prepare_verification_sources(BasisVault)
-        prepare_verification_sources(BasisStrategy)
-
-        print_verification_info(BasisVault, vault_address)
-        print_verification_info(BasisStrategy, strategy_address)
+        prepare_verification_sources(contract)
+        print_verification_info(contract, address)
 
 
 def print_verification_info(contract, address):

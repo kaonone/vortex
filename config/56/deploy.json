@@ -11,5 +11,7 @@
   "deposit_limit": 250000,
   "individual_deposit_limit": 2500,
   "management_fee": 0,
-  "performance_fee": 2500
+  "performance_fee": 2500,
+  "use_alchemy_keeper": true,
+  "keeper_cooldown": 21600
 }

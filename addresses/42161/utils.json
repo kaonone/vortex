@@ -1,5 +1,8 @@
 {
-  "create_call": "0x7990207faEf7896f0108b6d491e68834d9285Fa4",
-  "gnosis_safe": "0x404d5E235fA66E78413418168e6e6c51A5Ee013F",
-  "vaults_registry": "0x1F286794aD8872C2d952334552869F9d0267E1ac"
+  "create_call": null,
+  "gnosis_safe": null,
+  "vaults_registry": null,
+  "keeper_address": null,
+
+  "upkeep_registry": null
 }

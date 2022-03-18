@@ -36,20 +36,22 @@ def get_latest_vault_addresses():
 
 
 def set_create_call_contract(address):
-    with open(get_utils_path(), "r+", encoding="utf-8") as file:
-        data = json.load(file)
+    _set_utility_address("create_call", address)
 
-        data["create_call"] = address
 
-        file.seek(0)
-        json.dump(data, file, indent=2)
+def set_keeper_address(address):
+    _set_utility_address("keeper_address", address)
 
 
 def set_vaults_registry_contract(address):
+    _set_utility_address("vaults_registry", address)
+
+
+def _set_utility_address(key, value):
     with open(get_utils_path(), "r+", encoding="utf-8") as file:
         data = json.load(file)
 
-        data["vaults_registry"] = address
+        data[key] = value
 
         file.seek(0)
         json.dump(data, file, indent=2)
