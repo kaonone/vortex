@@ -21,8 +21,12 @@ install-ape-safe-venv:
 	pip --require-virtualenv install -r requirements/ape_safe.txt
 	brownie networks import network-config.yaml true
 
+GLOBAL_BROWNIE := $(shell command -v brownie 2> /dev/null)
+
 install-contracts-deps:
+ifeq ($(GLOBAL_BROWNIE),)
 	. venvs/default/bin/activate
+endif
 	brownie pm install "Uniswap/uniswap-v3-core@1.0.0"
 	brownie pm install "Uniswap/uniswap-v3-periphery@1.0.0"
 	brownie pm install "OpenZeppelin/openzeppelin-contracts@4.0.0"
