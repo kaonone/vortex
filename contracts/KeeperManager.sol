@@ -7,31 +7,21 @@ import "@oz-upgradeable/contracts/security/PausableUpgradeable.sol";
 import "../interfaces/IStrategy.sol";
 
 contract KeeperManager is OwnableUpgradeable, PausableUpgradeable {
-    address public strategy;
     address public registryContract;
     uint256 public cooldown;
     uint256 public lastTimestamp;
-    bool public harvested;
 
     event CooldownSet(uint256 cooldown);
-    event StrategySet(address indexed strategy);
     event RegistryContractSet(address indexed registryContract);
 
-    function initialize(
-        address _strategy,
-        uint256 _cooldown,
-        address _registryContract
-    ) public initializer {
+    function initialize(uint256 _cooldown, address _registryContract)
+        public
+        initializer
+    {
         __Ownable_init();
         __Pausable_init();
-        strategy = _strategy;
         cooldown = _cooldown;
         registryContract = _registryContract;
-    }
-
-    function setStrategy(address _strategy) public onlyOwner {
-        strategy = _strategy;
-        emit StrategySet(_strategy);
     }
 
     function setCoolDown(uint256 _cooldown) public onlyOwner {
@@ -44,35 +34,34 @@ contract KeeperManager is OwnableUpgradeable, PausableUpgradeable {
         emit RegistryContractSet(_registryContract);
     }
 
-    function checkUpkeep(
-        bytes calldata /* checkData */
-    )
+    /**
+     * @param  checkData  encoded strategy address: abi.encode(strategy, (address))
+     */
+    function checkUpkeep(bytes calldata checkData)
         external
-        returns (
-            bool upkeepNeeded,
-            bytes memory /* performData */
-        )
+        returns (bool upkeepNeeded, bytes memory performData)
     {
-        upkeepNeeded = (block.timestamp - lastTimestamp) > cooldown;
+        address strategy = abi.decode(checkData, (address));
+
+        bool harvestNeeded = IStrategy(strategy).getFundingRate() > 0;
+        bool unwindNeeded = !harvestNeeded && !IStrategy(strategy).isUnwind();
+
+        upkeepNeeded =
+            (harvestNeeded || unwindNeeded) &&
+            (block.timestamp - lastTimestamp) > cooldown;
+        performData = checkData;
     }
 
-    function performUpkeep(
-        bytes calldata /* performData */
-    ) external {
-        require(msg.sender == registryContract, "!keeper");
-        require(
-            (block.timestamp - lastTimestamp) > cooldown,
-            "harvest not needed"
-        );
+    function performUpkeep(bytes calldata performData) external {
+        require(msg.sender == registryContract, "!chainLinkRegistry");
+
+        address strategy = abi.decode(performData, (address));
         lastTimestamp = block.timestamp;
 
         if (IStrategy(strategy).getFundingRate() > 0) {
             IStrategy(strategy).harvest();
-            harvested = true;
-        } else if (IStrategy(strategy).isUnwind() == false) {
+        } else if (!IStrategy(strategy).isUnwind()) {
             IStrategy(strategy).unwind();
-        } else {
-            harvested = false;
         }
     }
 }

@@ -21,7 +21,7 @@ def test_vault_deployment(BasisVault, deployer, token):
     assert vault.want() == constant.USDC
     assert vault.depositLimit() == constant.DEPOSIT_LIMIT
 
-    assert vault.name() == "akBVUSDC-ETH"
+    assert vault.name() == "akBV-USDC-ETH"
     assert vault.symbol() == "akBasisVault-USDC-ETH"
 
     assert vault.totalLent() == 0
