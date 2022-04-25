@@ -11,12 +11,15 @@ def main():
     admin_key = os.getenv("DEPLOYER_PRIVATE_KEY")
     strategy = BasisStrategy.at(constant.STRATEGY_ADDRESS)
     harvester = accounts.add(admin_key)
-    if strategy.getFundingRate() > 0:
-        strategy.harvest({"from": harvester})
-        time.sleep(2)
-        print("strategy harvested")
-    elif strategy.isUnwind() == False:
+    if strategy.isUnwind() == False:
         strategy.unwind({"from": harvester})
         print("strategy unwound")
-    else:
-        print("trying next 6 hours")
+    # if strategy.getFundingRate() > 0:
+    #     strategy.harvest({"from": harvester})
+    #     time.sleep(2)
+    #     print("strategy harvested")
+    # elif strategy.isUnwind() == False:
+    #     strategy.unwind({"from": harvester})
+    #     print("strategy unwound")
+    # else:
+    #     print("trying next 6 hours")
